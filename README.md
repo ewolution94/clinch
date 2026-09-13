@@ -1,0 +1,153 @@
+<p align="center">
+  <img src="brand/banner.svg" alt="Pylon — who's in, who's out." width="100%" />
+</p>
+
+# Pylon
+
+**Who's in, who's out.**
+
+NFL standings and the playoff picture on one screen. Built because the NFL
+doesn't have a Bundesliga table — it has two conferences, eight divisions, four
+division winners who get in regardless of record, and three wild cards who get
+in because of it. Pylon shows all of that at a glance, and says plainly which
+teams are in the field, which are chasing it, and which are already out.
+
+## Features
+
+- **Both conferences, one screen** — all eight divisions, every team, with
+  records, point differential, recent form and current seed. Tap any team for
+  its splits, last five results and next kickoff.
+- **A playoff picture that isn't guesswork** — seeds 1–7 per conference, the
+  cut line drawn as a real object, everyone still alive ranked by how many games
+  back they are, and the eliminated set aside.
+- **The wild card round as it stands today** — 1 seed on a bye, 2v7, 3v6, 4v5.
+- **Clinched and eliminated only when the maths says so** — see
+  [How the labels are derived](#how-the-labels-are-derived). Nothing here is a
+  projection or a win probability.
+- **Live during games** — scores and states stream over SSE; the page never
+  needs a refresh.
+- **Built for a phone first** — the tables drop columns as the space narrows
+  using container queries, so a card in a two-column desktop layout stays as
+  readable as the same card on a 390px screen.
+- **One container** — the built frontend is served by the same Express process
+  as the API, and there is no database, no volume and no state on disk.
+
+## Local development
+
+```bash
+npm run install:all
+npm run dev
+```
+
+Client: **http://localhost:5176**. API: `http://localhost:4600` (proxied
+through `/api` in dev, same-origin in production — no CORS config either way).
+
+## Deploying (Docker)
+
+```bash
+docker compose up -d --build
+```
+
+Then point the Cloudflare Tunnel's public hostname at container port `4600`.
+Pylon has no hardcoded origin assumptions and stores nothing, so the container
+is disposable — restarting it just re-pulls the league.
+
+### Environment variables
+
+| Variable                  | Default   | Purpose                                                    |
+| ------------------------- | --------- | ---------------------------------------------------------- |
+| `PORT`                    | `4600`    | Port the server listens on.                                 |
+| `PYLON_SEASON`            | *(live)*  | Pin a season (e.g. `2025`) instead of following the current one. |
+| `PYLON_REFRESH_MS`        | `120000`  | Refresh cadence when nothing is being played.               |
+| `PYLON_LIVE_REFRESH_MS`   | `25000`   | Refresh cadence while a game is in progress.                |
+| `PYLON_SCHEDULE_TTL_MS`   | `3600000` | How long a future week's schedule is trusted before re-fetching. |
+| `PYLON_TIMEOUT_MS`        | `12000`   | Per-request timeout against the upstream feed.              |
+
+## Where the data comes from
+
+ESPN's public NFL endpoints — `standings?level=3` for the division tables and
+`scoreboard` for schedule and scores. No key, no account, no scraping.
+
+The server polls them, keeps the result in memory and serves every client from
+that one copy, so the number of people looking at the page has no bearing on how
+often ESPN gets asked. Weeks that have finished are never re-fetched, which is
+why steady-state traffic is a single request per cycle.
+
+Two things are taken from ESPN as authoritative rather than recomputed:
+
+- **`playoffSeed`** — the conference seed, with the NFL's full tiebreaker chain
+  (head-to-head, common games, strength of victory…) already applied. Pylon
+  sorts by it rather than reimplementing tiebreakers it would get subtly wrong.
+- **Division membership order** is *not* taken from ESPN — it returns division
+  entries in its own order, which is not the standings order. Divisions are
+  sorted by seed instead, which puts the real leader first.
+
+Teams that haven't kicked off yet come back with `playoffSeed: 0`, which would
+otherwise sort them above the entire conference. Those are slotted in by win
+differential and the whole conference renumbered — a no-op from the moment every
+team has played once.
+
+## How the labels are derived
+
+Every status is settled arithmetic, never a projection. A win counts 1 and a tie
+counts ½, so ties stop being a special case; `floor` is the record a team ends on
+if it loses out, `ceiling` the record if it wins out.
+
+| Label | Condition |
+| ----- | --------- |
+| **Eliminated** | The team's ceiling is below the current 7th seed's floor. At least seven teams are already at or above that mark and none of them can lose ground, so the chase is over. |
+| **Clinched berth** | The team's floor is above the ceiling of all nine teams currently outside the cut. It finishes ahead of every one of them, so at worst it is the 7 seed. |
+| **Clinched division** | The team's floor is above the ceilings of its three division rivals. |
+| **Clinched bye** | Clinched the division, and its floor is above every other ceiling in the conference. |
+| **On the bubble / In the hunt / Long shot** | Outside the cut by ≤1 / ≤3 / more games. |
+
+These are *sufficient* conditions, not exhaustive ones — a team can be eliminated
+in ways this doesn't catch, since that needs full schedule analysis. Pylon
+under-claims on purpose: it will occasionally be late to call a team out, and it
+will never call one out wrongly.
+
+One thing deliberately not read off the seed number: whether a team is a division
+winner or a wild card. Seeds 1–4 are usually the four division leaders, but that
+only holds once every team has played, so the role comes from the team's actual
+position in its own division.
+
+## Tech stack
+
+- **Server**: Node.js, Express, TypeScript, Server-Sent Events. No database, no
+  files, no state — an in-memory cache in front of a public API.
+- **Client**: React 19, TypeScript, Vite, Tailwind CSS v4. No UI framework, no
+  animation library, no icon package; fonts and logos are served locally, so the
+  page makes no third-party requests at all.
+
+## Project structure
+
+```
+pylon/
+├── brand/                  standalone brand assets (mark, logo, banner)
+├── server/src/
+│   ├── config.ts           env vars
+│   ├── espn.ts             upstream client + response normalisation
+│   ├── derive.ts           seeding, clinch/elimination, the bracket
+│   ├── snapshotStore.ts    poll loop, week cache, SSE fan-out
+│   ├── teams.ts            the 32 teams: division, and a dark-legible accent
+│   ├── index.ts            API, SSE, static serving
+│   └── types.ts
+├── client/public/
+│   ├── fonts/              two variable woff2 files, self-hosted
+│   └── logos/              32 team marks, 160px webp, ~230 kB total
+├── client/src/
+│   ├── components/         Header, DivisionCard, TeamRow, SeedRow, Bracket…
+│   ├── hooks/              useSnapshot (SSE), useRoute, useMediaQuery
+│   └── lib/                types, status ladder, formatting
+├── Dockerfile              multi-stage build → single runtime image
+└── docker-compose.yml
+```
+
+## What this deliberately doesn't do
+
+- **No win probabilities or playoff odds.** Those need a simulation and a model,
+  and a number like "63%" invites more trust than it earns. Pylon shows what is
+  true right now and what is already settled.
+- **No tiebreaker reimplementation.** ESPN's seed is used as given.
+- **No accounts, favourites or notifications.** It's a page you open on a Sunday
+  evening, read in ten seconds and close.

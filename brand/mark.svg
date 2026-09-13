@@ -1,0 +1,32 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0c111c"/>
+      <stop offset="1" stop-color="#05070c"/>
+    </linearGradient>
+    <linearGradient id="lit" x1="0" y1="14" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff9248"/>
+      <stop offset="1" stop-color="#ff5a08"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="14" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c4470f"/>
+      <stop offset="1" stop-color="#8f3108"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="32" cy="34" r="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff6a1a" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="2.5" y="2.5" width="59" height="59" rx="15" fill="url(#bg)" stroke="#1c2434" stroke-width="1"/>
+  <circle cx="32" cy="34" r="26" fill="url(#glow)"/>
+
+  <!-- yard lines behind the pylon -->
+  <path d="M 12 50 L 12 22 M 52 50 L 52 22" stroke="#1c2434" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- the pylon: two lit faces, one shadowed, seen from the corner -->
+  <path d="M 32 11 L 49 19.5 L 49 46 L 32 54.5 Z" fill="url(#shade)"/>
+  <path d="M 32 11 L 15 19.5 L 15 46 L 32 54.5 Z" fill="url(#lit)"/>
+  <path d="M 15 19.5 L 32 27.5 L 49 19.5 L 32 11 Z" fill="#ffb07a"/>
+  <path d="M 15 32 L 32 40 L 49 32" fill="none" stroke="#05070c" stroke-width="2" stroke-opacity="0.32"/>
+</svg>

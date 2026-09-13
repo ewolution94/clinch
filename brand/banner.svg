@@ -1,0 +1,61 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0c111c"/>
+      <stop offset="0.55" stop-color="#05070c"/>
+      <stop offset="1" stop-color="#050609"/>
+    </linearGradient>
+    <radialGradient id="ambient" cx="980" cy="120" r="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff6a1a" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff9248"/>
+      <stop offset="1" stop-color="#ff5a08"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c4470f"/>
+      <stop offset="1" stop-color="#8f3108"/>
+    </linearGradient>
+    <pattern id="yard" width="96" height="630" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="1" height="630" fill="#141b28"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" fill="url(#yard)"/>
+  <rect width="1200" height="630" fill="url(#ambient)"/>
+
+  <!-- the cut line: seven in, the rest below -->
+  <g opacity="0.5">
+    <path d="M 0 452 L 1200 452" stroke="#ff3d5a" stroke-width="1.5" stroke-dasharray="7 9" opacity="0.55"/>
+  </g>
+  <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="13" letter-spacing="4" fill="#7c8aa5">
+    <text x="120" y="440">CUT LINE</text>
+  </g>
+
+  <!-- seed ladder -->
+  <g>
+    <rect x="120" y="352" width="120" height="10" rx="5" fill="#ffc53d" opacity="0.9"/>
+    <rect x="252" y="352" width="96" height="10" rx="5" fill="#ff6a1a" opacity="0.8"/>
+    <rect x="360" y="352" width="96" height="10" rx="5" fill="#ff6a1a" opacity="0.62"/>
+    <rect x="468" y="352" width="96" height="10" rx="5" fill="#ff6a1a" opacity="0.44"/>
+    <rect x="576" y="352" width="84" height="10" rx="5" fill="#4dd8c0" opacity="0.7"/>
+    <rect x="672" y="352" width="84" height="10" rx="5" fill="#4dd8c0" opacity="0.5"/>
+    <rect x="768" y="352" width="84" height="10" rx="5" fill="#4dd8c0" opacity="0.32"/>
+    <rect x="864" y="352" width="72" height="10" rx="5" fill="#1c2434"/>
+    <rect x="948" y="352" width="72" height="10" rx="5" fill="#1c2434"/>
+  </g>
+
+  <!-- logo lockup -->
+  <g transform="translate(120,150) scale(2.1)">
+    <path d="M 32 11 L 49 19.5 L 49 46 L 32 54.5 Z" fill="url(#shade)"/>
+    <path d="M 32 11 L 15 19.5 L 15 46 L 32 54.5 Z" fill="url(#lit)"/>
+    <path d="M 15 19.5 L 32 27.5 L 49 19.5 L 32 11 Z" fill="#ffb07a"/>
+    <path d="M 15 32 L 32 40 L 49 32" fill="none" stroke="#05070c" stroke-width="2" stroke-opacity="0.32"/>
+  </g>
+
+  <text x="270" y="228" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="86" font-weight="700" letter-spacing="-2" fill="#eef2f9">PYLON</text>
+  <text x="274" y="272" font-family="JetBrains Mono, ui-monospace, monospace" font-size="17" letter-spacing="7" fill="#7c8aa5">WHO'S IN, WHO'S OUT</text>
+  <text x="120" y="560" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="22" fill="#b2bdd2">NFL standings and the playoff picture, at a glance.</text>
+</svg>

@@ -1,0 +1,22 @@
+<svg width="360" height="80" viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lit" x1="0" y1="14" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff9248"/>
+      <stop offset="1" stop-color="#ff5a08"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="14" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c4470f"/>
+      <stop offset="1" stop-color="#8f3108"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(8,8)">
+    <path d="M 32 11 L 49 19.5 L 49 46 L 32 54.5 Z" fill="url(#shade)"/>
+    <path d="M 32 11 L 15 19.5 L 15 46 L 32 54.5 Z" fill="url(#lit)"/>
+    <path d="M 15 19.5 L 32 27.5 L 49 19.5 L 32 11 Z" fill="#ffb07a"/>
+    <path d="M 15 32 L 32 40 L 49 32" fill="none" stroke="#05070c" stroke-width="2" stroke-opacity="0.32"/>
+  </g>
+
+  <text x="78" y="43" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="30" font-weight="700" letter-spacing="-0.5" fill="#eef2f9">PYLON</text>
+  <text x="79" y="59" font-family="JetBrains Mono, ui-monospace, monospace" font-size="9.5" letter-spacing="3.4" fill="#7c8aa5">WHO'S IN, WHO'S OUT</text>
+</svg>

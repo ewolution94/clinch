@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+  font-style: normal;
+}
+
+@theme {
+  --color-abyss: #05070c;
+  --color-abyss-2: #080b14;
+  --color-ink: #0c111c;
+  --color-ink-2: #11182a;
+  --color-line: #1c2434;
+  --color-line-soft: #141b28;
+  --color-mist: #7c8aa5;
+  --color-fog: #b2bdd2;
+  --color-paper: #eef2f9;
+
+  /* Playoff tiers, brightest to dimmest: bye, division, wild card, chasing. */
+  --color-pylon: #ff6a1a;
+  --color-gold: #ffc53d;
+  --color-jade: #4dd8c0;
+  --color-ice: #7aa2d8;
+  --color-live: #ff3d5a;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  --animate-live-dot: live-dot 2s ease-in-out infinite;
+  --animate-rise: rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-sheen: sheen 9s ease-in-out infinite;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    color-scheme: dark;
+    /* The header is sticky; anchor jumps shouldn't hide behind it. */
+    scroll-padding-top: 7rem;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-abyss);
+    color: var(--color-paper);
+    font-family: var(--font-display);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    /* Standings are dense; stop iOS from reflowing them on rotate. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-pylon) 35%, transparent);
+    color: var(--color-paper);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 999px;
+    border: 2px solid var(--color-abyss);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-mist);
+  }
+}
+
+@layer components {
+  .glass-panel {
+    background: color-mix(in srgb, var(--color-ink) 78%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--color-line);
+  }
+
+  .mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Expand/collapse without measuring heights in JS. */
+  .drawer {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .drawer > * {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .drawer[data-open="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  /* Horizontal scrollers fade at the edge instead of cutting content dead. */
+  .edge-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes live-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 0%, transparent);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheen {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
