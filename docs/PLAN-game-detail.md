@@ -6,10 +6,13 @@ Written 2026-09-14 for a future session. Not implemented. Delete once it is.
 live or final — and opens a modal with logos, big scoreboard type, a
 quarter-by-quarter linescore and team statistics.
 
-Entry point today is `WeekGames` (`client/src/components/WeekGames.tsx`). The
-same modal should be reusable later from `BracketMatchCard` and from the "last
-5 / next" chips inside `TeamRow`'s drawer, which already carry ESPN event ids —
-so build it keyed by **event id alone**, not by anything `WeekGames` has to hand.
+Two confirmed entry points: `WeekGames` (`client/src/components/WeekGames.tsx`)
+and **`BracketMatchCard`** — Eric asked for bracket matches to open the same
+modal. A third is nearly free later: the "last 5 / next" chips in `TeamRow`'s
+drawer already carry ESPN event ids.
+
+So build the modal keyed by **event id alone**, never by anything a particular
+card has to hand. See §3.5 for what the bracket needs to supply one.
 
 ---
 
@@ -55,7 +58,12 @@ Design it as two bodies sharing one header.
   `athlete.shortName` and a formatted `displayValue` like `"25/35, 254 YDS, 1 TD"`.
   Present for scheduled games too, as *season* leaders.
 - **Scoring plays** — `scoringPlays[]`: `period.number`, `clock.displayValue`,
-  `team.id`, `type.text`, `text`, and the running `awayScore` / `homeScore`.
+  `team.abbreviation` (directly usable — no id lookup), the running
+  `awayScore` / `homeScore`, a categorised `type.text` (`Passing Touchdown`,
+  `Rushing Touchdown`, `Field Goal Good`, `Interception Return Touchdown`,
+  `Sack Opp Fumble Recovery`…) and a `text` that already names the players:
+  `"Mike Gesicki 2 Yd pass from Joe Burrow (Evan McPherson Kick)"`.
+  **This block is doing most of the work in this feature — see §3.4.**
 - **Venue** — `gameInfo.venue.fullName` + `.address`, `gameInfo.attendance`.
 - **Odds** — `pickcenter[0].details` (e.g. `"KC -2.5"`), `overUnder`.
 - **Format** — `format.regulation.periods` is `4`. Use it rather than hardcoding
@@ -112,12 +120,17 @@ interface GameDetail {
     score: number | null;
     record: string | null;     // the `total` entry
     linescores: number[];
-    stats: { name: string; label: string; value: string }[];
+    // Only the four the UI shows. Drop the other 21 here rather than in the
+    // client — it's the difference between a ~4 kB and a ~9 kB response.
+    stats: { label: string; value: string }[];
+    // Passing / rushing / receiving only, using ESPN's formatted string as-is.
     leaders: { category: string; athlete: string; line: string }[];
   }[];
   scoring: {
     period: number; clock: string; teamAbbr: string;
-    type: string; text: string; away: number; home: number;
+    type: string;              // "Passing Touchdown", "Field Goal Good"…
+    text: string;              // already names the players
+    away: number; home: number;
   }[];
 }
 ```
@@ -125,6 +138,11 @@ interface GameDetail {
 Resolve team identity through the existing `teamMeta()` so the client gets
 accents and names the same way it does everywhere else, and so an unrecognised
 team is filtered out rather than rendered half-broken.
+
+`scoring` is the largest array and the most valuable — keep every entry. The
+savings come from dropping the 21 unused team stats, all per-player boxscores,
+`drives`, `winprobability`, `news`, `videos` and `article`, which together are
+most of the 590 kB.
 
 ### Caching
 
@@ -192,23 +210,56 @@ washed in that team's accent — reuse the `SeedRow` gradient treatment and
 (48–72 px), records underneath, status pill in the middle (LIVE dot / FINAL /
 kickoff in local time).
 
-**Body — final or live:**
+**Body — final or live.** Eric asked for shallow depth: how the quarters went,
+plus a few standout player lines. That points somewhere better than a stats
+table, and cheaper to build:
+
 1. **Linescore table.** Columns `1 2 3 4 (OT…)` + `T`. Two rows. Winner's total
-   emphasised; quarters beyond `period` render `—`. This is the centrepiece —
-   it's what was actually asked for.
-2. **Team stats.** Paired comparison bars: label in the middle, each team's
-   value extending outward in its own accent, width proportional to the pair.
-   Pick ~8 stats; the full 25 is noise. Percentage-style stats
-   (`thirdDownEff` = `"5-10"`) need parsing before they can drive a bar —
-   either parse to a ratio or render those as plain text.
-3. **Scoring timeline.** Chronological, grouped by quarter, each entry showing
-   team mark, clock, play text and the running score.
-4. **Leaders.** Three rows per team (pass / rush / rec) using ESPN's
-   pre-formatted `displayValue`.
+   emphasised; quarters beyond `period` render `—`. The centrepiece.
+2. **Scoring timeline, grouped by quarter** — the main event, sitting directly
+   under the linescore and reading as its expansion. Each quarter is a heading
+   with that quarter's score (`CIN 14 — TB 3`), then its plays: clock, team
+   mark, the play text, and the running score. Because ESPN's `text` already
+   names the players and `type.text` already categorises the score, this
+   answers *both* halves of the request at once — "how did each quarter go" and
+   "who threw the touchdowns" — with **no parsing and no per-player boxscore
+   work at all**. Colour and iconography come off `type.text`: touchdowns in the
+   scoring team's accent, field goals muted, defensive scores (interception and
+   fumble returns) marked distinctly, since those are the moments worth spotting.
+3. **Standouts.** Three compact lines per team — passing, rushing, receiving —
+   straight from `leaders[]`'s pre-formatted `displayValue`
+   (`"J. Burrow 25/35, 254 YDS, 1 TD, 1 INT"`). Names and numbers, no cards, no
+   headshots.
+4. **Four team numbers, as text.** Total yards, turnovers, 3rd down, possession.
+   Deliberately *not* comparison bars: `thirdDownEff` is `"5-10"` and
+   `possessionTime` is `"31:24"`, so bars would mean parsing several formats for
+   decoration. Render the pair either side of a centred label and stop there.
+
+Explicitly **out**: the remaining 21 team stats, per-player boxscores, drive
+charts and win-probability curves. All are available and all were declined.
 
 **Body — scheduled:** records and division standing, last-five form (reuse
 `FormDots`), the spread from `pickcenter`, venue, kickoff in local time, and
 season leaders. No empty boxscore chrome.
+
+### 3.5 Opening it from the bracket
+
+`BracketMatchCard` has no event id today — `BracketMatch` is built from seeding,
+not from a game. Add `gameId: string | null` to `BracketMatch` in
+`client/src/lib/bracket.ts` and set it inside `settle()`, which already locates
+the matching `PostseasonGame`; it is a two-line change at the point where the
+score is read.
+
+**A bracket card is clickable only when `gameId` is non-null.** Through the whole
+regular season the bracket's wild card matchups are projections from current
+seeding — no game exists, so there is nothing to open, and offering a click
+would imply a fixture that isn't scheduled. This falls straight out of the
+"never project" rule; don't work around it by synthesising an id from the two
+team abbreviations.
+
+Once the postseason starts, every settled match has a real id and opens the same
+modal as a standings card. The `?game=<id>` URL means a bracket game and a
+standings game produce the same link.
 
 **Mobile.** This is the primary target. Full-screen sheet rather than a centred
 dialog below ~640 px, entering from the bottom, with the linescore table
@@ -226,7 +277,10 @@ fade behaves correctly (that hook exists precisely because a static fade lied).
 3. Header band and linescore table — the core of the request.
 4. Stats bars, scoring timeline, leaders.
 5. The scheduled-game body.
-6. View Transitions morph and the CSS fallback, last: it's the part most likely
+6. Bracket entry point: `gameId` on `BracketMatch`, clickable only when set.
+   Cheap once the modal exists, and best verified with `CLINCH_SEASON=2025`,
+   where every bracket match has a real game behind it.
+7. View Transitions morph and the CSS fallback, last: it's the part most likely
    to absorb time, and it must not be load-bearing for the feature working.
 
 Test data is easiest with a pinned finished season, which also gives overtime
@@ -238,13 +292,16 @@ CLINCH_SEASON=2025 npm run build && CLINCH_SEASON=2025 npm start
 
 ---
 
-## 5. Open questions for Eric
+## 5. Settled with Eric (2026-09-14)
 
-- **How much statistical depth?** The plan above stops at team-level stats and
-  leaders. ESPN also exposes full per-player boxscores, drive-by-drive charts
-  and win-probability curves. A win-probability sparkline across the game would
-  be striking on a final, but it is a real chunk of work — worth asking before
-  building rather than assuming.
-- **Should the bracket's matches open the same modal?** They carry event ids
-  once the postseason is real, so it is nearly free — but only if the modal is
-  built keyed by id from the start, which is why this plan insists on that.
+- **Statistical depth: shallow.** Quarters plus a few standout player lines. No
+  per-player boxscores, drive charts or win-probability curves — all available,
+  all declined. He left the shape open ("surprise me"), and §3's answer is to
+  make the **scoring timeline** carry it instead of a stats table: it is less
+  work, needs no parsing, and tells the story of each quarter better than
+  twenty-five numbers would.
+- **Bracket matches open the same modal.** Confirmed. See §3.5 — it needs
+  `gameId` threaded onto `BracketMatch`, and cards must stay unclickable while
+  the matchup is still only a projection.
+- **The View Transitions morph is approved.** Still build it last (§4); it is
+  the flourish, not the feature.
