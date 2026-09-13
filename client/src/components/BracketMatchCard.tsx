@@ -8,6 +8,8 @@ interface BracketMatchCardProps {
   onPick: (matchId: string, abbr: string) => void;
   /** Only offered once a real game exists behind the matchup. */
   onOpenGame?: (id: string) => void;
+  /** The game currently in the modal, which owns the shared transition name. */
+  openGameId?: string | null;
   /** Mirrors the layout for the NFC half so both sides read inward. */
   mirrored?: boolean;
   size?: "sm" | "lg";
@@ -91,7 +93,14 @@ function Side({ team, source, score, won, lost, mirrored, size, onPick }: SidePr
   );
 }
 
-export function BracketMatchCard({ match, onPick, onOpenGame, mirrored = false, size = "sm" }: BracketMatchCardProps) {
+export function BracketMatchCard({
+  match,
+  onPick,
+  onOpenGame,
+  openGameId,
+  mirrored = false,
+  size = "sm",
+}: BracketMatchCardProps) {
   const settled = match.winner !== null;
   const homeWon = settled && match.winner?.abbr === match.home?.abbr;
   const awayWon = settled && match.winner?.abbr === match.away?.abbr;
@@ -100,7 +109,11 @@ export function BracketMatchCard({ match, onPick, onOpenGame, mirrored = false, 
 
   return (
     <div
-      style={match.gameId ? { viewTransitionName: `game-${match.gameId}` } : undefined}
+      style={
+        match.gameId && match.gameId !== openGameId
+          ? { viewTransitionName: `game-${match.gameId}` }
+          : undefined
+      }
       className={clsx(
         "@container/match relative overflow-hidden rounded-lg border bg-ink/70 backdrop-blur-sm transition-colors",
         match.decidedBy === "pick"

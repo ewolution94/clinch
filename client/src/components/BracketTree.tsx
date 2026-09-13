@@ -10,6 +10,7 @@ import type { ConferenceView, Snapshot } from "../lib/types";
 interface BracketTreeProps {
   snapshot: Snapshot;
   onOpenGame: (id: string) => void;
+  openGameId: string | null;
 }
 
 /** One round's column: matches spread evenly so the connector maths holds. */
@@ -58,11 +59,13 @@ function ConferencePath({
   conference,
   onPick,
   onOpenGame,
+  openGameId,
 }: {
   bracket: ConferenceBracket;
   conference: ConferenceView;
   onPick: (matchId: string, abbr: string) => void;
   onOpenGame: (id: string) => void;
+  openGameId: string | null;
 }) {
   const tint = bracket.conference === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
@@ -84,7 +87,7 @@ function ConferencePath({
       <div className="flex flex-col gap-1.5">
         <ByeCard team={bracket.bye} />
         {bracket.wildcard.map((m) => (
-          <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} />
+          <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} />
         ))}
       </div>
 
@@ -93,13 +96,13 @@ function ConferencePath({
       {bracket.reseeded && <ReseedNote />}
       <div className="flex flex-col gap-1.5">
         {bracket.divisional.map((m) => (
-          <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} />
+          <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} />
         ))}
       </div>
 
       <span aria-hidden="true" className="mx-auto h-4 w-px bg-line" />
       <RoundLabel>{`${bracket.conference} CHAMPIONSHIP`}</RoundLabel>
-      {bracket.championship && <BracketMatchCard match={bracket.championship} onPick={onPick} onOpenGame={onOpenGame} size="lg" />}
+      {bracket.championship && <BracketMatchCard match={bracket.championship} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} size="lg" />}
     </section>
   );
 }
@@ -119,7 +122,7 @@ function divisionalArms(bracket: ConferenceBracket): (string | undefined)[] {
 const COLUMNS =
   "minmax(0,1fr) 26px minmax(0,1fr) 26px minmax(0,1fr) 30px minmax(210px,1.5fr) 30px minmax(0,1fr) 26px minmax(0,1fr) 26px minmax(0,1fr)";
 
-export function BracketTree({ snapshot, onOpenGame }: BracketTreeProps) {
+export function BracketTree({ snapshot, onOpenGame, openGameId }: BracketTreeProps) {
   const [picks, setPicks] = useState<Picks>({});
 
   const bracket = useMemo(
@@ -165,8 +168,8 @@ export function BracketTree({ snapshot, onOpenGame }: BracketTreeProps) {
       {/* Phones: the Super Bowl first as the headline, then each path down. */}
       <div className="flex flex-col gap-6 lg:hidden">
         <SuperBowlCard match={bracket.superBowl} seasonYear={snapshot.season.year} onPick={onPick} compact />
-        <ConferencePath bracket={afc} conference={afcView} onPick={onPick} onOpenGame={onOpenGame} />
-        <ConferencePath bracket={nfc} conference={nfcView} onPick={onPick} onOpenGame={onOpenGame} />
+        <ConferencePath bracket={afc} conference={afcView} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} />
+        <ConferencePath bracket={nfc} conference={nfcView} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} />
       </div>
 
       {/* Desktop: the real thing — both halves closing on the middle. */}
@@ -194,18 +197,18 @@ export function BracketTree({ snapshot, onOpenGame }: BracketTreeProps) {
           <Round>
             {[
               <ByeCard key="bye" team={afc.bye} />,
-              ...afc.wildcard.map((m) => <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} />),
+              ...afc.wildcard.map((m) => <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} />),
             ]}
           </Round>
           <BracketConnectors incoming={4} flow="right" arms={wildCardArms(afc)} />
           <Round>
             {afc.divisional.map((m) => (
-              <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} />
+              <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} />
             ))}
           </Round>
           <BracketConnectors incoming={2} flow="right" arms={divisionalArms(afc)} />
           <Round>
-            {afc.championship ? [<BracketMatchCard key="cf" match={afc.championship} onPick={onPick} onOpenGame={onOpenGame} size="lg" />] : []}
+            {afc.championship ? [<BracketMatchCard key="cf" match={afc.championship} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} size="lg" />] : []}
           </Round>
           <BracketConnectors incoming={1} flow="right" arms={[afc.champion?.accent]} />
 
@@ -218,20 +221,20 @@ export function BracketTree({ snapshot, onOpenGame }: BracketTreeProps) {
           <BracketConnectors incoming={1} flow="left" arms={[nfc.champion?.accent]} />
           <Round>
             {nfc.championship
-              ? [<BracketMatchCard key="cf" match={nfc.championship} onPick={onPick} onOpenGame={onOpenGame} mirrored size="lg" />]
+              ? [<BracketMatchCard key="cf" match={nfc.championship} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} mirrored size="lg" />]
               : []}
           </Round>
           <BracketConnectors incoming={2} flow="left" arms={divisionalArms(nfc)} />
           <Round>
             {nfc.divisional.map((m) => (
-              <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} mirrored />
+              <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} mirrored />
             ))}
           </Round>
           <BracketConnectors incoming={4} flow="left" arms={wildCardArms(nfc)} />
           <Round>
             {[
               <ByeCard key="bye" team={nfc.bye} mirrored />,
-              ...nfc.wildcard.map((m) => <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} mirrored />),
+              ...nfc.wildcard.map((m) => <BracketMatchCard key={m.id} match={m} onPick={onPick} onOpenGame={onOpenGame} openGameId={openGameId} mirrored />),
             ]}
           </Round>
         </div>

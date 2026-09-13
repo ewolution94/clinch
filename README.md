@@ -28,6 +28,10 @@ teams are in the field, which are chasing it, and which are already out.
 - **Clinched and eliminated only when the maths says so** — see
   [How the labels are derived](#how-the-labels-are-derived). Nothing here is a
   projection or a win probability.
+- **Any game opens** — tap a card on the standings page, or a played game in the
+  bracket, for a colour-split scoreboard, the quarter-by-quarter linescore and a
+  scoring timeline that names who threw and caught every touchdown. Where the
+  browser supports it, the card morphs into the dialog.
 - **Live during games** — scores and states stream over SSE; the page never
   needs a refresh.
 - **Built for a phone first** — the tables drop columns as the space narrows
@@ -104,9 +108,15 @@ is disposable — restarting it just re-pulls the league.
 
 ## Where the data comes from
 
-ESPN's public NFL endpoints — `standings?level=3` for the division tables and
-`scoreboard` for schedule and scores, including the postseason rounds that fill
-the bracket in. No key, no account, no scraping.
+ESPN's public NFL endpoints — `standings?level=3` for the division tables,
+`scoreboard` for schedule and scores (including the postseason rounds that fill
+the bracket in), and `summary?event=` behind `/api/game/:id` for a single game's
+detail. No key, no account, no scraping.
+
+That last one is ~590 kB per game. The server trims it to ~3 kB by dropping the
+21 team stats the UI doesn't show, the per-player boxscores, drives, win
+probability, news and video — so a modal costs a browser about as much as a
+photograph, not half a megabyte of JSON it would throw away.
 
 The server polls them, keeps the result in memory and serves every client from
 that one copy, so the number of people looking at the page has no bearing on how

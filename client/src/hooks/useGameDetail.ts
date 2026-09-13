@@ -9,6 +9,13 @@ interface GameDetailState {
   error: boolean;
 }
 
+/** Which game the held state belongs to, so a change of id reads as loading. */
+interface Loaded {
+  id: string;
+  detail: GameDetail | null;
+  error: boolean;
+}
+
 /**
  * Loads one game's detail, and keeps re-polling while that game is in progress.
  *
@@ -17,18 +24,13 @@ interface GameDetailState {
  * has asked for yet, and it stops the moment the modal closes.
  */
 export function useGameDetail(id: string | null): GameDetailState {
-  const [state, setState] = useState<GameDetailState>({ detail: null, loading: false, error: false });
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
 
   useEffect(() => {
-    if (!id) {
-      setState({ detail: null, loading: false, error: false });
-      return;
-    }
+    if (!id) return;
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-
-    setState({ detail: null, loading: true, error: false });
 
     const load = async () => {
       try {
@@ -36,10 +38,10 @@ export function useGameDetail(id: string | null): GameDetailState {
         if (!res.ok) throw new Error(String(res.status));
         const detail = (await res.json()) as GameDetail;
         if (cancelled) return;
-        setState({ detail, loading: false, error: false });
+        setLoaded({ id, detail, error: false });
         if (detail.state === "in") timer = setTimeout(load, LIVE_POLL_MS);
       } catch {
-        if (!cancelled) setState((prev) => ({ detail: prev.detail, loading: false, error: true }));
+        if (!cancelled) setLoaded((prev) => ({ id, detail: prev?.id === id ? prev.detail : null, error: true }));
       }
     };
 
@@ -51,5 +53,13 @@ export function useGameDetail(id: string | null): GameDetailState {
     };
   }, [id]);
 
-  return state;
+  // Derived rather than reset in the effect: state held for a different game is
+  // simply not this game's state, so switching ids reads as loading with no
+  // extra render.
+  const current = loaded && loaded.id === id ? loaded : null;
+  return {
+    detail: current?.detail ?? null,
+    loading: id !== null && current === null,
+    error: current?.error ?? false,
+  };
 }

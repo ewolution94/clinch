@@ -343,7 +343,11 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       aria-label="Game detail"
       className="game-dialog"
     >
-      <div className="game-dialog__panel" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="game-dialog__panel"
+        style={{ viewTransitionName: `game-${gameId}` }}
+        onClick={(event) => event.stopPropagation()}
+      >
         <button
           type="button"
           onClick={onClose}

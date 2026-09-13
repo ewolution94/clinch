@@ -28,20 +28,14 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `/bracket` (the tournament tree) — via a ~25-line history router, no
   react-router. Dark only. Mobile shows one conference with a switch; from
   1280px both render side by side.
+- **Game detail** (`server/src/gameDetail*.ts`, `client/src/components/GameModal.tsx`):
+  `/api/game/:id` trims ESPN's ~590 kB summary to ~3 kB. The modal is lazy-loaded,
+  built on `<dialog>`/`showModal`, and owns a `?game=` history entry so back
+  closes it. Opened from the standings cards and from played bracket games.
 - **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): filled only
   by real postseason results or the reader's own picks, with a correct NFL
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
   viewBox — see the comment in `BracketConnectors.tsx` before changing any of it.
-
-## Planned next
-
-`docs/PLAN-game-detail.md` — make every game card on the standings page open a
-modal with logos, big scoreboard type, a quarter-by-quarter linescore and team
-stats. Written 2026-09-14 with the ESPN `summary` endpoint already researched
-(all three game states, real field paths, and the traps: overtime adds linescore
-entries, unplayed quarters read as `'0'` rather than absent, scheduled games have
-no boxscore at all, and the raw payload is ~590 kB so it must be trimmed
-server-side). Not started.
 
 ## Decisions already made — don't re-litigate
 
@@ -91,6 +85,19 @@ server-side). Not started.
   `.absolute`.** `TeamLogo` sets `relative` on itself, so a positioning class
   passed in from outside silently loses and the watermark stays in flow. Don't
   merge the two components back together.
+- **The view-transition morph needs `flushSync`, and a unique name.**
+  `startViewTransition` snapshots the DOM the moment its callback returns, and
+  React would still be holding the state update — without `flushSync` the
+  browser captures the old DOM twice and nothing animates. Separately, a
+  `view-transition-name` must be unique at capture time, so the card *drops* its
+  name as the dialog takes it (`openGameId` is threaded down for exactly this).
+  Two elements sharing a name silently skips the transition, with no error.
+  `main.tsx` sets `html.vt` so the CSS fallback entrance stands down where the
+  morph runs; the lazy chunk is warmed on idle so the first open can morph too.
+- **Unplayed quarters must be gated on `status.period`.** ESPN reports a quarter
+  that hasn't happened as `'0'`, not as absent, so a game in the 1st quarter
+  would otherwise render as three scoreless ones. Overtime adds linescore
+  entries beyond `format.regulation.periods` — don't assume four columns.
 - **Team colour never goes *behind* a logo.** The first version put a blurred
   disc of the team's accent behind the mark, which erased the Jets, Eagles,
   Seahawks and Giants — their logos are the same hue as their brand. `TeamLogo`

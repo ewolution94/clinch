@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { FieldBackdrop } from "./components/FieldBackdrop";
 import { Header } from "./components/Header";
 import { ConferenceStandings } from "./components/ConferenceStandings";
@@ -33,14 +34,39 @@ export default function App() {
     document.title = snapshot ? `${view} · ${snapshot.week.label} — Clinch` : "Clinch";
   }, [snapshot, route]);
 
-  // A shared-element morph from the clicked card into the dialog, where the
-  // browser supports it; a plain open where it doesn't.
+  // The morph needs the modal's chunk already parsed, or the browser captures a
+  // Suspense fallback instead of the dialog. Warm it once the page is idle.
+  useEffect(() => {
+    const warm = () => void import("./components/GameModal");
+    const idle = window.requestIdleCallback?.(warm);
+    if (idle === undefined) {
+      const timer = setTimeout(warm, 1500);
+      return () => clearTimeout(timer);
+    }
+    return () => window.cancelIdleCallback?.(idle);
+  }, []);
+
+  /**
+   * A shared-element morph from the clicked card into the dialog.
+   *
+   * `flushSync` is load-bearing: `startViewTransition` snapshots the DOM as soon
+   * as its callback returns, and React would otherwise still be holding the
+   * update. Without it the browser captures the *old* DOM twice and nothing
+   * animates.
+   */
+  const withTransition = useCallback((update: () => void) => {
+    if (!document.startViewTransition) {
+      update();
+      return;
+    }
+    document.startViewTransition(() => flushSync(update));
+  }, []);
+
   const onOpenGame = useCallback(
-    (id: string) => {
-      document.startViewTransition ? document.startViewTransition(() => openGame(id)) : openGame(id);
-    },
-    [openGame]
+    (id: string) => withTransition(() => openGame(id)),
+    [withTransition, openGame]
   );
+  const onCloseGame = useCallback(() => withTransition(closeGame), [withTransition, closeGame]);
 
   return (
     <div className="min-h-screen">
@@ -70,7 +96,12 @@ export default function App() {
             {route === "standings" ? (
               <>
                 <SeasonHero snapshot={snapshot} />
-                <WeekGames games={snapshot.games} label={snapshot.week.label} onOpenGame={onOpenGame} />
+                <WeekGames
+                  games={snapshot.games}
+                  label={snapshot.week.label}
+                  onOpenGame={onOpenGame}
+                  openGameId={game}
+                />
                 <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
                   {conferences.map((c) => (
                     <ConferenceStandings key={c.id} conference={c} />
@@ -79,7 +110,7 @@ export default function App() {
                 <Legend />
               </>
             ) : route === "bracket" ? (
-              <BracketTree snapshot={snapshot} onOpenGame={onOpenGame} />
+              <BracketTree snapshot={snapshot} onOpenGame={onOpenGame} openGameId={game} />
             ) : (
               <>
                 {snapshot.season.type === 2 && snapshot.week.number <= 4 && (
@@ -110,7 +141,7 @@ export default function App() {
 
       {game && (
         <Suspense fallback={null}>
-          <GameModal gameId={game} onClose={closeGame} />
+          <GameModal gameId={game} onClose={onCloseGame} />
         </Suspense>
       )}
     </div>

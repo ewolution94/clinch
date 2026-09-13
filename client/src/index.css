@@ -162,6 +162,12 @@
     animation: panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
+  /* Where a shared-element morph runs, it *is* the entrance — playing the
+     fallback on top of it fights the browser's own interpolation. */
+  html.vt .game-dialog__panel {
+    animation: none;
+  }
+
   /* Phone: a sheet that owns the screen. Desktop: a centred dialog. */
   @media (width < 40rem) {
     .game-dialog {
@@ -261,5 +267,24 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Shared-element morph between a game card and its dialog. */
+::view-transition-group(*) {
+  animation-duration: 0.32s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.22s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
   }
 }

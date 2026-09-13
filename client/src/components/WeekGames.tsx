@@ -9,6 +9,8 @@ interface WeekGamesProps {
   games: ScoreboardGame[];
   label: string;
   onOpenGame: (id: string) => void;
+  /** The game currently in the modal, which owns the shared transition name. */
+  openGameId: string | null;
 }
 
 function Side({ abbr, score, dim }: { abbr: string; score: number | null; dim: boolean }) {
@@ -23,7 +25,7 @@ function Side({ abbr, score, dim }: { abbr: string; score: number | null; dim: b
   );
 }
 
-export const WeekGames = memo(function WeekGames({ games, label, onOpenGame }: WeekGamesProps) {
+export const WeekGames = memo(function WeekGames({ games, label, onOpenGame, openGameId }: WeekGamesProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);
   const mask = edgeFadeMask(edges);
@@ -56,7 +58,7 @@ export const WeekGames = memo(function WeekGames({ games, label, onOpenGame }: W
                 type="button"
                 onClick={() => onOpenGame(game.id)}
                 aria-label={`${game.away} at ${game.home} — game detail`}
-                style={{ viewTransitionName: `game-${game.id}` }}
+                style={game.id === openGameId ? undefined : { viewTransitionName: `game-${game.id}` }}
                 className={clsx(
                   "flex w-[148px] shrink-0 flex-col gap-1.5 rounded-xl border bg-ink/55 p-2.5 text-left transition-colors hover:border-fog/35 hover:bg-ink-2/70 sm:w-auto",
                   game.state === "in" ? "border-live/40" : "border-line"
