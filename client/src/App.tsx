@@ -27,7 +27,7 @@ export default function App() {
 
   useEffect(() => {
     const view = route === "playoffs" ? "Playoff picture" : route === "bracket" ? "Bracket" : "Standings";
-    document.title = snapshot ? `${view} · ${snapshot.week.label} — Pylon` : "Pylon";
+    document.title = snapshot ? `${view} · ${snapshot.week.label} — Clinch` : "Clinch";
   }, [snapshot, route]);
 
   return (

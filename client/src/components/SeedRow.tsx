@@ -46,7 +46,7 @@ export const SeedRow = memo(function SeedRow({ team, chasing = false }: SeedRowP
       </div>
 
       <div className="relative flex min-w-0 flex-1 items-center gap-2.5 px-2.5 py-2.5 sm:gap-3 sm:px-3.5">
-        <TeamLogo abbr={team.abbr} size={34} glow={team.accent} />
+        <TeamLogo abbr={team.abbr} size={34} accent={team.accent} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-display text-[10px] tracking-[0.1em] text-mist uppercase">

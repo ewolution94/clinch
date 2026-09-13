@@ -100,6 +100,20 @@ export interface ScoreboardGame {
   awayScore: number | null;
 }
 
+export type RoundId = "wildcard" | "divisional" | "championship" | "superbowl";
+
+export interface PostseasonGame {
+  id: string;
+  round: RoundId;
+  kickoff: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  home: string;
+  away: string;
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
 export interface Snapshot {
   generatedAt: number;
   season: { year: number; type: number; label: string };
@@ -108,6 +122,7 @@ export interface Snapshot {
   stale: boolean;
   conferences: ConferenceView[];
   games: ScoreboardGame[];
+  postseason: PostseasonGame[];
 }
 
 export type ConnectionState = "connecting" | "live" | "offline";

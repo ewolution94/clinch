@@ -108,6 +108,20 @@ export interface ScoreboardGame {
   awayScore: number | null;
 }
 
+export type PostseasonRound = "wildcard" | "divisional" | "championship" | "superbowl";
+
+export interface PostseasonGame {
+  id: string;
+  round: PostseasonRound;
+  kickoff: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  home: string;
+  away: string;
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
 export interface Snapshot {
   generatedAt: number;
   season: { year: number; type: number; label: string };
@@ -117,4 +131,9 @@ export interface Snapshot {
   stale: boolean;
   conferences: ConferenceView[];
   games: ScoreboardGame[];
+  /**
+   * Real playoff results, once there are any. Empty for the whole regular
+   * season — the bracket leaves its later rounds blank rather than guessing.
+   */
+  postseason: PostseasonGame[];
 }

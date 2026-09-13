@@ -39,10 +39,16 @@ function RoundLabel({ children, muted }: { children: string; muted?: boolean }) 
 
 function ReseedNote() {
   return (
-    <p className="mt-1 rounded-md border border-pylon/25 bg-pylon/8 px-2 py-1 text-center font-mono text-[8.5px] leading-relaxed tracking-[0.08em] text-pylon">
+    <p className="mt-1 rounded-md border border-brand/25 bg-brand/8 px-2 py-1 text-center font-mono text-[8.5px] leading-relaxed tracking-[0.08em] text-brand">
       RESEEDED — THE 1 SEED ALWAYS DRAWS THE LOWEST SURVIVOR, SO THESE LINES NO LONGER MATCH
     </p>
   );
+}
+
+/** Nothing advances on its own any more, so the arms light up only as rounds
+    are actually settled — by a played game or by the reader's own pick. */
+function accentOf(team: { accent: string } | null | undefined): string | undefined {
+  return team?.accent;
 }
 
 /** The stacked view: a phone can't take a mirrored tree, so rounds flow down. */
@@ -55,7 +61,7 @@ function ConferencePath({
   conference: ConferenceView;
   onPick: (matchId: string, abbr: string) => void;
 }) {
-  const tint = bracket.conference === "AFC" ? "var(--color-pylon)" : "var(--color-jade)";
+  const tint = bracket.conference === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
   return (
     <section className="flex flex-col gap-2.5">
@@ -97,11 +103,11 @@ function ConferencePath({
 
 /** Each arm is lit by the team that travels along it into the next round. */
 function wildCardArms(bracket: ConferenceBracket): (string | undefined)[] {
-  return [bracket.bye?.accent, ...bracket.wildcard.map((m) => m.winner?.accent)];
+  return [accentOf(bracket.bye), ...bracket.wildcard.map((m) => accentOf(m.winner))];
 }
 
 function divisionalArms(bracket: ConferenceBracket): (string | undefined)[] {
-  return bracket.divisional.map((m) => m.winner?.accent);
+  return bracket.divisional.map((m) => accentOf(m.winner));
 }
 
 // Seven round columns with connector gutters between them. The middle column
@@ -113,7 +119,10 @@ const COLUMNS =
 export function BracketTree({ snapshot }: BracketTreeProps) {
   const [picks, setPicks] = useState<Picks>({});
 
-  const bracket = useMemo(() => buildBracket(snapshot.conferences, picks), [snapshot.conferences, picks]);
+  const bracket = useMemo(
+    () => buildBracket(snapshot.conferences, snapshot.postseason, picks),
+    [snapshot.conferences, snapshot.postseason, picks]
+  );
   const afc = bracket.conferences.find((c) => c.conference === "AFC");
   const nfc = bracket.conferences.find((c) => c.conference === "NFC");
   const afcView = snapshot.conferences.find((c) => c.id === "AFC");
@@ -133,18 +142,19 @@ export function BracketTree({ snapshot }: BracketTreeProps) {
           <h2 className="font-display text-[clamp(30px,5vw,46px)] leading-none font-bold tracking-[-0.03em] text-paper">
             The road to {superBowlShort(snapshot.season.year)}
           </h2>
-          <p className="font-display text-[12px] text-mist">
-            Seeded on today&apos;s standings, with the higher seed advancing. Tap any team to send them through — the
-            bracket reseeds after every round, exactly like the NFL does.
+          <p className="max-w-2xl font-display text-[12px] leading-relaxed text-mist">
+            The field as today&apos;s standings seed it. Later rounds stay empty until the games are actually played —
+            nothing here assumes a winner. Tap a team to try a result of your own; the bracket reseeds after every
+            round, exactly like the NFL does.
           </p>
         </div>
         {hasPicks && (
           <button
             type="button"
             onClick={() => setPicks({})}
-            className="shrink-0 rounded-full border border-line bg-ink/70 px-3.5 py-1.5 font-mono text-[10px] tracking-[0.14em] text-mist transition-colors hover:border-pylon/40 hover:text-pylon"
+            className="shrink-0 rounded-full border border-brand/35 bg-brand/10 px-3.5 py-1.5 font-mono text-[10px] tracking-[0.14em] text-brand transition-colors hover:bg-brand/18"
           >
-            RESET
+            CLEAR MY PICKS
           </button>
         )}
       </header>

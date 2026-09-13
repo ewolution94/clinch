@@ -23,7 +23,7 @@ COPY --from=build /app/client/dist ./client/dist
 
 EXPOSE 4600
 
-# No volume: everything Pylon knows comes from ESPN and is re-fetched on boot.
+# No volume: everything Clinch knows comes from ESPN and is re-fetched on boot.
 HEALTHCHECK --interval=60s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://localhost:4600/api/health || exit 1
 

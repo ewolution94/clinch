@@ -28,7 +28,7 @@
   --color-paper: #eef2f9;
 
   /* Playoff tiers, brightest to dimmest: bye, division, wild card, chasing. */
-  --color-pylon: #ff6a1a;
+  --color-brand: #ff6a1a;
   --color-gold: #ffc53d;
   --color-jade: #4dd8c0;
   --color-ice: #7aa2d8;
@@ -76,7 +76,7 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-pylon) 35%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 35%, transparent);
     color: var(--color-paper);
   }
 

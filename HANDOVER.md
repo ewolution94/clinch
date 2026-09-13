@@ -1,6 +1,6 @@
 Session handover — disposable, delete once absorbed. Written 2026-09 by Claude.
 
-**PYLON** — NFL standings + playoff picture. Tagline "who's in, who's out."
+**CLINCH** — NFL standings + playoff picture. Tagline "who's in, who's out."
 Tech matches the house pattern: Express+TS backend (`server/`) + Vite/React/TS/
 Tailwind v4 frontend (`client/`), SSE for live updates, single process in prod.
 Siblings: **PULSE** (`../pulse`, status page) and **HARBOR** (`../harbor`, local
@@ -28,10 +28,10 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `/bracket` (the tournament tree) — via a ~25-line history router, no
   react-router. Dark only. Mobile shows one conference with a switch; from
   1280px both render side by side.
-- **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): defaults to
-  chalk, and every team is tappable to advance them, with a correct NFL reseed
-  between rounds. The connector elbows are SVG in a stretched 100×100 viewBox —
-  see the comment in `BracketConnectors.tsx` before changing any of it.
+- **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): filled only
+  by real postseason results or the reader's own picks, with a correct NFL
+  reseed between rounds. The connector elbows are SVG in a stretched 100×100
+  viewBox — see the comment in `BracketConnectors.tsx` before changing any of it.
 
 ## Decisions already made — don't re-litigate
 
@@ -41,15 +41,27 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   elbows are a stretched SVG with fixed fractions instead of JS measuring DOM
   positions and re-measuring on resize. If you change how a round column lays
   its matches out, this breaks silently and invisibly.
-- **No default Super Bowl winner.** Every other round defaults to the higher
-  seed; two conference champions have no seed between them and play at a neutral
-  site, so picking one would be inventing a result. It stays open.
+- **The bracket never projects a winner.** It shipped once defaulting to chalk —
+  higher seed advances — which filled the tree to the Super Bowl with games
+  nobody had played. Eric asked for that out: only a real result or an explicit
+  pick places a team, and every other slot says where its team will come from.
+  Don't reintroduce a "complete the bracket" default; an empty slot is the
+  honest state, and earlier screenshots showing a full tree in September are
+  the behaviour that was removed.
+- **Real playoff results come from ESPN `seasontype=3`** (weeks 1/2/3/5 —
+  week 4 is the Pro Bowl). Only fetched once the regular season is over, since
+  there is nothing to read before that. `snapshot.postseason` is empty all season
+  and that's correct, not a bug.
+- **The divisional round waits for the whole wild card weekend.** The 1 seed
+  draws the lowest remaining seed, so two of three results settle nothing. The
+  bye team does take its divisional slot immediately — that's a rule, not a
+  prediction.
 
 - **ESPN's `playoffSeed` is authoritative.** It has the NFL's full tiebreaker
   chain applied. Reimplementing head-to-head/common-games/strength-of-victory
   would be a lot of code that is subtly wrong all season.
 - **No playoff odds or win probabilities.** Every label is settled arithmetic —
-  sufficient conditions only, so Pylon is sometimes late to call a team out and
+  sufficient conditions only, so Clinch is sometimes late to call a team out and
   never calls one out wrongly. A "63%" would invite trust it can't earn.
 - **Division winner vs wild card comes from `divisionRank`, not the seed
   number.** Seeds 1–4 are only the four division leaders once every team has
@@ -70,6 +82,12 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `.absolute`.** `TeamLogo` sets `relative` on itself, so a positioning class
   passed in from outside silently loses and the watermark stays in flow. Don't
   merge the two components back together.
+- **Team colour never goes *behind* a logo.** The first version put a blurred
+  disc of the team's accent behind the mark, which erased the Jets, Eagles,
+  Seahawks and Giants — their logos are the same hue as their brand. `TeamLogo`
+  now draws a neutral light plate ringed in the team colour, plus a faint white
+  halo to lift dark marks off the page. All 32 were compared side by side before
+  settling on it; don't "restore the glow".
 - **Fonts and logos are served locally** (two variable woff2 files, 32 webp
   marks, ~290 kB total). The page makes no third-party requests — no Google
   Fonts, no ESPN CDN hotlinking.
@@ -77,7 +95,7 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 ## Process notes
 
 - **Not pushed to GitHub yet.** Local repo initialised, one commit. Plan mirrors
-  Pulse: create `ewolution94/pylon`, add the remote, push `main`, then push a
+  Pulse: create `ewolution94/clinch`, add the remote, push `main`, then push a
   `release` branch to trigger the first GHCR build. Before that first release
   push the repo needs **Settings → Actions → General → Workflow permissions →
   "Read and write permissions"**, or the push to GHCR fails — not the default
@@ -90,8 +108,8 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   the mid-season branches. Live 2026 week 1 verified in the browser at 390px,
   1200px and 1800px, plus the production single-process build (SPA fallback,
   immutable asset headers, SSE). No automated test suite exists.
-- `PYLON_SEASON=2025` is the fastest way to see the UI with a full season of
+- `CLINCH_SEASON=2025` is the fastest way to see the UI with a full season of
   data in it — worth doing before judging any change to the playoff view, since
   week 1 shows almost everything tied.
-- No Pylon processes left running — the dev server and the production
+- No Clinch processes left running — the dev server and the production
   verification process were both stopped by exact PID.

@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="brand/banner.svg" alt="Pylon — who's in, who's out." width="100%" />
+  <img src="brand/banner.svg" alt="Clinch — who's in, who's out." width="100%" />
 </p>
 
-# Pylon
+# Clinch
 
 **Who's in, who's out.**
 
 NFL standings and the playoff picture on one screen. Built because the NFL
 doesn't have a Bundesliga table — it has two conferences, eight divisions, four
 division winners who get in regardless of record, and three wild cards who get
-in because of it. Pylon shows all of that at a glance, and says plainly which
+in because of it. Clinch shows all of that at a glance, and says plainly which
 teams are in the field, which are chasing it, and which are already out.
 
 ## Features
@@ -22,9 +22,9 @@ teams are in the field, which are chasing it, and which are already out.
   back they are, and the eliminated set aside.
 - **The whole bracket as a tournament tree** — both halves closing on the
   Super Bowl, with each connector lit in the colour of the team travelling along
-  it. Tap any team to send them through; the bracket **reseeds after every
-  round**, exactly like the NFL does, so knocking out a 2 seed changes who the 1
-  seed draws.
+  it. Rounds fill in **only as games are actually played**; nothing is projected.
+  Tap any team to try a result of your own, and the bracket **reseeds after
+  every round** exactly like the NFL does.
 - **Clinched and eliminated only when the maths says so** — see
   [How the labels are derived](#how-the-labels-are-derived). Nothing here is a
   projection or a win probability.
@@ -46,16 +46,30 @@ teams are in the field, which are chasing it, and which are already out.
 
 ### How the bracket fills itself in
 
-With no picks the higher seed advances every game — "chalk" — so the tree is a
-complete picture rather than a row of empty slots. The one exception is the
-Super Bowl: two conference champions have no seed between them and the game is
-at a neutral site, so there is no honest default. It stays a question until you
-answer it.
+Only two things ever place a team in the bracket: **a game that was actually
+played**, and **a pick you made yourself**. There is no third fallback — no
+"higher seed advances" filling the tree to the Super Bowl with results nobody
+played. A bracket that looks decided when nothing is decided is worse than an
+empty one.
 
-Picking a winner re-runs the whole bracket underneath, including the reseed. A
-pick that no longer names a team in its match — because you changed something
-upstream — is ignored rather than having to be cleared, so the tree is always
-consistent with the picks that still make sense.
+So for the whole regular season the tree shows the wild card matchups the
+current seeding produces, and every later slot says where its team will come
+from — *Lowest remaining seed*, *Wild card winner*, *Winner of Game 4*, *AFC
+champion*. Come January those slots fill in with the real results and scores as
+the rounds are played.
+
+Two structural exceptions are worth knowing:
+
+- **The 1 seed takes its divisional slot immediately.** That's a rule, not a
+  prediction — a bye means they play in the divisional round whatever happens.
+- **The divisional round needs the whole wild card weekend.** The 1 seed draws
+  the lowest remaining seed, so two of three results settle nothing; the round
+  stays blank until all three are in.
+
+Picking a winner re-runs the bracket underneath it, reseed included, and is
+marked `PICK` so it never reads as a result. A pick that no longer names a team
+in its match — because you changed something upstream — is ignored rather than
+having to be cleared.
 
 ## Local development
 
@@ -74,7 +88,7 @@ docker compose up -d --build
 ```
 
 Then point the Cloudflare Tunnel's public hostname at container port `4600`.
-Pylon has no hardcoded origin assumptions and stores nothing, so the container
+Clinch has no hardcoded origin assumptions and stores nothing, so the container
 is disposable — restarting it just re-pulls the league.
 
 ### Environment variables
@@ -82,16 +96,17 @@ is disposable — restarting it just re-pulls the league.
 | Variable                  | Default   | Purpose                                                    |
 | ------------------------- | --------- | ---------------------------------------------------------- |
 | `PORT`                    | `4600`    | Port the server listens on.                                 |
-| `PYLON_SEASON`            | *(live)*  | Pin a season (e.g. `2025`) instead of following the current one. |
-| `PYLON_REFRESH_MS`        | `120000`  | Refresh cadence when nothing is being played.               |
-| `PYLON_LIVE_REFRESH_MS`   | `25000`   | Refresh cadence while a game is in progress.                |
-| `PYLON_SCHEDULE_TTL_MS`   | `3600000` | How long a future week's schedule is trusted before re-fetching. |
-| `PYLON_TIMEOUT_MS`        | `12000`   | Per-request timeout against the upstream feed.              |
+| `CLINCH_SEASON`            | *(live)*  | Pin a season (e.g. `2025`) instead of following the current one. |
+| `CLINCH_REFRESH_MS`        | `120000`  | Refresh cadence when nothing is being played.               |
+| `CLINCH_LIVE_REFRESH_MS`   | `25000`   | Refresh cadence while a game is in progress.                |
+| `CLINCH_SCHEDULE_TTL_MS`   | `3600000` | How long a future week's schedule is trusted before re-fetching. |
+| `CLINCH_TIMEOUT_MS`        | `12000`   | Per-request timeout against the upstream feed.              |
 
 ## Where the data comes from
 
 ESPN's public NFL endpoints — `standings?level=3` for the division tables and
-`scoreboard` for schedule and scores. No key, no account, no scraping.
+`scoreboard` for schedule and scores, including the postseason rounds that fill
+the bracket in. No key, no account, no scraping.
 
 The server polls them, keeps the result in memory and serves every client from
 that one copy, so the number of people looking at the page has no bearing on how
@@ -101,7 +116,7 @@ why steady-state traffic is a single request per cycle.
 Two things are taken from ESPN as authoritative rather than recomputed:
 
 - **`playoffSeed`** — the conference seed, with the NFL's full tiebreaker chain
-  (head-to-head, common games, strength of victory…) already applied. Pylon
+  (head-to-head, common games, strength of victory…) already applied. Clinch
   sorts by it rather than reimplementing tiebreakers it would get subtly wrong.
 - **Division membership order** is *not* taken from ESPN — it returns division
   entries in its own order, which is not the standings order. Divisions are
@@ -127,7 +142,7 @@ if it loses out, `ceiling` the record if it wins out.
 | **On the bubble / In the hunt / Long shot** | Outside the cut by ≤1 / ≤3 / more games. |
 
 These are *sufficient* conditions, not exhaustive ones — a team can be eliminated
-in ways this doesn't catch, since that needs full schedule analysis. Pylon
+in ways this doesn't catch, since that needs full schedule analysis. Clinch
 under-claims on purpose: it will occasionally be late to call a team out, and it
 will never call one out wrongly.
 
@@ -136,11 +151,11 @@ winner or a wild card. Seeds 1–4 are usually the four division leaders, but th
 only holds once every team has played, so the role comes from the team's actual
 position in its own division.
 
-The bracket applies the same care to reseeding. Its lines are drawn so that the
-chalk pairings are correct — the bye sits next to the 4v5 winner, giving 1v4 and
-2v3. But the NFL reseeds, and after an upset the 1 seed draws whichever survivor
-is seeded lowest, which may not be the one the drawn line points at. When that
-happens the round says so rather than quietly showing the wrong pairing.
+The bracket applies the same care to reseeding. Its lines are drawn for the
+common case — the bye sits next to the 4v5 winner, giving 1v4 and 2v3. But the
+NFL reseeds, and after an upset the 1 seed draws whichever survivor is seeded
+lowest, which may not be the one the drawn line points at. When that happens the
+round says so rather than quietly showing the wrong pairing.
 
 ## Tech stack
 
@@ -153,7 +168,7 @@ happens the round says so rather than quietly showing the wrong pairing.
 ## Project structure
 
 ```
-pylon/
+clinch/
 ├── brand/                  standalone brand assets (mark, logo, banner)
 ├── server/src/
 │   ├── config.ts           env vars
@@ -178,8 +193,10 @@ pylon/
 ## What this deliberately doesn't do
 
 - **No win probabilities or playoff odds.** Those need a simulation and a model,
-  and a number like "63%" invites more trust than it earns. Pylon shows what is
+  and a number like "63%" invites more trust than it earns. Clinch shows what is
   true right now and what is already settled.
 - **No tiebreaker reimplementation.** ESPN's seed is used as given.
 - **No accounts, favourites or notifications.** It's a page you open on a Sunday
   evening, read in ten seconds and close.
+- **No projected bracket.** See
+  [How the bracket fills itself in](#how-the-bracket-fills-itself-in).

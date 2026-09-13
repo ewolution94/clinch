@@ -1,7 +1,7 @@
 import { fetchScoreboard, fetchStandings } from "./espn.js";
 import { buildConferences } from "./derive.js";
 import { config } from "./config.js";
-import type { ScoreboardGame, Snapshot } from "./types.js";
+import type { PostseasonGame, PostseasonRound, ScoreboardGame, Snapshot } from "./types.js";
 
 const REGULAR_SEASON_WEEKS = 18;
 
@@ -14,9 +14,18 @@ interface CachedWeek {
 
 const SEASON_TYPE_LABEL: Record<number, string> = { 1: "Preseason", 2: "Regular season", 3: "Postseason" };
 
+/** ESPN's postseason weeks. Week 4 is the Pro Bowl, which isn't a round. */
+const POSTSEASON_WEEKS: [number, PostseasonRound][] = [
+  [1, "wildcard"],
+  [2, "divisional"],
+  [3, "championship"],
+  [5, "superbowl"],
+];
+
 export class SnapshotStore {
   private snapshot: Snapshot | null = null;
   private weeks = new Map<number, CachedWeek>();
+  private postseasonWeeks = new Map<number, CachedWeek>();
   private listeners = new Set<(snapshot: Snapshot) => void>();
   private timer: NodeJS.Timeout | null = null;
   private refreshing = false;
@@ -53,6 +62,33 @@ export class SnapshotStore {
     const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
     this.weeks.set(week, { games: payload.games, fetchedAt: Date.now(), settled });
     return payload.games;
+  }
+
+  /**
+   * Playoff games as they're actually played. Unlike regular-season weeks these
+   * are re-fetched until every game in the round is final — a round in progress
+   * is exactly when someone is watching the bracket.
+   */
+  private async fetchPostseason(season: number): Promise<PostseasonGame[]> {
+    const out: PostseasonGame[] = [];
+
+    for (const [week, round] of POSTSEASON_WEEKS) {
+      const cached = this.postseasonWeeks.get(week);
+      if (cached?.settled) {
+        out.push(...cached.games.map((g) => ({ ...g, round })));
+        continue;
+      }
+      try {
+        const payload = await fetchScoreboard({ season, seasonType: 3, week }, config.requestTimeoutMs);
+        const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
+        this.postseasonWeeks.set(week, { games: payload.games, fetchedAt: Date.now(), settled });
+        out.push(...payload.games.map((g) => ({ ...g, round })));
+      } catch {
+        if (cached) out.push(...cached.games.map((g) => ({ ...g, round })));
+      }
+    }
+
+    return out;
   }
 
   private async refresh(): Promise<void> {
@@ -104,6 +140,10 @@ export class SnapshotStore {
         }
       }
 
+      // There is no postseason to read during a regular season, so don't ask.
+      const postseason =
+        pinnedToPast || seasonType === 3 ? await this.fetchPostseason(season) : [];
+
       const standings = await fetchStandings(config.season, config.requestTimeoutMs);
       const conferences = buildConferences(standings, allGames);
       const weekGames = allGames.filter((g) => g.week === (currentWeek || 1));
@@ -121,11 +161,12 @@ export class SnapshotStore {
         stale: false,
         conferences,
         games: weekGames,
+        postseason,
       });
 
       this.schedule(anyLive ? config.liveRefreshMs : config.refreshMs);
     } catch (error) {
-      console.error("[pylon] refresh failed:", error instanceof Error ? error.message : error);
+      console.error("[clinch] refresh failed:", error instanceof Error ? error.message : error);
       if (this.snapshot) this.publish({ ...this.snapshot, stale: true });
       this.schedule(Math.min(config.refreshMs, 60_000));
     } finally {

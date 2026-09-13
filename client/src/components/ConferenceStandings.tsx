@@ -9,7 +9,7 @@ interface ConferenceStandingsProps {
 
 export const ConferenceStandings = memo(function ConferenceStandings({ conference }: ConferenceStandingsProps) {
   const inField = conference.seeds.slice(0, 7);
-  const tint = conference.id === "AFC" ? "var(--color-pylon)" : "var(--color-jade)";
+  const tint = conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
   return (
     <section className="@container flex flex-col gap-4">
@@ -44,11 +44,11 @@ export const ConferenceStandings = memo(function ConferenceStandings({ conferenc
             {inField.map((team, i) => (
               <span
                 key={team.abbr}
-                className="relative rounded-full border border-line bg-abyss-2 p-[3px] transition-transform hover:z-10 hover:scale-125"
-                style={{ zIndex: 7 - i, boxShadow: `0 0 10px color-mix(in srgb, ${team.accent} 30%, transparent)` }}
+                className="relative rounded-full transition-transform hover:z-10 hover:scale-125"
+                style={{ zIndex: 7 - i }}
                 title={`${team.seed}. ${team.location} ${team.name} (${team.record})`}
               >
-                <TeamLogo abbr={team.abbr} size={20} />
+                <TeamLogo abbr={team.abbr} size={26} accent={team.accent} />
               </span>
             ))}
           </div>

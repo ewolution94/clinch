@@ -17,7 +17,7 @@ function Side({ team, seed }: { team: TeamEntry | undefined; seed: number }) {
       >
         {seed}
       </span>
-      <TeamLogo abbr={team.abbr} size={22} glow={team.accent} />
+      <TeamLogo abbr={team.abbr} size={22} accent={team.accent} />
       <div className="flex min-w-0 flex-col leading-none">
         <span className="mono-tabular truncate text-[11px] font-bold text-paper">{team.abbr}</span>
         <span className="mono-tabular mt-0.5 text-[9px] text-mist">{team.record}</span>
@@ -53,7 +53,7 @@ export const BracketPreview = memo(function BracketPreview({ conference }: Brack
           >
             <span className="font-mono text-[9px] tracking-[0.14em] text-gold">FIRST-ROUND BYE</span>
             <div className="mt-2 flex items-center gap-2">
-              <TeamLogo abbr={bye.abbr} size={26} glow={bye.accent} />
+              <TeamLogo abbr={bye.abbr} size={26} accent={bye.accent} />
               <div className="flex min-w-0 flex-col leading-none">
                 <span className="mono-tabular truncate text-[12px] font-bold text-paper">{bye.abbr}</span>
                 <span className="mono-tabular mt-0.5 text-[9px] text-mist">{bye.record}</span>

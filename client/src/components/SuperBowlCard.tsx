@@ -15,6 +15,8 @@ interface SuperBowlCardProps {
 function Contender({
   team,
   label,
+  source,
+  score,
   won,
   decided,
   compact,
@@ -22,6 +24,8 @@ function Contender({
 }: {
   team: TeamEntry | null;
   label: string;
+  source: string | null;
+  score: number | null;
   won: boolean;
   decided: boolean;
   compact: boolean;
@@ -29,8 +33,10 @@ function Contender({
 }) {
   if (!team) {
     return (
-      <div className="flex h-16 items-center justify-center rounded-xl border border-dashed border-line">
-        <span className="font-mono text-[10px] tracking-[0.14em] text-mist">{label} CHAMPION</span>
+      <div className="flex h-[60px] items-center justify-center rounded-xl border border-dashed border-line/70">
+        <span className="font-mono text-[9px] tracking-[0.14em] text-mist/60 uppercase">
+          {source || `${label} champion`}
+        </span>
       </div>
     );
   }
@@ -51,13 +57,15 @@ function Contender({
       }}
     >
       <TeamWatermark abbr={team.abbr} size={96} className="-right-6 -bottom-8 opacity-[0.12]" />
-      <TeamLogo abbr={team.abbr} size={compact ? 34 : 36} glow={team.accent} />
+      <TeamLogo abbr={team.abbr} size={compact ? 34 : 36} accent={team.accent} />
       {/* Stacked rather than name-beside-record: this column is the narrowest
           part of the bracket, and a side-by-side layout collides here. */}
       <span className="relative flex min-w-0 flex-1 flex-col items-start gap-0.5 leading-none">
         <span className="font-mono text-[8px] tracking-[0.18em] text-mist">{label}</span>
         <span className="w-full truncate font-display text-[15px] font-semibold text-paper">{team.name}</span>
-        <span className="mono-tabular text-[10px] text-fog opacity-80">{team.record}</span>
+        <span className="mono-tabular text-[10px] text-fog opacity-80">
+          {score !== null ? `${score} pts` : team.record}
+        </span>
       </span>
       {won && (
         <span
@@ -102,6 +110,8 @@ export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: Su
         <Contender
           team={match?.home ?? null}
           label="AFC"
+          source={match?.homeSource ?? null}
+          score={match?.score?.home ?? null}
           won={decided && champion?.abbr === match?.home?.abbr}
           decided={decided}
           compact={compact}
@@ -115,6 +125,8 @@ export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: Su
         <Contender
           team={match?.away ?? null}
           label="NFC"
+          source={match?.awaySource ?? null}
+          score={match?.score?.away ?? null}
           won={decided && champion?.abbr === match?.away?.abbr}
           decided={decided}
           compact={compact}
@@ -124,9 +136,14 @@ export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: Su
 
       <p className="relative mt-3 text-center font-mono text-[9px] tracking-[0.14em] text-mist">
         {champion ? (
-          <span className="text-gold">{champion.location.toUpperCase()} {champion.name.toUpperCase()} — YOUR PICK</span>
-        ) : (
+          <span className="text-gold">
+            {champion.location.toUpperCase()} {champion.name.toUpperCase()}
+            {match?.decidedBy === "pick" ? " — YOUR PICK" : " — CHAMPIONS"}
+          </span>
+        ) : match?.home && match?.away ? (
           "TAP A TEAM TO CROWN THEM"
+        ) : (
+          "WAITING ON BOTH CONFERENCES"
         )}
       </p>
     </section>

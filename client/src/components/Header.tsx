@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import { PylonMark } from "./PylonMark";
+import { ClinchMark } from "./ClinchMark";
 import type { Route } from "../hooks/useRoute";
 import type { ConferenceId, ConnectionState, Snapshot } from "../lib/types";
 
@@ -37,9 +37,9 @@ export function Header({
     <header>
       <div className="mx-auto flex max-w-[1800px] items-start justify-between gap-4 px-4 pt-6 pb-5 sm:px-6 lg:px-10">
         <div className="flex items-center gap-3">
-          <PylonMark size={38} />
+          <ClinchMark size={38} />
           <div className="flex flex-col leading-none">
-            <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">PYLON</span>
+            <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">CLINCH</span>
             <span className="mt-1 font-mono text-[10px] tracking-[0.22em] text-mist">WHO&apos;S IN, WHO&apos;S OUT</span>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function Header({
                   aria-current={conference === id ? "true" : undefined}
                   className={clsx(
                     "rounded-full px-3.5 py-1.5 font-mono text-[12px] font-medium tracking-wide transition-colors",
-                    conference === id ? "bg-pylon/15 text-pylon" : "text-mist hover:text-fog"
+                    conference === id ? "bg-brand/15 text-brand" : "text-mist hover:text-fog"
                   )}
                 >
                   {id}
@@ -119,7 +119,7 @@ export function Header({
 
         <div className="h-px w-full bg-line/60">
           <div
-            className="h-px bg-gradient-to-r from-pylon/70 to-gold/70 transition-[width] duration-700"
+            className="h-px bg-gradient-to-r from-brand/70 to-gold/70 transition-[width] duration-700"
             style={{ width: `${Math.min(100, progress * 100)}%` }}
           />
         </div>

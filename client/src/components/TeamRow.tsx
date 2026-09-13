@@ -72,7 +72,7 @@ export const TeamRow = memo(function TeamRow({ team, showRank = true }: TeamRowP
         )}
 
         <span className="relative transition-transform duration-200 group-hover:scale-110">
-          <TeamLogo abbr={team.abbr} size={30} glow={team.accent} />
+          <TeamLogo abbr={team.abbr} size={30} accent={team.accent} />
         </span>
 
         <span className="relative flex min-w-0 flex-1 items-baseline gap-2">

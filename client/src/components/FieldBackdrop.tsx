@@ -22,7 +22,7 @@ export function FieldBackdrop() {
         }}
       />
 
-      <div className="animate-sheen absolute -top-48 left-1/2 h-[620px] w-[900px] -translate-x-1/2 rounded-full bg-pylon/10 blur-[150px]" />
+      <div className="animate-sheen absolute -top-48 left-1/2 h-[620px] w-[900px] -translate-x-1/2 rounded-full bg-brand/10 blur-[150px]" />
       <div
         className="animate-sheen absolute -bottom-64 -left-40 h-[520px] w-[520px] rounded-full bg-jade/[0.07] blur-[150px]"
         style={{ animationDelay: "-4.5s" }}

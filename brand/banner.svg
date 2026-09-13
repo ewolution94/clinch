@@ -47,15 +47,16 @@
     <rect x="948" y="352" width="72" height="10" rx="5" fill="#1c2434"/>
   </g>
 
-  <!-- logo lockup -->
+  <!-- logo lockup: two bracket arms closing on one point -->
   <g transform="translate(120,150) scale(2.1)">
-    <path d="M 32 11 L 49 19.5 L 49 46 L 32 54.5 Z" fill="url(#shade)"/>
-    <path d="M 32 11 L 15 19.5 L 15 46 L 32 54.5 Z" fill="url(#lit)"/>
-    <path d="M 15 19.5 L 32 27.5 L 49 19.5 L 32 11 Z" fill="#ffb07a"/>
-    <path d="M 15 32 L 32 40 L 49 32" fill="none" stroke="#05070c" stroke-width="2" stroke-opacity="0.32"/>
+    <g stroke="url(#lit)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M13 13 L29 32 L13 51"/>
+      <path d="M51 13 L35 32 L51 51"/>
+    </g>
+    <circle cx="32" cy="32" r="4.6" fill="#ffc53d"/>
   </g>
 
-  <text x="270" y="228" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="86" font-weight="700" letter-spacing="-2" fill="#eef2f9">PYLON</text>
+  <text x="270" y="228" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="86" font-weight="700" letter-spacing="-2" fill="#eef2f9">CLINCH</text>
   <text x="274" y="272" font-family="JetBrains Mono, ui-monospace, monospace" font-size="17" letter-spacing="7" fill="#7c8aa5">WHO'S IN, WHO'S OUT</text>
   <text x="120" y="560" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="22" fill="#b2bdd2">NFL standings and the playoff picture, at a glance.</text>
 </svg>

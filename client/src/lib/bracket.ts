@@ -1,16 +1,21 @@
-import type { ConferenceId, ConferenceView, TeamEntry } from "./types";
+import type { ConferenceId, ConferenceView, PostseasonGame, RoundId, TeamEntry } from "./types";
 
-export type RoundId = "wildcard" | "divisional" | "championship" | "superbowl";
+export type { RoundId };
 
 export interface BracketMatch {
   id: string;
   round: RoundId;
-  /** Higher seed, and — outside the Super Bowl — the host. */
+  /** Game number within its conference, so slots can say "Winner of Game 5". */
+  number: number;
   home: TeamEntry | null;
   away: TeamEntry | null;
+  /** Where an unfilled slot's team will come from. */
+  homeSource: string | null;
+  awaySource: string | null;
   winner: TeamEntry | null;
-  /** The winner was chosen by the reader rather than defaulted to the seed. */
-  picked: boolean;
+  /** Null while the game is unplayed and unpicked. */
+  decidedBy: "played" | "pick" | null;
+  score: { home: number; away: number } | null;
 }
 
 export interface ConferenceBracket {
@@ -23,7 +28,7 @@ export interface ConferenceBracket {
   champion: TeamEntry | null;
   /**
    * The divisional pairing no longer matches the lines drawn on the bracket,
-   * because an upset changed who the 1 seed's lowest remaining opponent is.
+   * because the 1 seed's lowest remaining opponent came from elsewhere.
    */
   reseeded: boolean;
 }
@@ -36,99 +41,148 @@ export interface Bracket {
 
 export type Picks = Record<string, string>;
 
+function blank(id: string, round: RoundId, number: number, homeSource: string, awaySource: string): BracketMatch {
+  return {
+    id,
+    round,
+    number,
+    home: null,
+    away: null,
+    homeSource,
+    awaySource,
+    winner: null,
+    decidedBy: null,
+    score: null,
+  };
+}
+
+/** Lower seed number is the better seed, and hosts every round but the last. */
+function seedOrder(a: TeamEntry | null, b: TeamEntry | null): [TeamEntry | null, TeamEntry | null] {
+  const teams = [a, b].filter((t): t is TeamEntry => t !== null).sort((x, y) => x.seed - y.seed);
+  return [teams[0] ?? null, teams[1] ?? null];
+}
+
 /**
- * Resolves a match. With no pick, the higher seed advances — "chalk" — which is
- * what makes the default bracket a complete picture rather than a row of empty
- * slots. A pick only counts if it names one of the two teams actually in the
- * match, so picks left over from a path the reader has since changed are
- * ignored instead of having to be cleaned up.
+ * Settles a match from reality first, then from the reader's own pick.
+ *
+ * There is deliberately no third fallback. Assuming the higher seed advances
+ * would fill the tree to the Super Bowl with results nobody has played, and a
+ * bracket that looks decided when nothing is decided is worse than an empty one.
  */
-function resolve(match: BracketMatch, picks: Picks, defaultWinner: TeamEntry | null): BracketMatch {
+function settle(match: BracketMatch, played: PostseasonGame[], picks: Picks): BracketMatch {
   const { home, away } = match;
-  if (!home || !away) return { ...match, winner: home ?? away ?? null, picked: false };
+  if (!home || !away) return match;
+
+  const game = played.find(
+    (g) =>
+      g.round === match.round &&
+      g.state === "post" &&
+      g.homeScore !== null &&
+      g.awayScore !== null &&
+      ((g.home === home.abbr && g.away === away.abbr) || (g.home === away.abbr && g.away === home.abbr))
+  );
+
+  if (game) {
+    const homeIsGameHome = game.home === home.abbr;
+    const homeScore = homeIsGameHome ? game.homeScore! : game.awayScore!;
+    const awayScore = homeIsGameHome ? game.awayScore! : game.homeScore!;
+    const winner = homeScore === awayScore ? null : homeScore > awayScore ? home : away;
+    return { ...match, winner, decidedBy: winner ? "played" : null, score: { home: homeScore, away: awayScore } };
+  }
 
   const pick = picks[match.id];
   const chosen = pick === home.abbr ? home : pick === away.abbr ? away : null;
-  return { ...match, winner: chosen ?? defaultWinner, picked: chosen !== null };
+  return chosen ? { ...match, winner: chosen, decidedBy: "pick" } : match;
 }
 
-function match(id: string, round: RoundId, a: TeamEntry | null, b: TeamEntry | null): BracketMatch {
-  // Lower seed number is the better seed, and hosts.
-  const ordered = [a, b].filter((t): t is TeamEntry => t !== null).sort((x, y) => x.seed - y.seed);
-  return { id, round, home: ordered[0] ?? null, away: ordered[1] ?? null, winner: null, picked: false };
-}
-
-function buildConference(conference: ConferenceView, picks: Picks): ConferenceBracket {
+function buildConference(
+  conference: ConferenceView,
+  played: PostseasonGame[],
+  picks: Picks
+): ConferenceBracket {
   const bySeed = new Map(conference.seeds.map((t) => [t.seed, t]));
   const seed = (n: number) => bySeed.get(n) ?? null;
   const bye = seed(1);
+  const id = conference.id;
 
-  // Top to bottom: the bye, then 4v5, 3v6, 2v7. Pairing neighbours then gives
-  // 1v4 and 2v3 — exactly the chalk divisional round — so the drawn lines are
-  // correct until an upset forces a reseed.
-  const wildcard = [
-    match(`${conference.id}-WC1`, "wildcard", seed(4), seed(5)),
-    match(`${conference.id}-WC2`, "wildcard", seed(3), seed(6)),
-    match(`${conference.id}-WC3`, "wildcard", seed(2), seed(7)),
-  ].map((m) => resolve(m, picks, m.home));
+  // Top to bottom: the bye, then 4v5, 3v6, 2v7. Pairing neighbours then feeds
+  // the divisional round the way the NFL's reseed usually resolves it.
+  const pairs: [number, number][] = [
+    [4, 5],
+    [3, 6],
+    [2, 7],
+  ];
+  const wildcard = pairs.map(([high, low], i) => {
+    const [home, away] = seedOrder(seed(high), seed(low));
+    return settle(
+      { ...blank(`${id}-WC${i + 1}`, "wildcard", i + 1, "", ""), home, away },
+      played,
+      picks
+    );
+  });
 
-  const survivors = [bye, ...wildcard.map((m) => m.winner)]
-    .filter((t): t is TeamEntry => t !== null)
-    .sort((a, b) => a.seed - b.seed);
+  const survivors = wildcard.map((m) => m.winner);
+  const allThrough = survivors.every((t): t is TeamEntry => t !== null);
 
-  // The NFL reseeds: the 1 seed always draws the lowest remaining seed.
-  const divisional =
-    survivors.length === 4
-      ? [
-          match(`${conference.id}-DV1`, "divisional", survivors[0], survivors[3]),
-          match(`${conference.id}-DV2`, "divisional", survivors[1], survivors[2]),
-        ].map((m) => resolve(m, picks, m.home))
-      : [];
+  // The divisional round can't be drawn from a partial wild card weekend: the 1
+  // seed draws the lowest remaining seed, which isn't known until all three are
+  // in. The bye team still takes its slot — that's a rule, not a prediction.
+  let divisional: BracketMatch[];
+  let reseeded = false;
 
-  const championship =
-    divisional.length === 2
-      ? (() => {
-          const cf = match(`${conference.id}-CF`, "championship", divisional[0].winner, divisional[1].winner);
-          return resolve(cf, picks, cf.home);
-        })()
-      : null;
+  if (allThrough && bye) {
+    const remaining = [bye, ...survivors.filter((t): t is TeamEntry => t !== null)].sort((a, b) => a.seed - b.seed);
+    const first = seedOrder(remaining[0], remaining[3]);
+    const second = seedOrder(remaining[1], remaining[2]);
+    divisional = [
+      settle({ ...blank(`${id}-DV1`, "divisional", 4, "", ""), home: first[0], away: first[1] }, played, picks),
+      settle({ ...blank(`${id}-DV2`, "divisional", 5, "", ""), home: second[0], away: second[1] }, played, picks),
+    ];
+    const byeOpponent = divisional[0].home?.abbr === bye.abbr ? divisional[0].away : divisional[0].home;
+    reseeded = byeOpponent?.abbr !== wildcard[0].winner?.abbr;
+  } else {
+    divisional = [
+      { ...blank(`${id}-DV1`, "divisional", 4, "", "Lowest remaining seed"), home: bye },
+      blank(`${id}-DV2`, "divisional", 5, "Wild card winner", "Wild card winner"),
+    ];
+  }
 
-  // Chalk keeps the bye paired with the top wild card match's winner.
-  const reseeded =
-    divisional.length === 2 &&
-    divisional[0].away?.abbr !== wildcard[0].winner?.abbr &&
-    divisional[0].home?.abbr !== wildcard[0].winner?.abbr;
+  const [cfHome, cfAway] = seedOrder(divisional[0].winner, divisional[1].winner);
+  const championship = settle(
+    {
+      ...blank(`${id}-CF`, "championship", 6, "Winner of Game 4", "Winner of Game 5"),
+      home: cfHome,
+      away: cfAway,
+    },
+    played,
+    picks
+  );
 
   return {
-    conference: conference.id,
+    conference: id,
     bye,
     wildcard,
     divisional,
     championship,
-    champion: championship?.winner ?? null,
+    champion: championship.winner,
     reseeded,
   };
 }
 
-export function buildBracket(conferences: ConferenceView[], picks: Picks): Bracket {
-  const built = conferences.map((c) => buildConference(c, picks));
+export function buildBracket(
+  conferences: ConferenceView[],
+  played: PostseasonGame[],
+  picks: Picks
+): Bracket {
+  const built = conferences.map((c) => buildConference(c, played, picks));
   const afc = built.find((b) => b.conference === "AFC")?.champion ?? null;
   const nfc = built.find((b) => b.conference === "NFC")?.champion ?? null;
 
-  // Neutral site, and no seed to separate two conference champions — so unlike
-  // every other round this one has no default winner. It stays a question until
-  // the reader answers it.
-  const superBowl: BracketMatch | null =
-    afc && nfc
-      ? resolve({ id: "SB", round: "superbowl", home: afc, away: nfc, winner: null, picked: false }, picks, null)
-      : null;
+  const superBowl = settle(
+    { ...blank("SB", "superbowl", 7, "AFC champion", "NFC champion"), home: afc, away: nfc },
+    played,
+    picks
+  );
 
-  return { conferences: built, superBowl, champion: superBowl?.winner ?? null };
+  return { conferences: built, superBowl, champion: superBowl.winner };
 }
-
-export const ROUND_LABEL: Record<RoundId, string> = {
-  wildcard: "Wild card",
-  divisional: "Divisional",
-  championship: "Conference championship",
-  superbowl: "Super Bowl",
-};

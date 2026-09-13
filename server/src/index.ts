@@ -68,11 +68,11 @@ if (existsSync(clientDist)) {
   );
   app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(join(clientDist, "index.html")));
 } else {
-  console.warn(`[pylon] no client build at ${clientDist} — API only`);
+  console.warn(`[clinch] no client build at ${clientDist} — API only`);
 }
 
 const server = app.listen(config.port, () => {
-  console.log(`[pylon] listening on :${config.port}`);
+  console.log(`[clinch] listening on :${config.port}`);
 });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

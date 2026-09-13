@@ -1,15 +1,15 @@
 services:
-  pylon:
+  clinch:
     build: .
-    image: ghcr.io/ewolution94/pylon:latest
-    container_name: pylon
+    image: ghcr.io/ewolution94/clinch:latest
+    container_name: clinch
     restart: unless-stopped
     ports:
       - "4600:4600"
     environment:
       # How often the league is re-polled when nothing is being played.
-      - PYLON_REFRESH_MS=120000
+      - CLINCH_REFRESH_MS=120000
       # …and while a game is in progress.
-      - PYLON_LIVE_REFRESH_MS=25000
+      - CLINCH_LIVE_REFRESH_MS=25000
       # Pin a completed season instead of following the live one, e.g. 2025.
-      # - PYLON_SEASON=2025
+      # - CLINCH_SEASON=2025

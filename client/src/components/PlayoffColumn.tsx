@@ -22,7 +22,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({ conference }: Playoff
   const field = conference.seeds.filter((t) => t.seed <= 7);
   const chasing = conference.seeds.filter((t) => t.seed > 7 && t.status !== "eliminated");
   const eliminated = conference.seeds.filter((t) => t.status === "eliminated");
-  const tint = conference.id === "AFC" ? "var(--color-pylon)" : "var(--color-jade)";
+  const tint = conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
   return (
     <section className="flex flex-col gap-3">

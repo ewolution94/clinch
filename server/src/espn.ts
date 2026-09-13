@@ -4,7 +4,7 @@ import { teamMeta } from "./teams.js";
 const SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl";
 const CORE = "https://site.api.espn.com/apis/v2/sports/football/nfl";
 
-const USER_AGENT = "pylon/1.0 (+https://github.com/ewolution94/pylon)";
+const USER_AGENT = "clinch/1.0 (+https://github.com/ewolution94/clinch)";
 
 async function getJson<T>(url: string, timeoutMs: number): Promise<T> {
   const controller = new AbortController();

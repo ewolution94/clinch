@@ -20,7 +20,7 @@ function TopSeed({ team, conference, align }: { team: TeamEntry; conference: str
         size={130}
         className={`${align === "left" ? "-right-8" : "-left-8"} -bottom-10 opacity-[0.1]`}
       />
-      <TeamLogo abbr={team.abbr} size={48} glow={team.accent} eager />
+      <TeamLogo abbr={team.abbr} size={48} accent={team.accent} eager />
       <div className="relative flex min-w-0 flex-col leading-none">
         <span className="font-mono text-[8.5px] tracking-[0.2em]" style={{ color: team.accent }}>
           {conference} NO. 1 SEED
@@ -71,7 +71,7 @@ export const SeasonHero = memo(function SeasonHero({ snapshot }: SeasonHeroProps
           <div className="mt-3 flex items-center gap-3 lg:w-[260px]">
             <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-line">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-pylon via-gold to-jade transition-[width] duration-1000"
+                className="h-full rounded-full bg-gradient-to-r from-brand via-gold to-jade transition-[width] duration-1000"
                 style={{ width: `${progress}%` }}
               />
             </div>

@@ -12,7 +12,7 @@ export interface StatusMeta {
 
 export const STATUS_META: Record<PlayoffStatus, StatusMeta> = {
   "clinched-bye": { label: "Clinched bye", short: "BYE", color: "var(--color-gold)", inField: true },
-  "clinched-division": { label: "Clinched division", short: "DIV", color: "var(--color-pylon)", inField: true },
+  "clinched-division": { label: "Clinched division", short: "DIV", color: "var(--color-brand)", inField: true },
   clinched: { label: "Clinched berth", short: "IN", color: "var(--color-jade)", inField: true },
   in: { label: "In the field", short: "IN", color: "var(--color-jade)", inField: true },
   bubble: { label: "On the bubble", short: "BUB", color: "var(--color-ice)", inField: false },
@@ -32,6 +32,6 @@ export const STATUS_META: Record<PlayoffStatus, StatusMeta> = {
 export function seedRole(seed: number, divisionRank: number): { label: string; color: string } {
   if (seed > 7) return { label: "Outside the field", color: "var(--color-mist)" };
   if (seed === 1) return { label: "Bye + home field", color: "var(--color-gold)" };
-  if (divisionRank === 1) return { label: "Division leader", color: "var(--color-pylon)" };
+  if (divisionRank === 1) return { label: "Division leader", color: "var(--color-brand)" };
   return { label: "Wild card", color: "var(--color-jade)" };
 }
