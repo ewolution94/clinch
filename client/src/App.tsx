@@ -3,7 +3,9 @@ import { FieldBackdrop } from "./components/FieldBackdrop";
 import { Header } from "./components/Header";
 import { ConferenceStandings } from "./components/ConferenceStandings";
 import { PlayoffColumn } from "./components/PlayoffColumn";
+import { BracketTree } from "./components/BracketTree";
 import { WeekGames } from "./components/WeekGames";
+import { SeasonHero } from "./components/SeasonHero";
 import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
 import { useSnapshot } from "./hooks/useSnapshot";
@@ -24,9 +26,8 @@ export default function App() {
   }, [snapshot, wide, conference]);
 
   useEffect(() => {
-    document.title = snapshot
-      ? `${route === "playoffs" ? "Playoff picture" : "Standings"} · ${snapshot.week.label} — Pylon`
-      : "Pylon";
+    const view = route === "playoffs" ? "Playoff picture" : route === "bracket" ? "Bracket" : "Standings";
+    document.title = snapshot ? `${view} · ${snapshot.week.label} — Pylon` : "Pylon";
   }, [snapshot, route]);
 
   return (
@@ -40,7 +41,7 @@ export default function App() {
         onRoute={navigate}
         conference={conference}
         onConference={setConference}
-        showConferenceSwitch={!wide}
+        showConferenceSwitch={!wide && route !== "bracket"}
       />
 
       <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
@@ -56,6 +57,7 @@ export default function App() {
 
             {route === "standings" ? (
               <>
+                <SeasonHero snapshot={snapshot} />
                 <WeekGames games={snapshot.games} label={snapshot.week.label} />
                 <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
                   {conferences.map((c) => (
@@ -64,6 +66,8 @@ export default function App() {
                 </div>
                 <Legend />
               </>
+            ) : route === "bracket" ? (
+              <BracketTree snapshot={snapshot} />
             ) : (
               <>
                 {snapshot.season.type === 2 && snapshot.week.number <= 4 && (

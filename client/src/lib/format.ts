@@ -32,3 +32,21 @@ export function formatClock(timestamp: number): string {
 export function logoUrl(abbr: string): string {
   return `/logos/${abbr.toLowerCase()}.webp`;
 }
+
+/** Super Bowl I followed the 1966 season, and they've counted up ever since. */
+export function superBowlNumeral(seasonYear: number): string {
+  let left = seasonYear - 1965;
+  if (left < 1) return "";
+  const table: [number, string][] = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"],
+    [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  let out = "";
+  for (const [value, symbol] of table) {
+    while (left >= value) {
+      out += symbol;
+      left -= value;
+    }
+  }
+  return out;
+}

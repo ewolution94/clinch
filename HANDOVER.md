@@ -24,11 +24,26 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 - **Derivation** (`server/src/derive.ts`): seeding, division order, clinch and
   elimination, games back, the wild card bracket. README's "How the labels are
   derived" is the spec; read it before touching this file.
-- **UI**: two routes, `/` (standings) and `/playoffs`, via a ~20-line history
-  router — no react-router. Dark only. Mobile shows one conference with a
-  switch; from 1280px both render side by side.
+- **UI**: three routes — `/` (standings), `/playoffs` (the tiered picture) and
+  `/bracket` (the tournament tree) — via a ~25-line history router, no
+  react-router. Dark only. Mobile shows one conference with a switch; from
+  1280px both render side by side.
+- **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): defaults to
+  chalk, and every team is tappable to advance them, with a correct NFL reseed
+  between rounds. The connector elbows are SVG in a stretched 100×100 viewBox —
+  see the comment in `BracketConnectors.tsx` before changing any of it.
 
 ## Decisions already made — don't re-litigate
+
+- **The bracket's connectors are arithmetic, not measurement.** Round columns
+  spread their matches with `flex-1`, so match *i* is always at (i + 0.5) / n of
+  the column height — identical in every column at every size. That's why the
+  elbows are a stretched SVG with fixed fractions instead of JS measuring DOM
+  positions and re-measuring on resize. If you change how a round column lays
+  its matches out, this breaks silently and invisibly.
+- **No default Super Bowl winner.** Every other round defaults to the higher
+  seed; two conference champions have no seed between them and play at a neutral
+  site, so picking one would be inventing a result. It stays open.
 
 - **ESPN's `playoffSeed` is authoritative.** It has the NFL's full tiebreaker
   chain applied. Reimplementing head-to-head/common-games/strength-of-victory
@@ -44,9 +59,13 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   conference. `normaliseSeeds()` slots them in by win differential. No-op from
   week 2 onward — but it *is* load-bearing every September.
 - **Row columns use container queries, not viewport breakpoints.** With both
-  conferences side by side a division card is ~420px on a 1800px screen —
+  conferences side by side a division card is ~400px on a 1800px screen —
   narrower than the same card on a phone. Viewport breakpoints overflowed it.
   If you add a column, gate it on `@…/card`, never on `sm:`/`lg:`.
+- **Nicknames are hidden on narrow cards, records and form are not.** When the
+  row was made bolder the names started truncating to "Pat…" / "Commande…". The
+  logo and abbreviation already identify the team, and every data column beats a
+  half-word — so the nickname is what gives way, from `@sm/card` down.
 - **`TeamWatermark` exists because Tailwind emits `.relative` after
   `.absolute`.** `TeamLogo` sets `relative` on itself, so a positioning class
   passed in from outside silently loses and the watermark stays in flow. Don't

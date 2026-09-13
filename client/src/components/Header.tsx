@@ -15,8 +15,9 @@ interface HeaderProps {
 }
 
 const TABS: { id: Route; label: string; short: string }[] = [
-  { id: "standings", label: "Standings", short: "Standings" },
-  { id: "playoffs", label: "Playoff picture", short: "Playoffs" },
+  { id: "standings", label: "Standings", short: "Table" },
+  { id: "playoffs", label: "Playoff picture", short: "Picture" },
+  { id: "bracket", label: "Bracket", short: "Bracket" },
 ];
 
 export function Header({
@@ -86,7 +87,7 @@ export function Header({
                 onClick={() => onRoute(tab.id)}
                 aria-current={route === tab.id ? "page" : undefined}
                 className={clsx(
-                  "rounded-full px-3.5 py-1.5 font-display text-[13px] font-medium transition-colors sm:px-5",
+                  "rounded-full px-3 py-1.5 font-display text-[13px] font-medium transition-colors sm:px-5",
                   route === tab.id ? "bg-paper text-abyss" : "text-mist hover:text-fog"
                 )}
               >

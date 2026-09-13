@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type Route = "standings" | "playoffs";
+export type Route = "standings" | "playoffs" | "bracket";
+
+const PATHS: Record<Route, string> = {
+  standings: "/",
+  playoffs: "/playoffs",
+  bracket: "/bracket",
+};
 
 function readRoute(): Route {
-  return window.location.pathname.startsWith("/playoffs") ? "playoffs" : "standings";
+  const path = window.location.pathname;
+  if (path.startsWith("/playoffs")) return "playoffs";
+  if (path.startsWith("/bracket")) return "bracket";
+  return "standings";
 }
 
 /**
@@ -20,7 +29,7 @@ export function useRoute(): [Route, (next: Route) => void] {
   }, []);
 
   const navigate = useCallback((next: Route) => {
-    window.history.pushState({}, "", next === "playoffs" ? "/playoffs" : "/");
+    window.history.pushState({}, "", PATHS[next]);
     setRoute(next);
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, []);

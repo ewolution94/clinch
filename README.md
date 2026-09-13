@@ -20,7 +20,11 @@ teams are in the field, which are chasing it, and which are already out.
 - **A playoff picture that isn't guesswork** — seeds 1–7 per conference, the
   cut line drawn as a real object, everyone still alive ranked by how many games
   back they are, and the eliminated set aside.
-- **The wild card round as it stands today** — 1 seed on a bye, 2v7, 3v6, 4v5.
+- **The whole bracket as a tournament tree** — both halves closing on the
+  Super Bowl, with each connector lit in the colour of the team travelling along
+  it. Tap any team to send them through; the bracket **reseeds after every
+  round**, exactly like the NFL does, so knocking out a 2 seed changes who the 1
+  seed draws.
 - **Clinched and eliminated only when the maths says so** — see
   [How the labels are derived](#how-the-labels-are-derived). Nothing here is a
   projection or a win probability.
@@ -31,6 +35,27 @@ teams are in the field, which are chasing it, and which are already out.
   readable as the same card on a 390px screen.
 - **One container** — the built frontend is served by the same Express process
   as the API, and there is no database, no volume and no state on disk.
+
+## The three views
+
+| Route | What it's for |
+| ----- | ------------- |
+| `/` | **Standings.** All eight divisions under a banner showing where the season is and who leads each conference. Tap a team for its splits, last five results and next kickoff. |
+| `/playoffs` | **Playoff picture.** Seeds 1–7, the cut line, everyone still chasing it ranked by games back, and the eliminated. |
+| `/bracket` | **Bracket.** The tournament tree, seeded on today's standings and playable. |
+
+### How the bracket fills itself in
+
+With no picks the higher seed advances every game — "chalk" — so the tree is a
+complete picture rather than a row of empty slots. The one exception is the
+Super Bowl: two conference champions have no seed between them and the game is
+at a neutral site, so there is no honest default. It stays a question until you
+answer it.
+
+Picking a winner re-runs the whole bracket underneath, including the reseed. A
+pick that no longer names a team in its match — because you changed something
+upstream — is ignored rather than having to be cleared, so the tree is always
+consistent with the picks that still make sense.
 
 ## Local development
 
@@ -111,6 +136,12 @@ winner or a wild card. Seeds 1–4 are usually the four division leaders, but th
 only holds once every team has played, so the role comes from the team's actual
 position in its own division.
 
+The bracket applies the same care to reseeding. Its lines are drawn so that the
+chalk pairings are correct — the bye sits next to the 4v5 winner, giving 1v4 and
+2v3. But the NFL reseeds, and after an upset the 1 seed draws whichever survivor
+is seeded lowest, which may not be the one the drawn line points at. When that
+happens the round says so rather than quietly showing the wrong pairing.
+
 ## Tech stack
 
 - **Server**: Node.js, Express, TypeScript, Server-Sent Events. No database, no
@@ -136,9 +167,10 @@ pylon/
 │   ├── fonts/              two variable woff2 files, self-hosted
 │   └── logos/              32 team marks, 160px webp, ~230 kB total
 ├── client/src/
-│   ├── components/         Header, DivisionCard, TeamRow, SeedRow, Bracket…
+│   ├── components/         Header, SeasonHero, DivisionCard, TeamRow, SeedRow,
+│   │                       BracketTree, BracketConnectors, SuperBowlCard…
 │   ├── hooks/              useSnapshot (SSE), useRoute, useMediaQuery
-│   └── lib/                types, status ladder, formatting
+│   └── lib/                types, status ladder, bracket resolver, formatting
 ├── Dockerfile              multi-stage build → single runtime image
 └── docker-compose.yml
 ```

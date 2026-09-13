@@ -36,25 +36,50 @@ export const TeamRow = memo(function TeamRow({ team, showRank = true }: TeamRowP
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="group flex w-full items-center gap-2 px-2.5 py-2.5 text-left transition-colors hover:bg-ink-2/60 @xl/card:gap-3 @xl/card:px-3"
+        className="group relative flex w-full items-center gap-2.5 px-3 py-3 text-left @xl/card:gap-3.5 @xl/card:px-4"
       >
         {/* Team colour edge — the only place each team's brand is asserted at
             full strength, so 16 rows stay scannable rather than a rainbow. */}
         <span
           aria-hidden="true"
-          className="absolute top-1 bottom-1 left-0 w-[3px] rounded-full transition-opacity group-hover:opacity-100"
-          style={{ background: team.accent, opacity: status.inField ? 0.9 : 0.35 }}
+          className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full transition-all group-hover:top-0 group-hover:bottom-0 group-hover:w-[4px]"
+          style={{ background: team.accent, opacity: status.inField ? 0.95 : 0.3 }}
+        />
+        {/* …and a wash of it that only appears under the cursor. */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style={{
+            background: `linear-gradient(90deg, color-mix(in srgb, ${team.accent} 16%, transparent) 0%, transparent 55%)`,
+          }}
         />
 
         {showRank && (
-          <span className="mono-tabular w-3 shrink-0 text-center text-[10px] text-mist">{team.divisionRank}</span>
+          <span
+            className="mono-tabular relative flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold"
+            style={
+              team.divisionRank === 1
+                ? {
+                    color: team.accent,
+                    background: `color-mix(in srgb, ${team.accent} 16%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${team.accent} 32%, transparent)`,
+                  }
+                : { color: "var(--color-mist)" }
+            }
+          >
+            {team.divisionRank}
+          </span>
         )}
 
-        <TeamLogo abbr={team.abbr} size={26} glow={team.accent} />
+        <span className="relative transition-transform duration-200 group-hover:scale-110">
+          <TeamLogo abbr={team.abbr} size={30} glow={team.accent} />
+        </span>
 
-        <span className="flex min-w-0 flex-1 items-baseline gap-2">
-          <span className="mono-tabular shrink-0 text-[13px] font-bold tracking-tight text-paper">{team.abbr}</span>
-          <span className="truncate font-display text-[13px] text-fog">
+        <span className="relative flex min-w-0 flex-1 items-baseline gap-2">
+          <span className="mono-tabular shrink-0 text-[14px] font-bold tracking-tight text-paper">{team.abbr}</span>
+          {/* On a phone the logo and abbreviation already name the team, and
+              every data column is worth more than a half-truncated nickname. */}
+          <span className="hidden truncate font-display text-[13px] text-fog @sm/card:inline">
             <span className="hidden @lg/card:inline">{team.location} </span>
             {team.name}
           </span>
@@ -62,34 +87,35 @@ export const TeamRow = memo(function TeamRow({ team, showRank = true }: TeamRowP
 
         {/* Win percentage is redundant next to a 17-game record, so it lives in
             the drawer; these two only appear once the card is genuinely wide. */}
-        <span className="mono-tabular hidden w-14 shrink-0 text-right text-[12px] text-mist @xl/card:block">
+        <span className="mono-tabular relative hidden w-14 shrink-0 text-right text-[12px] text-mist @xl/card:block">
           {team.conferenceRecord}
         </span>
-        <span className="mono-tabular hidden w-14 shrink-0 text-right text-[12px] text-mist @xl/card:block">
+        <span className="mono-tabular relative hidden w-14 shrink-0 text-right text-[12px] text-mist @xl/card:block">
           {team.divisionRecord}
         </span>
 
-        <span className="mono-tabular w-12 shrink-0 text-right text-[13px] font-semibold text-paper">
+        <span className="mono-tabular relative w-[52px] shrink-0 text-right text-[15px] font-bold text-paper">
           {team.record}
         </span>
 
         <span
-          className="mono-tabular w-9 shrink-0 text-right text-[11px]"
+          className="mono-tabular relative w-9 shrink-0 text-right text-[11px]"
           style={{ color: team.pointDiff > 0 ? "var(--color-jade)" : team.pointDiff < 0 ? "var(--color-live)" : undefined }}
         >
           {formatDiff(team.pointDiff)}
         </span>
 
-        <span className="hidden shrink-0 @xs/card:block">
+        <span className="relative hidden shrink-0 @xs/card:block">
           <FormDots form={team.form} />
         </span>
 
         <span
-          className="mono-tabular flex h-5 w-9 shrink-0 items-center justify-center rounded-md text-[10px] font-bold tracking-wide"
+          className="mono-tabular relative flex h-6 w-10 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tracking-wide"
           style={{
             color: status.color,
-            background: `color-mix(in srgb, ${status.color} 12%, transparent)`,
-            border: `1px solid color-mix(in srgb, ${status.color} 22%, transparent)`,
+            background: `color-mix(in srgb, ${status.color} 14%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${status.color} 28%, transparent)`,
+            boxShadow: status.inField ? `0 0 12px color-mix(in srgb, ${status.color} 18%, transparent)` : undefined,
           }}
           title={`${status.label} · conference seed ${team.seed}`}
         >
