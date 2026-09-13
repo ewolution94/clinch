@@ -125,12 +125,6 @@
     grid-template-rows: 1fr;
   }
 
-  /* Horizontal scrollers fade at the edge instead of cutting content dead. */
-  .edge-fade {
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
-  }
-
   .no-scrollbar {
     scrollbar-width: none;
   }

@@ -1,6 +1,7 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
+import { edgeFadeMask, useOverflowEdges } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
 import type { ScoreboardGame } from "../lib/types";
 
@@ -22,6 +23,10 @@ function Side({ abbr, score, dim }: { abbr: string; score: number | null; dim: b
 }
 
 export const WeekGames = memo(function WeekGames({ games, label }: WeekGamesProps) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const edges = useOverflowEdges(scroller);
+  const mask = edgeFadeMask(edges);
+
   if (games.length === 0) return null;
 
   return (
@@ -31,8 +36,14 @@ export const WeekGames = memo(function WeekGames({ games, label }: WeekGamesProp
         <span className="font-mono text-[9px] tracking-[0.12em] text-mist opacity-70">{games.length} GAMES</span>
       </div>
 
-      {/* Scrolls sideways on a phone, wraps into a grid once there's room. */}
-      <div className="edge-fade no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+      {/* Scrolls sideways on a phone, wraps into a grid once there's room. The
+          fade is applied per-edge from the live scroll position, so the wrapped
+          grid — which never overflows — is left alone entirely. */}
+      <div
+        ref={scroller}
+        className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0"
+        style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      >
         <div className="flex gap-2 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]">
           {games.map((game) => {
             const final = game.state === "post";
