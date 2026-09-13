@@ -8,6 +8,7 @@ import type { ScoreboardGame } from "../lib/types";
 interface WeekGamesProps {
   games: ScoreboardGame[];
   label: string;
+  onOpenGame: (id: string) => void;
 }
 
 function Side({ abbr, score, dim }: { abbr: string; score: number | null; dim: boolean }) {
@@ -22,7 +23,7 @@ function Side({ abbr, score, dim }: { abbr: string; score: number | null; dim: b
   );
 }
 
-export const WeekGames = memo(function WeekGames({ games, label }: WeekGamesProps) {
+export const WeekGames = memo(function WeekGames({ games, label, onOpenGame }: WeekGamesProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);
   const mask = edgeFadeMask(edges);
@@ -50,10 +51,14 @@ export const WeekGames = memo(function WeekGames({ games, label }: WeekGamesProp
             const homeWon = final && (game.homeScore ?? 0) > (game.awayScore ?? 0);
             const awayWon = final && (game.awayScore ?? 0) > (game.homeScore ?? 0);
             return (
-              <article
+              <button
                 key={game.id}
+                type="button"
+                onClick={() => onOpenGame(game.id)}
+                aria-label={`${game.away} at ${game.home} — game detail`}
+                style={{ viewTransitionName: `game-${game.id}` }}
                 className={clsx(
-                  "flex w-[148px] shrink-0 flex-col gap-1.5 rounded-xl border bg-ink/55 p-2.5 sm:w-auto",
+                  "flex w-[148px] shrink-0 flex-col gap-1.5 rounded-xl border bg-ink/55 p-2.5 text-left transition-colors hover:border-fog/35 hover:bg-ink-2/70 sm:w-auto",
                   game.state === "in" ? "border-live/40" : "border-line"
                 )}
               >
@@ -70,7 +75,7 @@ export const WeekGames = memo(function WeekGames({ games, label }: WeekGamesProp
                     {game.state === "pre" ? formatKickoff(game.kickoff) : game.statusDetail || (final ? "Final" : "")}
                   </span>
                 </div>
-              </article>
+              </button>
             );
           })}
         </div>

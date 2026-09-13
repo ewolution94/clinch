@@ -16,6 +16,11 @@ export interface BracketMatch {
   /** Null while the game is unplayed and unpicked. */
   decidedBy: "played" | "pick" | null;
   score: { home: number; away: number } | null;
+  /**
+   * The real ESPN event, once one exists. Null all through the regular season —
+   * these matchups are projections from seeding, so there is no game to open.
+   */
+  gameId: string | null;
 }
 
 export interface ConferenceBracket {
@@ -53,6 +58,7 @@ function blank(id: string, round: RoundId, number: number, homeSource: string, a
     winner: null,
     decidedBy: null,
     score: null,
+    gameId: null,
   };
 }
 
@@ -73,26 +79,31 @@ function settle(match: BracketMatch, played: PostseasonGame[], picks: Picks): Br
   const { home, away } = match;
   if (!home || !away) return match;
 
+  // Match on the teams alone, whatever state the game is in: a scheduled or
+  // in-progress playoff game still exists, and is still worth opening.
   const game = played.find(
     (g) =>
       g.round === match.round &&
-      g.state === "post" &&
-      g.homeScore !== null &&
-      g.awayScore !== null &&
       ((g.home === home.abbr && g.away === away.abbr) || (g.home === away.abbr && g.away === home.abbr))
   );
+  const withGame = game ? { ...match, gameId: game.id } : match;
 
-  if (game) {
+  if (game && game.state === "post" && game.homeScore !== null && game.awayScore !== null) {
     const homeIsGameHome = game.home === home.abbr;
-    const homeScore = homeIsGameHome ? game.homeScore! : game.awayScore!;
-    const awayScore = homeIsGameHome ? game.awayScore! : game.homeScore!;
+    const homeScore = homeIsGameHome ? game.homeScore : game.awayScore;
+    const awayScore = homeIsGameHome ? game.awayScore : game.homeScore;
     const winner = homeScore === awayScore ? null : homeScore > awayScore ? home : away;
-    return { ...match, winner, decidedBy: winner ? "played" : null, score: { home: homeScore, away: awayScore } };
+    return {
+      ...withGame,
+      winner,
+      decidedBy: winner ? "played" : null,
+      score: { home: homeScore, away: awayScore },
+    };
   }
 
   const pick = picks[match.id];
   const chosen = pick === home.abbr ? home : pick === away.abbr ? away : null;
-  return chosen ? { ...match, winner: chosen, decidedBy: "pick" } : match;
+  return chosen ? { ...withGame, winner: chosen, decidedBy: "pick" } : withGame;
 }
 
 function buildConference(

@@ -6,6 +6,8 @@ import type { TeamEntry } from "../lib/types";
 interface BracketMatchCardProps {
   match: BracketMatch;
   onPick: (matchId: string, abbr: string) => void;
+  /** Only offered once a real game exists behind the matchup. */
+  onOpenGame?: (id: string) => void;
   /** Mirrors the layout for the NFC half so both sides read inward. */
   mirrored?: boolean;
   size?: "sm" | "lg";
@@ -89,13 +91,16 @@ function Side({ team, source, score, won, lost, mirrored, size, onPick }: SidePr
   );
 }
 
-export function BracketMatchCard({ match, onPick, mirrored = false, size = "sm" }: BracketMatchCardProps) {
+export function BracketMatchCard({ match, onPick, onOpenGame, mirrored = false, size = "sm" }: BracketMatchCardProps) {
   const settled = match.winner !== null;
   const homeWon = settled && match.winner?.abbr === match.home?.abbr;
   const awayWon = settled && match.winner?.abbr === match.away?.abbr;
 
+  const openable = Boolean(match.gameId && onOpenGame);
+
   return (
     <div
+      style={match.gameId ? { viewTransitionName: `game-${match.gameId}` } : undefined}
       className={clsx(
         "@container/match relative overflow-hidden rounded-lg border bg-ink/70 backdrop-blur-sm transition-colors",
         match.decidedBy === "pick"
@@ -105,6 +110,18 @@ export function BracketMatchCard({ match, onPick, mirrored = false, size = "sm" 
             : "border-line/70 hover:border-line"
       )}
     >
+      {/* Only a real fixture gets this. A projected matchup has no game to open. */}
+      {openable && (
+        <button
+          type="button"
+          onClick={() => onOpenGame?.(match.gameId!)}
+          aria-label="Game detail"
+          title="Game detail"
+          className="absolute right-1 bottom-1 z-10 flex h-5 w-5 items-center justify-center rounded-md border border-line bg-abyss/80 font-mono text-[9px] text-mist transition-colors hover:border-fog/40 hover:text-paper"
+        >
+          ↗
+        </button>
+      )}
       {match.decidedBy === "pick" && (
         <span
           className="absolute top-0 right-0 z-10 rounded-bl-md bg-brand/18 px-1.5 py-0.5 font-mono text-[7.5px] tracking-[0.14em] text-brand"

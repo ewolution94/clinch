@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { FieldBackdrop } from "./components/FieldBackdrop";
 import { Header } from "./components/Header";
 import { ConferenceStandings } from "./components/ConferenceStandings";
@@ -8,6 +8,9 @@ import { WeekGames } from "./components/WeekGames";
 import { SeasonHero } from "./components/SeasonHero";
 import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
+
+// Kept out of the main bundle: most visits never open a game.
+const GameModal = lazy(() => import("./components/GameModal"));
 import { useSnapshot } from "./hooks/useSnapshot";
 import { useRoute } from "./hooks/useRoute";
 import { DESKTOP_QUERY, useMediaQuery } from "./hooks/useMediaQuery";
@@ -16,7 +19,7 @@ import type { ConferenceId } from "./lib/types";
 
 export default function App() {
   const { snapshot, connection } = useSnapshot();
-  const [route, navigate] = useRoute();
+  const { route, navigate, game, openGame, closeGame } = useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
   const wide = useMediaQuery(DESKTOP_QUERY);
 
@@ -29,6 +32,15 @@ export default function App() {
     const view = route === "playoffs" ? "Playoff picture" : route === "bracket" ? "Bracket" : "Standings";
     document.title = snapshot ? `${view} · ${snapshot.week.label} — Clinch` : "Clinch";
   }, [snapshot, route]);
+
+  // A shared-element morph from the clicked card into the dialog, where the
+  // browser supports it; a plain open where it doesn't.
+  const onOpenGame = useCallback(
+    (id: string) => {
+      document.startViewTransition ? document.startViewTransition(() => openGame(id)) : openGame(id);
+    },
+    [openGame]
+  );
 
   return (
     <div className="min-h-screen">
@@ -58,7 +70,7 @@ export default function App() {
             {route === "standings" ? (
               <>
                 <SeasonHero snapshot={snapshot} />
-                <WeekGames games={snapshot.games} label={snapshot.week.label} />
+                <WeekGames games={snapshot.games} label={snapshot.week.label} onOpenGame={onOpenGame} />
                 <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
                   {conferences.map((c) => (
                     <ConferenceStandings key={c.id} conference={c} />
@@ -67,7 +79,7 @@ export default function App() {
                 <Legend />
               </>
             ) : route === "bracket" ? (
-              <BracketTree snapshot={snapshot} />
+              <BracketTree snapshot={snapshot} onOpenGame={onOpenGame} />
             ) : (
               <>
                 {snapshot.season.type === 2 && snapshot.week.number <= 4 && (
@@ -95,6 +107,12 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {game && (
+        <Suspense fallback={null}>
+          <GameModal gameId={game} onClose={closeGame} />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -126,3 +126,43 @@ export interface Snapshot {
 }
 
 export type ConnectionState = "connecting" | "live" | "offline";
+
+export interface GameTeamDetail {
+  abbr: string;
+  location: string;
+  name: string;
+  accent: string;
+  homeAway: "home" | "away";
+  score: number | null;
+  record: string | null;
+  linescores: number[];
+  stats: { label: string; value: string }[];
+  leaders: { category: string; athlete: string; line: string }[];
+}
+
+export interface ScoringPlayDetail {
+  id: string;
+  period: number;
+  clock: string;
+  teamAbbr: string;
+  type: string;
+  text: string;
+  away: number;
+  home: number;
+}
+
+export interface GameDetail {
+  id: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  period: number | null;
+  clock: string | null;
+  kickoff: string;
+  venue: { name: string; city: string; state: string } | null;
+  attendance: number | null;
+  odds: string | null;
+  regulationPeriods: number;
+  /** Always [away, home]. */
+  teams: GameTeamDetail[];
+  scoring: ScoringPlayDetail[];
+}
