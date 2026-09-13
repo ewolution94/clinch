@@ -33,6 +33,16 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
   viewBox — see the comment in `BracketConnectors.tsx` before changing any of it.
 
+## Planned next
+
+`docs/PLAN-game-detail.md` — make every game card on the standings page open a
+modal with logos, big scoreboard type, a quarter-by-quarter linescore and team
+stats. Written 2026-09-14 with the ESPN `summary` endpoint already researched
+(all three game states, real field paths, and the traps: overtime adds linescore
+entries, unplayed quarters read as `'0'` rather than absent, scheduled games have
+no boxscore at all, and the raw payload is ~590 kB so it must be trimmed
+server-side). Not started.
+
 ## Decisions already made — don't re-litigate
 
 - **The bracket's connectors are arithmetic, not measurement.** Round columns
@@ -56,7 +66,6 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   draws the lowest remaining seed, so two of three results settle nothing. The
   bye team does take its divisional slot immediately — that's a rule, not a
   prediction.
-
 - **ESPN's `playoffSeed` is authoritative.** It has the NFL's full tiebreaker
   chain applied. Reimplementing head-to-head/common-games/strength-of-victory
   would be a lot of code that is subtly wrong all season.
@@ -94,7 +103,8 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 
 ## Process notes
 
-- **Not pushed to GitHub yet.** Local repo initialised, one commit. Plan mirrors
+- **Not pushed to GitHub yet.** Local repo initialised, five commits on `main`.
+  Plan mirrors
   Pulse: create `ewolution94/clinch`, add the remote, push `main`, then push a
   `release` branch to trigger the first GHCR build. Before that first release
   push the repo needs **Settings → Actions → General → Workflow permissions →
@@ -111,5 +121,7 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 - `CLINCH_SEASON=2025` is the fastest way to see the UI with a full season of
   data in it — worth doing before judging any change to the playoff view, since
   week 1 shows almost everything tied.
-- No Clinch processes left running — the dev server and the production
-  verification process were both stopped by exact PID.
+- **A Clinch dev server is still running** on `:5176`/`:4600`, started this
+  session so Eric could keep looking at it — stop it with `npm run dev`'s own
+  process or by exact PID, not a broad `pkill -f vite` (that once killed his
+  unrelated projects). Every throwaway verification server was stopped.
