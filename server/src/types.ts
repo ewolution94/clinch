@@ -137,3 +137,51 @@ export interface Snapshot {
    */
   postseason: PostseasonGame[];
 }
+
+/* ------------------------------------------------------------ game detail */
+
+export interface GameTeamDetail {
+  abbr: string;
+  location: string;
+  name: string;
+  accent: string;
+  homeAway: "home" | "away";
+  score: number | null;
+  /** Overall record, from the `total` entry rather than a positional guess. */
+  record: string | null;
+  /** One entry per period played; entries past `period` are not yet real. */
+  linescores: number[];
+  stats: { label: string; value: string }[];
+  leaders: { category: string; athlete: string; line: string }[];
+}
+
+export interface ScoringPlayDetail {
+  id: string;
+  period: number;
+  clock: string;
+  teamAbbr: string;
+  /** "Passing Touchdown", "Field Goal Good", "Interception Return Touchdown"… */
+  type: string;
+  /** Already names the players, so nothing here needs parsing. */
+  text: string;
+  away: number;
+  home: number;
+}
+
+export interface GameDetail {
+  id: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  /** Live only. Quarters past this one haven't been played. */
+  period: number | null;
+  clock: string | null;
+  kickoff: string;
+  venue: { name: string; city: string; state: string } | null;
+  attendance: number | null;
+  odds: string | null;
+  /** Anything past this period is overtime. */
+  regulationPeriods: number;
+  /** Always [away, home] — the order a football game is written in. */
+  teams: GameTeamDetail[];
+  scoring: ScoringPlayDetail[];
+}

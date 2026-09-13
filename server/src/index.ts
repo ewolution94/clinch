@@ -4,12 +4,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { SnapshotStore } from "./snapshotStore.js";
+import { GameDetailStore } from "./gameDetailStore.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const clientDist = join(here, "..", "..", "client", "dist");
 
 const store = new SnapshotStore();
 store.start();
+
+const games = new GameDetailStore();
 
 const app = express();
 app.disable("x-powered-by");
@@ -31,6 +34,23 @@ app.get("/api/snapshot", (_req, res) => {
     return;
   }
   res.json(snapshot);
+});
+
+app.get("/api/game/:id", async (req, res) => {
+  const { id } = req.params;
+  // The id lands in an upstream URL, so it is checked rather than trusted.
+  if (!/^\d{6,12}$/.test(id)) {
+    res.status(400).json({ error: "bad game id" });
+    return;
+  }
+
+  try {
+    res.setHeader("cache-control", "no-store");
+    res.json(await games.get(id));
+  } catch (error) {
+    console.error("[clinch] game detail failed:", error instanceof Error ? error.message : error);
+    res.status(502).json({ error: "upstream unavailable" });
+  }
 });
 
 app.get("/api/stream", (req, res) => {
