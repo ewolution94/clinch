@@ -57,6 +57,7 @@ export const WeekGames = memo(function WeekGames({ games, label, onOpenGame, ope
                 key={game.id}
                 type="button"
                 onClick={() => onOpenGame(game.id)}
+                data-game-id={game.id}
                 aria-label={`${game.away} at ${game.home} — game detail`}
                 style={game.id === openGameId ? undefined : { viewTransitionName: `game-${game.id}` }}
                 className={clsx(

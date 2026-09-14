@@ -29,9 +29,9 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   react-router. Dark only. Mobile shows one conference with a switch; from
   1280px both render side by side.
 - **Game detail** (`server/src/gameDetail*.ts`, `client/src/components/GameModal.tsx`):
-  `/api/game/:id` trims ESPN's ~590 kB summary to ~3 kB. The modal is lazy-loaded,
-  built on `<dialog>`/`showModal`, and owns a `?game=` history entry so back
-  closes it. Opened from the standings cards and from played bracket games.
+  `/api/game/:id` trims ESPN's ~590 kB summary to ~3 kB. The modal is lazy-loaded
+  and owns a `?game=` history entry so back closes it. Opened from the standings
+  cards and from played bracket games.
 - **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): filled only
   by real postseason results or the reader's own picks, with a correct NFL
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
@@ -85,6 +85,16 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `.absolute`.** `TeamLogo` sets `relative` on itself, so a positioning class
   passed in from outside silently loses and the watermark stays in flow. Don't
   merge the two components back together.
+- **The modal must NOT be a top-layer `<dialog>`.** It shipped as
+  `<dialog>`+`showModal()` for the free focus trap, and the morph looked broken:
+  Chromium does not capture top-layer elements in a view transition, so the
+  panel's `view-transition-name` never formed a group and the only thing
+  animating was the root cross-fade — leaving a snapshot of the page painted
+  *over* the opening modal. It is now a plain fixed overlay, with everything
+  `showModal()` provided reproduced explicitly: `inert` on the app shell, an
+  Escape handler, scroll lock, and focus returned to the card **by
+  `data-game-id`** (going inert blurs the card before the modal's effect runs,
+  so `document.activeElement` is already the body by then).
 - **The view-transition morph needs `flushSync`, and a unique name.**
   `startViewTransition` snapshots the DOM the moment its callback returns, and
   React would still be holding the state update — without `flushSync` the
@@ -119,6 +129,12 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   on new repos.
 - **CI** is `.github/workflows/docker-publish.yml`, copied from Pulse's working
   pattern: push to `release` → multi-arch (amd64 + arm64, for the NAS) → GHCR.
+- **View transitions cannot be verified in the Claude Code browser pane.** It
+  reports `document.visibilityState === "hidden"` even when fronted, and
+  `startViewTransition` always skips in a hidden document ("Transition was
+  aborted because of invalid state"). Name handover, focus, inert and layout are
+  all testable there; whether the morph actually *runs* is not. Check that in a
+  real browser.
 - **Verified this session**: derivation checked against the *finished* 2025
   season (every clinch/elimination label came out exactly right, including the
   1 seed and the 8-9 division winner) and against a synthetic week-13 table for

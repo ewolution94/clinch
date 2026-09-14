@@ -128,6 +128,7 @@ export function BracketMatchCard({
         <button
           type="button"
           onClick={() => onOpenGame?.(match.gameId!)}
+          data-game-id={match.gameId}
           aria-label="Game detail"
           title="Game detail"
           className="absolute right-1 bottom-1 z-10 flex h-5 w-5 items-center justify-center rounded-md border border-line bg-abyss/80 font-mono text-[9px] text-mist transition-colors hover:border-fog/40 hover:text-paper"

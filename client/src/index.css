@@ -133,24 +133,21 @@
   }
 
   /* The dialog is unstyled by default; these are its own layout + entrance. */
-  .game-dialog {
-    max-width: none;
-    max-height: none;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: inherit;
+  /* A normal fixed overlay rather than a top-layer dialog — see the comment in
+     GameModal.tsx: the top layer is invisible to view transitions. */
+  .game-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
     overflow: hidden;
-  }
-
-  .game-dialog::backdrop {
     background: color-mix(in srgb, var(--color-abyss) 72%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     animation: backdrop-in 0.2s ease both;
+  }
+
+  .game-dialog__panel:focus {
+    outline: none;
   }
 
   .game-dialog__panel {
@@ -170,7 +167,7 @@
 
   /* Phone: a sheet that owns the screen. Desktop: a centred dialog. */
   @media (width < 40rem) {
-    .game-dialog {
+    .game-overlay {
       display: flex;
       align-items: flex-end;
     }
@@ -184,7 +181,7 @@
   }
 
   @media (width >= 40rem) {
-    .game-dialog {
+    .game-overlay {
       display: grid;
       place-items: center;
       padding: 3vh 1rem;

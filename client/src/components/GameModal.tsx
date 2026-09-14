@@ -321,32 +321,61 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 export default function GameModal({ gameId, onClose }: GameModalProps) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const overlay = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const { detail, loading, error } = useGameDetail(gameId);
 
-  // showModal() is what gives focus trapping, Esc and an inert background —
-  // all of which are easy to get wrong by hand.
+  /**
+   * Deliberately *not* `<dialog>`/`showModal()`.
+   *
+   * That puts the element in the top layer, which view transitions do not
+   * capture — so the panel's `view-transition-name` never formed a group and
+   * the only thing that animated was the root cross-fade, leaving a snapshot of
+   * the page painted over the opening modal. Everything showModal() provided is
+   * reproduced here instead: Escape below, focus move and restore below, and
+   * `inert` on the app shell (see App.tsx) to hold focus and the accessibility
+   * tree outside.
+   */
   useEffect(() => {
-    const element = dialog.current;
-    if (element && !element.open) element.showModal();
-  }, []);
+    panel.current?.focus({ preventScroll: true });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = overflow;
+      // Return to the card by identity rather than to whatever was focused when
+      // this mounted: marking the shell inert blurs the card first, so by then
+      // `document.activeElement` is already the body.
+      document.querySelector<HTMLElement>(`[data-game-id="${gameId}"]`)?.focus({ preventScroll: true });
+    };
+  }, [onClose, gameId]);
 
   return (
-    <dialog
-      ref={dialog}
-      onClose={onClose}
-      onCancel={onClose}
-      onClick={(event) => {
-        // A click on the dialog itself is the backdrop; the panel stops its own.
-        if (event.target === dialog.current) onClose();
-      }}
+    <div
+      ref={overlay}
+      className="game-overlay"
+      role="dialog"
+      aria-modal="true"
       aria-label="Game detail"
-      className="game-dialog"
+      onMouseDown={(event) => {
+        if (event.target === overlay.current) onClose();
+      }}
     >
       <div
+        ref={panel}
+        tabIndex={-1}
         className="game-dialog__panel"
         style={{ viewTransitionName: `game-${gameId}` }}
-        onClick={(event) => event.stopPropagation()}
       >
         <button
           type="button"
@@ -370,6 +399,6 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
           </div>
         )}
       </div>
-    </dialog>
+    </div>
   );
 }
