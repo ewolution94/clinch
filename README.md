@@ -32,6 +32,9 @@ teams are in the field, which are chasing it, and which are already out.
   bracket, for a colour-split scoreboard, the quarter-by-quarter linescore and a
   scoring timeline that names who threw and caught every touchdown. Where the
   browser supports it, the card morphs into the dialog.
+- **Any week, forwards or back** — next week's fixtures, last month's results,
+  or the Wild Card round, grouped by day in your own timezone with bye teams and
+  division games called out. Arrows, ← / →, or a swipe.
 - **Live during games** — scores and states stream over SSE; the page never
   needs a refresh.
 - **Built for a phone first** — the tables drop columns as the space narrows
@@ -47,6 +50,18 @@ teams are in the field, which are chasing it, and which are already out.
 | `/` | **Standings.** All eight divisions under a banner showing where the season is and who leads each conference. Tap a team for its splits, last five results and next kickoff. |
 | `/playoffs` | **Playoff picture.** Seeds 1–7, the cut line, everyone still chasing it ranked by games back, and the eliminated. |
 | `/bracket` | **Bracket.** The tournament tree, seeded on today's standings and playable. |
+| `/week/:slug` | **Schedule.** Any week of the season — `/week/5`, `/week/wild-card` — grouped by day in your own timezone, with byes, division games flagged, and every game opening the same detail modal. |
+
+### What the week browser does and doesn't do
+
+It changes **which games you are looking at**. The standings, seeds and bracket
+always describe *now*, and any week other than the current one says so — "next
+week", "3 weeks back", with a way straight back.
+
+Standings *as of* a past week are deliberately absent. ESPN only ever exposes
+the **current** `playoffSeed`; records could be recomputed from results, but
+seeds could not, and inventing historical ones would break the rule the rest of
+the app rests on. A week is a schedule, not a time machine for the table.
 
 ### How the bracket fills itself in
 

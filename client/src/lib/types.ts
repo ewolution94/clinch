@@ -114,6 +114,23 @@ export interface PostseasonGame {
   awayScore: number | null;
 }
 
+export interface CalendarWeek {
+  seasonType: number;
+  week: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface WeekView {
+  seasonType: number;
+  week: number;
+  label: string;
+  games: ScoreboardGame[];
+  byeTeams: string[];
+  settled: boolean;
+}
+
 export interface Snapshot {
   generatedAt: number;
   season: { year: number; type: number; label: string };
@@ -123,6 +140,7 @@ export interface Snapshot {
   conferences: ConferenceView[];
   games: ScoreboardGame[];
   postseason: PostseasonGame[];
+  calendar: CalendarWeek[];
 }
 
 export type ConnectionState = "connecting" | "live" | "offline";

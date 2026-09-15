@@ -32,25 +32,31 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `/api/game/:id` trims ESPN's ~590 kB summary to ~3 kB. The modal is lazy-loaded
   and owns a `?game=` history entry so back closes it. Opened from the standings
   cards and from played bracket games.
+- **Week browser** (`/week/:slug`, `components/WeekView.tsx`): any week of the
+  season from ESPN's own calendar, which ships inside the snapshot. Slugs are
+  `5` for the regular season and `wild-card`-style for the postseason.
+  `/api/week/:type/:week` shares the poll loop's cache. Neighbours are
+  prefetched on arrival and on arrow hover.
 - **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): filled only
   by real postseason results or the reader's own picks, with a correct NFL
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
   viewBox — see the comment in `BracketConnectors.tsx` before changing any of it.
 
-## Planned next
-
-`docs/PLAN-week-browser.md` — browse any week of the season (schedule, results,
-byes, odds) as its own view. Written 2026-09-15 with the ESPN side researched:
-the scoreboard's `leagues[0].calendar` already describes every week and names
-the postseason rounds, future weeks carry byes/odds/broadcast but **no team
-records** (join those from the snapshot instead), and a fourth tab does not fit
-at 390px — measured, and the plan proposes moving the AFC/NFC switch out of the
-global bar to make room. Deliberately out of scope: standings *as of* a past
-week, since ESPN only exposes current seeds and inventing historical ones would
-break the rule the rest of the app rests on. Not started.
-
 ## Decisions already made — don't re-litigate
 
+- **A week is a schedule, not a time machine.** The week browser never moves the
+  standings, seeds or bracket, and says so on every week but the current one.
+  Standings *as of* week N would mean inventing historical seeds, since ESPN
+  only exposes current ones — the same rule that governs everything else here.
+- **Relative week labels count calendar positions, not week numbers.** The
+  postseason restarts at week 1, so arithmetic on the numbers reported "100
+  weeks ahead" for the Wild Card round. `relativeLabel` takes the calendar and
+  uses indices.
+- **Future weeks carry no team records.** Join them from the snapshot by
+  abbreviation — every team's record, accent and name is already there.
+- **The conference switch is not global navigation.** It lives above the
+  conference block it controls. It used to sit in the sticky bar, where it cost
+  116px of a 390px row and left no room for a fourth tab.
 - **The bracket's connectors are arithmetic, not measurement.** Round columns
   spread their matches with `flex-1`, so match *i* is always at (i + 0.5) / n of
   the column height — identical in every column at every size. That's why the

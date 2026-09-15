@@ -19,8 +19,13 @@ const SLACK = 2;
  * doesn't overflow, so a layout that wraps instead of scrolling needs no
  * breakpoint handling — it simply never asks for a fade.
  */
-export function useOverflowEdges(ref: RefObject<HTMLElement | null>): OverflowEdges {
-  const [edges, setEdges] = useState<OverflowEdges>({ start: false, end: false });
+export function useOverflowEdges(
+  ref: RefObject<HTMLElement | null>,
+): OverflowEdges {
+  const [edges, setEdges] = useState<OverflowEdges>({
+    start: false,
+    end: false,
+  });
 
   useEffect(() => {
     const element = ref.current;
@@ -31,7 +36,9 @@ export function useOverflowEdges(ref: RefObject<HTMLElement | null>): OverflowEd
       setEdges((previous) => {
         const start = element.scrollLeft > SLACK;
         const end = hidden > SLACK && element.scrollLeft < hidden - SLACK;
-        return previous.start === start && previous.end === end ? previous : { start, end };
+        return previous.start === start && previous.end === end
+          ? previous
+          : { start, end };
       });
     };
 
@@ -54,7 +61,10 @@ export function useOverflowEdges(ref: RefObject<HTMLElement | null>): OverflowEd
 }
 
 /** A mask that fades only the edges with something behind them. */
-export function edgeFadeMask(edges: OverflowEdges, width = 28): string | undefined {
+export function edgeFadeMask(
+  edges: OverflowEdges,
+  width = 28,
+): string | undefined {
   if (!edges.start && !edges.end) return undefined;
   const stops = [
     edges.start ? "transparent 0" : "#000 0",

@@ -7,7 +7,10 @@ import type { ConnectionState, Snapshot } from "../lib/types";
  * re-polls ESPN, so the page never needs a manual refresh. A one-off fetch
  * runs alongside it purely so the first paint doesn't wait on the stream.
  */
-export function useSnapshot(): { snapshot: Snapshot | null; connection: ConnectionState } {
+export function useSnapshot(): {
+  snapshot: Snapshot | null;
+  connection: ConnectionState;
+} {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
   const gotStream = useRef(false);

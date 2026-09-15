@@ -41,7 +41,12 @@ export function useGameDetail(id: string | null): GameDetailState {
         setLoaded({ id, detail, error: false });
         if (detail.state === "in") timer = setTimeout(load, LIVE_POLL_MS);
       } catch {
-        if (!cancelled) setLoaded((prev) => ({ id, detail: prev?.id === id ? prev.detail : null, error: true }));
+        if (!cancelled)
+          setLoaded((prev) => ({
+            id,
+            detail: prev?.id === id ? prev.detail : null,
+            error: true,
+          }));
       }
     };
 

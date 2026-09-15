@@ -17,6 +17,7 @@ import { SeasonHero } from "./components/SeasonHero";
 import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
 import { ConferenceSwitch } from "./components/ConferenceSwitch";
+import { WeekView } from "./components/WeekView";
 
 // Kept out of the main bundle: most visits never open a game.
 const GameModal = lazy(() => import("./components/GameModal"));
@@ -28,7 +29,8 @@ import type { ConferenceId } from "./lib/types";
 
 export default function App() {
   const { snapshot, connection } = useSnapshot();
-  const { route, navigate, game, openGame, closeGame } = useRoute();
+  const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
+    useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
   /** The one game whose card is mid-morph, if any. */
   const [morphing, setMorphing] = useState<string | null>(null);
@@ -47,7 +49,9 @@ export default function App() {
         ? "Playoff picture"
         : route === "bracket"
           ? "Bracket"
-          : "Standings";
+          : route === "week"
+            ? "Schedule"
+            : "Standings";
     document.title = snapshot
       ? `${view} · ${snapshot.week.label} — Clinch`
       : "Clinch";
@@ -160,6 +164,14 @@ export default function App() {
                   </div>
                   <Legend />
                 </>
+              ) : route === "week" ? (
+                <WeekView
+                  snapshot={snapshot}
+                  slug={weekSlug}
+                  onOpenWeek={openWeek}
+                  onOpenGame={onOpenGame}
+                  morphCardId={morphCardId}
+                />
               ) : route === "bracket" ? (
                 <BracketTree
                   snapshot={snapshot}
