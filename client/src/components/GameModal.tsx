@@ -181,7 +181,6 @@ function Header({ detail }: { detail: GameDetail }) {
           align === "right" && "items-end text-right",
         )}
       >
-        <TeamLogo abbr={team.abbr} size={52} accent={team.accent} eager />
         <span className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
           {team.location}
         </span>
@@ -209,20 +208,23 @@ function Header({ detail }: { detail: GameDetail }) {
 
   return (
     <header
-      className="relative overflow-hidden px-4 pt-5 pb-4 sm:px-6"
+      /* Extra room on the right so the home team's city clears the close button. */
+      className="relative overflow-hidden px-4 pt-5 pr-14 pb-4 sm:px-6 sm:pr-16"
       style={{
         background: `linear-gradient(100deg, color-mix(in srgb, ${away.accent} 26%, var(--color-ink)) 0%, var(--color-ink) 42%, var(--color-ink) 58%, color-mix(in srgb, ${home.accent} 26%, var(--color-ink)) 100%)`,
       }}
     >
+      {/* With the small icon gone these carry the team identity on their own,
+          so they are bigger and far less faint than a background wash. */}
       <TeamWatermark
         abbr={away.abbr}
-        size={150}
-        className="-top-8 -left-10 opacity-[0.09]"
+        size={190}
+        className="-top-10 -left-12 opacity-[0.3]"
       />
       <TeamWatermark
         abbr={home.abbr}
-        size={150}
-        className="-top-8 -right-10 opacity-[0.09]"
+        size={190}
+        className="-top-10 -right-12 opacity-[0.3]"
       />
 
       <div className="relative flex items-start gap-3">
@@ -552,12 +554,30 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
     };
     document.addEventListener("keydown", onKeyDown);
 
-    const { overflow } = document.body.style;
+    /**
+     * iOS ignores `overflow: hidden` on the body often enough that the page
+     * behind a sheet still scrolls. Pinning the body is the reliable lock; the
+     * offset preserves where the reader was, and is put back on close.
+     */
+    const scrollY = window.scrollY;
+    const previous = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    };
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
+      document.body.style.overflow = previous.overflow;
+      document.body.style.position = previous.position;
+      document.body.style.top = previous.top;
+      document.body.style.width = previous.width;
+      window.scrollTo(0, scrollY);
       // Return to the card by identity rather than to whatever was focused when
       // this mounted: marking the shell inert blurs the card first, so by then
       // `document.activeElement` is already the body.
@@ -600,20 +620,22 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
           ✕
         </button>
 
-        {detail ? (
-          <>
-            <Header detail={detail} />
-            <Body detail={detail} />
-          </>
-        ) : error && !loading ? (
-          <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
-            <p className="font-mono text-[14px] tracking-[0.14em] text-mist">
-              COULDN&apos;T LOAD THIS GAME
-            </p>
-          </div>
-        ) : (
-          <GameSkeleton />
-        )}
+        <div className="game-dialog__scroll">
+          {detail ? (
+            <>
+              <Header detail={detail} />
+              <Body detail={detail} />
+            </>
+          ) : error && !loading ? (
+            <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
+              <p className="font-mono text-[14px] tracking-[0.14em] text-mist">
+                COULDN&apos;T LOAD THIS GAME
+              </p>
+            </div>
+          ) : (
+            <GameSkeleton />
+          )}
+        </div>
       </div>
     </div>
   );

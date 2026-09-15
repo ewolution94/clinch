@@ -173,6 +173,7 @@
   .game-overlay__scrim {
     position: absolute;
     inset: 0;
+    touch-action: none;
     background: color-mix(in srgb, var(--color-abyss) 72%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -183,13 +184,25 @@
     outline: none;
   }
 
+  /* The panel itself never scrolls — so the close button, which is absolutely
+     positioned on it, cannot be scrolled out of reach when a section expands. */
   .game-dialog__panel {
     position: relative;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background: var(--color-ink);
     border: 1px solid var(--color-line);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
     animation: panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .game-dialog__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Don't hand the scroll on to the page when this hits its end. */
+    overscroll-behavior: contain;
   }
 
   /* Where a shared-element morph runs, it *is* the entrance — playing the
@@ -207,6 +220,7 @@
     .game-dialog__panel {
       width: 100%;
       max-height: 92vh;
+      max-height: 92dvh;
       border-radius: 20px 20px 0 0;
       border-bottom: none;
       animation-name: sheet-in;
@@ -222,6 +236,7 @@
     .game-dialog__panel {
       width: min(720px, 100%);
       max-height: 94vh;
+      max-height: 94dvh;
       border-radius: 20px;
     }
   }

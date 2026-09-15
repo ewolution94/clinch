@@ -413,7 +413,7 @@ function WeekArrow({
             ? "No earlier week"
             : "No later week"
       }
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-ink/60 font-mono text-[16.5px] text-fog transition-colors hover:border-fog/40 hover:text-paper disabled:cursor-default disabled:opacity-25 disabled:hover:border-line"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-fog/25 bg-ink-2 font-mono text-[22px] leading-none font-bold text-paper shadow-lg shadow-abyss/50 transition-colors hover:border-brand/60 hover:bg-brand/15 hover:text-brand disabled:cursor-default disabled:border-line disabled:bg-ink/40 disabled:text-mist disabled:opacity-40 disabled:shadow-none"
     >
       {direction === "prev" ? "‹" : "›"}
     </button>
