@@ -106,6 +106,59 @@ export interface ScoreboardGame {
   away: string;
   homeScore: number | null;
   awayScore: number | null;
+  /** Absent for played games and whenever the lookup is switched off. */
+  broadcast?: GameBroadcast;
+}
+
+/* ------------------------------------------------------- german broadcasts */
+
+export type Outlet = "RTL" | "RTL+" | "Nitro" | "Sky";
+
+/**
+ * Deliberately four states, not a boolean. "Nobody has announced this yet" and
+ * "this is not being shown" look identical to a yes/no field and are completely
+ * different to a reader — RTL names its Sunday picks about a week out, so for
+ * half the time next week is worth looking at, the truthful answer is that the
+ * pick is still open.
+ */
+export type BroadcastStatus =
+  /** Named on an outlet you have. */
+  | "confirmed"
+  /** In a slot your outlet will use, whose matchup isn't announced yet. */
+  | "candidate"
+  /** Listings for this day exist and this game isn't in them. */
+  | "unavailable"
+  /** Beyond the listings horizon, or the lookup failed. */
+  | "unknown";
+
+export interface BroadcastSlot {
+  outlet: Outlet;
+  /** Programme start, which is 0–20 minutes before kickoff for the pregame. */
+  startsAt: string;
+}
+
+export interface GameBroadcast {
+  status: BroadcastStatus;
+  /** Only ever populated for `confirmed`. */
+  slots: BroadcastSlot[];
+  /** `candidate` only — how many games are competing for the same slot. */
+  contenders: number | null;
+  /** `candidate` only — whose pick is still open. */
+  pendingOutlet: Outlet | null;
+}
+
+export interface WeekBroadcasts {
+  /** False when nobody has published listings covering this week yet. */
+  published: boolean;
+  /** Games named on an outlet you have. */
+  confirmed: number;
+  /** Games still waiting on an unannounced pick. */
+  candidates: number;
+  /** Games in the week that haven't been played. */
+  upcoming: number;
+  /** The outlets this was judged against. */
+  outlets: Outlet[];
+  checkedAt: number;
 }
 
 export type PostseasonRound = "wildcard" | "divisional" | "championship" | "superbowl";
@@ -140,6 +193,8 @@ export interface WeekView {
   byeTeams: string[];
   /** Every game final, so this week will never change again. */
   settled: boolean;
+  /** Absent for a settled week — a played game needs no channel. */
+  broadcasts?: WeekBroadcasts;
 }
 
 export interface Snapshot {

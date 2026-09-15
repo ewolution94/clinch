@@ -35,6 +35,9 @@ teams are in the field, which are chasing it, and which are already out.
 - **Any week, forwards or back** — next week's fixtures, last month's results,
   or the Wild Card round, grouped by day in your own timezone with bye teams and
   division games called out. Arrows, ← / →, or a swipe.
+- **Whether you can actually watch it** — every upcoming game on the schedule
+  says whether it's on **RTL** or **RTL+**, the German outlets this is built
+  for. See [Can I watch this?](#can-i-watch-this).
 - **Live during games** — scores and states stream over SSE; the page never
   needs a refresh.
 - **Built for a phone first** — the tables drop columns as the space narrows
@@ -120,8 +123,16 @@ is disposable — restarting it just re-pulls the league.
 | `CLINCH_LIVE_REFRESH_MS`   | `25000`   | Refresh cadence while a game is in progress.                |
 | `CLINCH_SCHEDULE_TTL_MS`   | `3600000` | How long a future week's schedule is trusted before re-fetching. |
 | `CLINCH_TIMEOUT_MS`        | `12000`   | Per-request timeout against the upstream feed.              |
+| `CLINCH_BROADCAST`         | *(on)*    | Set to `off` to stop looking German broadcasts up entirely.  |
+| `CLINCH_BROADCAST_TTL_MS`  | `21600000`| How long a day of TV listings is trusted.                    |
+| `CLINCH_OUTLETS`           | `RTL,RTL+`| Which outlets count as watchable — also `Nitro`, `Sky`.      |
 
 ## Where the data comes from
+
+Scores, schedule and standings come from ESPN. German broadcast information does
+not — see [Can I watch this?](#can-i-watch-this) — and is the one part of the app
+served by a source that could disappear, which is why it fails to a missing badge
+rather than a missing page.
 
 ESPN's public NFL endpoints — `standings?level=3` for the division tables,
 `scoreboard` for schedule and scores (including the postseason rounds that fill
@@ -151,6 +162,41 @@ Teams that haven't kicked off yet come back with `playoffSeed: 0`, which would
 otherwise sort them above the entire conference. Those are slotted in by win
 differential and the whole conference renumbered — a no-op from the moment every
 team has played once.
+
+## Can I watch this?
+
+Clinch is read from Germany, where the NFL is not on one channel you can assume.
+**RTL** shows a handful of games a week on free TV and **RTL+** adds one more,
+and which games those are changes every week. So every upcoming game on the
+schedule carries the answer.
+
+ESPN can't help here — its `geoBroadcasts` are `region: "us"` without exception —
+so this comes from German TV listings instead, matched back to the game.
+
+| Badge | Means |
+| ----- | ----- |
+| **RTL** / **RTL+** (green) | Named in the listings. This one you can watch. |
+| **RTL ?** (dashed) | The slot is RTL's, but which game goes in it hasn't been announced. |
+| *nothing* | Either not being shown, or nobody has published that far ahead yet — the band at the top of the week says which. |
+
+That third row is the point. RTL names its Sunday picks about a week out, so for
+part of the time next week is worth looking at, **the honest answer is that the
+pick is still open** — and a badge that guessed would be wrong as often as it was
+right. Same rule as [the bracket](#how-the-bracket-fills-itself-in): a game is
+only ever called unwatchable when listings covering its day actually exist.
+Everything else is left unknown rather than filled in.
+
+Matching is on the **pair of teams**, never the separator: German listings write
+the home team first with a dash ("Bills – Lions") and the away team first with
+"at" ("Giants at Rams"), often in the same week. The pair identifies the game and
+home/away comes from ESPN. Kickoff time is only a guard against a repeat of a
+game played weeks earlier — a broadcast starts 0–20 minutes *before* kickoff, for
+the pregame, so the time on the badge is when to turn it on.
+
+Two things worth knowing: a German TV day runs past midnight, so the Sunday-night
+game that kicks off at 02:20 Monday is printed on Sunday's page; and the listings
+only run about a fortnight ahead, which is why a week further out than that says
+so instead of showing an empty set.
 
 ## How the labels are derived
 
@@ -198,6 +244,8 @@ clinch/
 ├── server/src/
 │   ├── config.ts           env vars
 │   ├── espn.ts             upstream client + response normalisation
+│   ├── broadcast.ts        German TV listings: fetch + parse
+│   ├── broadcastStore.ts   listings cache, matched onto the week's games
 │   ├── derive.ts           seeding, clinch/elimination, the bracket
 │   ├── snapshotStore.ts    poll loop, week cache, SSE fan-out
 │   ├── teams.ts            the 32 teams: division, and a dark-legible accent
@@ -208,7 +256,7 @@ clinch/
 │   └── logos/              32 team marks, 160px webp, ~230 kB total
 ├── client/src/
 │   ├── components/         Header, SeasonHero, DivisionCard, TeamRow, SeedRow,
-│   │                       BracketTree, BracketConnectors, SuperBowlCard…
+│   │                       BracketTree, BracketConnectors, Broadcast…
 │   ├── hooks/              useSnapshot (SSE), useRoute, useMediaQuery
 │   └── lib/                types, status ladder, bracket resolver, formatting
 ├── Dockerfile              multi-stage build → single runtime image

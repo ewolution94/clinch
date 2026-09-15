@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import { Shimmer } from "./Shimmer";
+import { BroadcastBadge, BroadcastBand } from "./Broadcast";
 import { useWeek, prefetchWeek } from "../hooks/useWeek";
 import { currentWeek, findBySlug, relativeLabel, weekSlug } from "../lib/weeks";
 import type {
@@ -132,7 +133,7 @@ function GameRow({
         )}
         <span
           className={clsx(
-            "mono-tabular text-[12px] tracking-wide",
+            "mono-tabular shrink-0 text-[12px] tracking-wide",
             live ? "text-live" : "text-mist",
           )}
         >
@@ -140,6 +141,7 @@ function GameRow({
             ? kickoffLabel(game)
             : game.statusDetail || "Final"}
         </span>
+        <BroadcastBadge broadcast={game.broadcast} />
       </div>
     </button>
   );
@@ -305,6 +307,8 @@ export function WeekView({
           Schedule and results only — the standings and bracket always show
           where the season stands today.
         </p>
+
+        <BroadcastBand broadcasts={view?.broadcasts} />
       </header>
 
       {loading && !view ? (

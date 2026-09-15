@@ -1,5 +1,6 @@
 import { fetchScoreboard, fetchStandings } from "./espn.js";
 import { buildConferences } from "./derive.js";
+import { broadcastStore } from "./broadcastStore.js";
 import { config } from "./config.js";
 import type {
   PostseasonGame,
@@ -129,33 +130,39 @@ export class SnapshotStore {
     // Settled weeks are frozen. Everything else has a short life: kickoff times
     // and odds move, and the live week is refreshed by the poll loop anyway.
     const ttl = cached?.settled ? Number.POSITIVE_INFINITY : config.weekTtlMs;
-    if (cached && Date.now() - cached.fetchedAt < ttl) {
-      return {
-        seasonType,
-        week,
-        label,
-        games: cached.games,
-        byeTeams: cached.byeTeams,
-        settled: cached.settled,
-      };
-    }
+    const fresh =
+      cached && Date.now() - cached.fetchedAt < ttl
+        ? cached
+        : await (async () => {
+            const payload = await fetchScoreboard(
+              { season, seasonType, week },
+              config.requestTimeoutMs
+            );
+            const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
+            const entry = {
+              games: payload.games,
+              fetchedAt: Date.now(),
+              settled,
+              byeTeams: payload.byeTeams,
+            };
+            this.weeks.set(key, entry);
+            return entry;
+          })();
 
-    const payload = await fetchScoreboard({ season, seasonType, week }, config.requestTimeoutMs);
-    const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
-    this.weeks.set(key, {
-      games: payload.games,
-      fetchedAt: Date.now(),
-      settled,
-      byeTeams: payload.byeTeams,
-    });
+    // Broadcasts are annotated on the way out rather than stored: they come from
+    // a different source on a different clock, and a settled week never needs
+    // them. The store below is cached and swallows its own failures, so a bad
+    // day of listings costs a badge and nothing else.
+    const { games, broadcasts } = await broadcastStore.annotate(week, fresh.games);
 
     return {
       seasonType,
       week,
       label,
-      games: payload.games,
-      byeTeams: payload.byeTeams,
-      settled,
+      games,
+      byeTeams: fresh.byeTeams,
+      settled: fresh.settled,
+      broadcasts,
     };
   }
 

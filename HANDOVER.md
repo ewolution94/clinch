@@ -17,6 +17,8 @@ his phone. Four views work: standings, schedule (any week), the tiered playoff
 picture, and a playable bracket. The last several sessions were his feedback on
 a live app rather than new features, so expect small, specific, visual asks.
 
+Newest feature: **German broadcast badges** on the week view — see below.
+
 **Open threads, none started:**
 
 - **Records "as of" a past week.** Repeatedly out of scope — ESPN exposes only
@@ -54,6 +56,11 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `5` for the regular season and `wild-card`-style for the postseason.
   `/api/week/:type/:week` shares the poll loop's cache. Neighbours are
   prefetched on arrival and on arrow hover.
+- **Broadcasts** (`server/src/broadcast.ts`, `broadcastStore.ts`,
+  `client/src/components/Broadcast.tsx`): whether Eric can watch a game from
+  Germany on RTL or RTL+. Annotated onto `WeekView` on the way out of
+  `snapshotStore.week()`, never stored in the ESPN week cache. README's
+  "Can I watch this?" is the spec.
 - **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): filled only
   by real postseason results or the reader's own picks, with a correct NFL
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
@@ -95,6 +102,51 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   draws the lowest remaining seed, so two of three results settle nothing. The
   bye team does take its divisional slot immediately — that's a rule, not a
   prediction.
+- **German broadcasts have four states, not a boolean.** `confirmed`,
+  `candidate`, `unavailable`, `unknown`. RTL names its Sunday picks about a week
+  out, so "nobody has announced this yet" and "this is not on" are both common
+  and completely different answers. A game is called `unavailable` **only** when
+  listings covering its day were actually published; a failed or out-of-horizon
+  fetch is `unknown`. Collapsing these to a boolean is the one change that would
+  make the feature dishonest — don't.
+- **Broadcast matching is on the team pair, never the separator.** German
+  listings write home-first with a dash ("Bills – Lions") and away-first with
+  "at" ("Giants at Rams"), both in the same week. `teamsInTitle()` scans for all
+  32 full names and treats the result as a set; home/away comes from ESPN.
+  Parsing the separator will look fine for a week and then silently invert.
+- **A German TV day runs past midnight.** The Sunday-night game kicking off
+  02:20 Monday is printed on *Sunday's* listings page. `listingsDay()` shifts
+  anything before 05:00 Berlin back a day. Reading the calendar date finds
+  nothing and calls the game unwatchable.
+- **`GAME_PREFIX` has a canary, and it must stay.** The `American Football:`
+  title prefix is the one assumption whose failure is *wrong* rather than
+  absent — drop a broadcast because the prefix changed and the game reads as
+  "not on", the only answer worse than "don't know". So a day carrying football
+  programmes of which **none** parse as broadcasts is reported `published:
+  false`. A day with no football at all is genuinely a Tuesday and stays
+  trusted. Verified by simulating the regression against live HTML.
+- **ran.joyn blocks with more than two team names are dropped**, not resolved.
+  The prose occasionally runs two fixtures into one paragraph and guessing which
+  pair was meant puts a badge on the wrong game. A single name still resolves —
+  within a week a team plays once — but only when exactly one game matches.
+- **DST is handled and tested.** `berlinWallClockToUtc` resolves the offset
+  twice; verified either side of the 25 Oct 2026 CEST→CET fallback, plus the
+  spring-forward morning and a CET afternoon kickoff. A one-hour error would not
+  produce wrong badges, it would silently lose them (the kickoff would fall
+  outside the sanity window), so it is worth keeping tested.
+- **TV Spielfilm serves a fallback page past its ~14-day horizon** — today's
+  all-channel grid, HTTP 200, no error. The only tell is that the rows belong to
+  other channels, so `fetchDay()` requires the requested channel to appear
+  before it believes the day. Without that check every far-future week reads as
+  "nothing on RTL".
+- **RTL+ is not in any TV listing** and its own app API is behind a Didomi
+  consent-or-pay wall (consent to ad tracking with 171 partners, or €3.99/mo) —
+  both purposes are marked required, so there is no decline-and-continue path.
+  The one game it adds per week comes from `ran.joyn.de` instead, which only
+  ever describes the *current* week, so it is applied to that week and no other.
+  That page is hand-written and ships typos ("Los Ageles Rams"), which is why
+  one recognised team is enough to resolve a game — within a week a team plays
+  once.
 - **ESPN's `playoffSeed` is authoritative.** It has the NFL's full tiebreaker
   chain applied. Reimplementing head-to-head/common-games/strength-of-victory
   would be a lot of code that is subtly wrong all season.
@@ -198,20 +250,42 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   in Portainer. The Portainer stack must NOT be the repo's `docker-compose.yml`
   — that has `build: .` and would make Portainer build instead of pull. Use an
   `image:`-only stack.
-- **⚠️ `release` is currently 3 commits ahead of `main`.** Eric was left checked
-  out on `release` after deploying and later work landed there. It fast-forwards
-  cleanly; the fix (which is also the redeploy) is:
-  `git checkout main && git merge --ff-only release && git push origin main && git push origin main:release`.
-  Check `git branch --show-current` before committing anything.
+- **The `release`/`main` divergence is resolved locally.** `main` was
+  fast-forwarded onto `release` on 2026-09-15 and is the checked-out branch
+  again; nothing was pushed. `origin/main` is therefore still behind — the next
+  push should be `git push origin main && git push origin main:release`, which
+  is also the redeploy. Check `git branch --show-current` before committing.
 - **No Docker on the dev machine.** The image is only ever built by CI, so a
   Dockerfile change cannot be smoke-tested locally — push to `release` and watch
   the Actions run.
+- **Broadcast sources are scraped HTML, not APIs.** Neither `tvspielfilm.de` nor
+  `ran.joyn.de` promises us anything; both were verified to answer Clinch's own
+  user-agent (no browser UA needed) and `robots.txt` allows the paths used.
+  Volume is ~7 requests per week view behind a 6-hour cache. If either markup
+  changes, badges vanish and nothing else breaks — that is by design, and
+  `CLINCH_BROADCAST=off` turns the whole thing off.
+- **Adding Nitro or Sky is an env change, not code.** `CLINCH_OUTLETS` defaults
+  to `RTL,RTL+`; the parser already sees Nitro (`RTL-N`, which carries the free
+  Sunday 19:00 *Sky NFL-Konferenz* whiparound) and Sky (`SKYSTE`). Eric was
+  asked and chose RTL + RTL+ only.
 - **View transitions cannot be verified in the Claude Code browser pane.** It
   reports `document.visibilityState === "hidden"` even when fronted, and
   `startViewTransition` always skips in a hidden document ("Transition was
   aborted because of invalid state"). Name handover, focus, inert and layout are
   all testable there; whether the morph actually *runs* is not. Check that in a
   real browser.
+- **Broadcast feature verified** against live listings on 2026-09-15: week 2 six
+  of sixteen (five RTL + the RTL+ exclusive Bengals–Texans), week 3 three
+  confirmed night games with the Sunday slots correctly `candidate` ("1 of 9"),
+  week 8 entirely `unknown`, a past week untouched, a forced-timeout run
+  degrading to `unknown` rather than `unavailable`, plus `CLINCH_BROADCAST=off`
+  and `CLINCH_SEASON=2025`. Checked at 375px and 1280px.
+  **Not yet verified against real listings:** the postseason and Super Bowl, the
+  international games (Munich 15 Nov, London, Madrid), Thanksgiving and the
+  Saturday weeks. All sit outside the ~14-day horizon, so they can only be
+  checked as they come into range — the titles are the thing to look at, since
+  a different prefix there would trip the canary and show `unknown` rather than
+  anything wrong.
 - **Verified over these sessions**: derivation against the *finished* 2025
   season (every clinch/elimination label exactly right, including the 1 seed and
   the 8-9 division winner) and a synthetic week-13 table for the mid-season
@@ -226,10 +300,12 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 - `CLINCH_SEASON=2025` is the fastest way to see the UI with a full season of
   data in it — worth doing before judging any change to the playoff view, since
   week 1 shows almost everything tied.
-- **A Clinch dev server is still running** on `:5176`/`:4600`, started so Eric
-  could keep looking at it — stop it by exact PID, never a broad
-  `pkill -f vite` (that once killed his unrelated projects). Every throwaway
-  verification server was stopped.
+- **Stop dev servers by exact PID**, never a broad `pkill -f vite` (that once
+  killed his unrelated projects). Every verification server from this session
+  was stopped.
+- `.claude/launch.json` was added so the Claude Code browser pane can start the
+  dev server itself (`preview_start`, name `clinch`). It is not needed by
+  `npm run dev`.
 - **Give commands with a `cd` in them.** Two separate steps were lost to
   commands run from `~/Documents/development` instead of the repo
   (`npm --prefix clinch` resolving to `clinch/clinch`, and a `git push` outside

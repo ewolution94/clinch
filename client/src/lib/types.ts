@@ -98,6 +98,41 @@ export interface ScoreboardGame {
   away: string;
   homeScore: number | null;
   awayScore: number | null;
+  /** Absent for played games and whenever the lookup is switched off. */
+  broadcast?: GameBroadcast;
+}
+
+/* ------------------------------------------------------- german broadcasts */
+
+export type Outlet = "RTL" | "RTL+" | "Nitro" | "Sky";
+
+/**
+ * Four states rather than a boolean, because "nobody has announced this yet" and
+ * "this is not being shown" are completely different answers to the only
+ * question the week view is being asked.
+ */
+export type BroadcastStatus = "confirmed" | "candidate" | "unavailable" | "unknown";
+
+export interface BroadcastSlot {
+  outlet: Outlet;
+  /** Programme start — 0–20 minutes before kickoff, for the pregame. */
+  startsAt: string;
+}
+
+export interface GameBroadcast {
+  status: BroadcastStatus;
+  slots: BroadcastSlot[];
+  contenders: number | null;
+  pendingOutlet: Outlet | null;
+}
+
+export interface WeekBroadcasts {
+  published: boolean;
+  confirmed: number;
+  candidates: number;
+  upcoming: number;
+  outlets: Outlet[];
+  checkedAt: number;
 }
 
 export type RoundId = "wildcard" | "divisional" | "championship" | "superbowl";
@@ -129,6 +164,8 @@ export interface WeekView {
   games: ScoreboardGame[];
   byeTeams: string[];
   settled: boolean;
+  /** Absent for a settled week — a played game needs no channel. */
+  broadcasts?: WeekBroadcasts;
 }
 
 export interface Snapshot {
