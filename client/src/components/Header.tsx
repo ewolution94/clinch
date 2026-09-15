@@ -1,17 +1,13 @@
 import { clsx } from "clsx";
 import { ClinchMark } from "./ClinchMark";
 import type { Route } from "../hooks/useRoute";
-import type { ConferenceId, ConnectionState, Snapshot } from "../lib/types";
+import type { ConnectionState, Snapshot } from "../lib/types";
 
 interface HeaderProps {
   snapshot: Snapshot | null;
   connection: ConnectionState;
   route: Route;
   onRoute: (route: Route) => void;
-  conference: ConferenceId;
-  onConference: (conference: ConferenceId) => void;
-  /** Desktop shows both conferences at once, so the switch is hidden there. */
-  showConferenceSwitch: boolean;
 }
 
 const TABS: { id: Route; label: string; short: string }[] = [
@@ -20,15 +16,7 @@ const TABS: { id: Route; label: string; short: string }[] = [
   { id: "bracket", label: "Bracket", short: "Bracket" },
 ];
 
-export function Header({
-  snapshot,
-  connection,
-  route,
-  onRoute,
-  conference,
-  onConference,
-  showConferenceSwitch,
-}: HeaderProps) {
+export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
   const live = snapshot?.live ?? false;
   const weekLabel = snapshot ? snapshot.week.label : "Loading";
   const progress =
@@ -93,7 +81,7 @@ export function Header({
       {/* Only the controls stick — the wordmark scrolls away and gives the
           standings the full height of a phone screen. */}
       <div className="sticky top-0 z-30 border-b border-line/70 bg-abyss/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-10">
+        <div className="mx-auto flex max-w-[1800px] items-center px-4 py-2.5 sm:px-6 lg:px-10">
           <nav
             className="flex rounded-full border border-line bg-ink/70 p-0.5"
             aria-label="Views"
@@ -116,30 +104,6 @@ export function Header({
               </button>
             ))}
           </nav>
-
-          {showConferenceSwitch && (
-            <nav
-              className="flex rounded-full border border-line bg-ink/70 p-0.5"
-              aria-label="Conference"
-            >
-              {(["AFC", "NFC"] as const).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => onConference(id)}
-                  aria-current={conference === id ? "true" : undefined}
-                  className={clsx(
-                    "rounded-full px-3.5 py-1.5 font-mono text-[14.5px] font-medium tracking-wide transition-colors",
-                    conference === id
-                      ? "bg-brand/15 text-brand"
-                      : "text-mist hover:text-fog",
-                  )}
-                >
-                  {id}
-                </button>
-              ))}
-            </nav>
-          )}
         </div>
 
         <div className="h-px w-full bg-line/60">

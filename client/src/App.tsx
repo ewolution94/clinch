@@ -16,6 +16,7 @@ import { WeekGames } from "./components/WeekGames";
 import { SeasonHero } from "./components/SeasonHero";
 import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
+import { ConferenceSwitch } from "./components/ConferenceSwitch";
 
 // Kept out of the main bundle: most visits never open a game.
 const GameModal = lazy(() => import("./components/GameModal"));
@@ -123,9 +124,6 @@ export default function App() {
           connection={connection}
           route={route}
           onRoute={navigate}
-          conference={conference}
-          onConference={setConference}
-          showConferenceSwitch={!wide && route !== "bracket"}
         />
 
         <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
@@ -149,6 +147,12 @@ export default function App() {
                     onOpenGame={onOpenGame}
                     morphCardId={morphCardId}
                   />
+                  {!wide && (
+                    <ConferenceSwitch
+                      value={conference}
+                      onChange={setConference}
+                    />
+                  )}
                   <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
                     {conferences.map((c) => (
                       <ConferenceStandings key={c.id} conference={c} />
@@ -171,6 +175,12 @@ export default function App() {
                       a game of the cut, so the seeding below moves a lot each
                       Sunday. It starts holding its shape around week 8.
                     </p>
+                  )}
+                  {!wide && (
+                    <ConferenceSwitch
+                      value={conference}
+                      onChange={setConference}
+                    />
                   )}
                   <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
                     {conferences.map((c) => (
