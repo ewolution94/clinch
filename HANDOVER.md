@@ -107,6 +107,17 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   lazy, but `onOpenGame` does `await import(...)` first — otherwise the render
   inside the transition can produce the Suspense fallback, and the browser
   captures no panel to morph into.
+- **A `view-transition-name` must exist on exactly ONE card, only while it
+  morphs.** This was the actual bug behind "the games section is layered on top
+  of the modal", and it took three attempts to find. A name is not a label: it
+  *lifts the element out of the page* into the transition layer, which paints
+  above everything. Every card carried one permanently, so opening a modal built
+  seventeen groups — sixteen floating cards plus root — and the cards after the
+  clicked one in DOM order painted over the morphing panel. `App` now grants the
+  name to a single card via `morphCardId` immediately before the snapshot and
+  clears it on `transition.finished`. At rest, `getComputedStyle` should report
+  `view-transition-name` on **nothing** but the implicit `root`; if you ever see
+  a card with one while idle, this regressed.
 - **The view-transition morph needs `flushSync`, and a unique name.**
   `startViewTransition` snapshots the DOM the moment its callback returns, and
   React would still be holding the state update — without `flushSync` the

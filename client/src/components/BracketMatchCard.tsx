@@ -8,8 +8,8 @@ interface BracketMatchCardProps {
   onPick: (matchId: string, abbr: string) => void;
   /** Only offered once a real game exists behind the matchup. */
   onOpenGame?: (id: string) => void;
-  /** The game currently in the modal, which owns the shared transition name. */
-  openGameId?: string | null;
+  /** The single card allowed to carry a `view-transition-name` right now. */
+  morphCardId?: string | null;
   /** Mirrors the layout for the NFC half so both sides read inward. */
   mirrored?: boolean;
   size?: "sm" | "lg";
@@ -26,14 +26,29 @@ interface SideProps {
   onPick: () => void;
 }
 
-function Side({ team, source, score, won, lost, mirrored, size, onPick }: SideProps) {
+function Side({
+  team,
+  source,
+  score,
+  won,
+  lost,
+  mirrored,
+  size,
+  onPick,
+}: SideProps) {
   const large = size === "lg";
   const height = large ? "h-12" : "h-9";
 
   // An unfilled slot says where its team will come from, quietly.
   if (!team) {
     return (
-      <div className={clsx("flex items-center px-2.5", height, mirrored && "flex-row-reverse")}>
+      <div
+        className={clsx(
+          "flex items-center px-2.5",
+          height,
+          mirrored && "flex-row-reverse",
+        )}
+      >
         <span className="truncate font-mono text-[8.5px] tracking-[0.12em] text-mist/55 uppercase">
           {source || "TBD"}
         </span>
@@ -51,7 +66,11 @@ function Side({ team, source, score, won, lost, mirrored, size, onPick }: SidePr
         "group/side relative flex w-full items-center gap-2 overflow-hidden px-2.5 transition-colors",
         height,
         mirrored && "flex-row-reverse",
-        won ? "text-paper" : lost ? "text-mist opacity-55" : "text-fog hover:text-paper"
+        won
+          ? "text-paper"
+          : lost
+            ? "text-mist opacity-55"
+            : "text-fog hover:text-paper",
       )}
       style={
         won
@@ -63,15 +82,33 @@ function Side({ team, source, score, won, lost, mirrored, size, onPick }: SidePr
     >
       <span
         aria-hidden="true"
-        className={clsx("absolute inset-y-0 w-[3px] transition-opacity", mirrored ? "right-0" : "left-0")}
+        className={clsx(
+          "absolute inset-y-0 w-[3px] transition-opacity",
+          mirrored ? "right-0" : "left-0",
+        )}
         style={{ background: team.accent, opacity: won ? 1 : lost ? 0.2 : 0.4 }}
       />
-      <span className={clsx("mono-tabular shrink-0 text-[9px] text-mist", mirrored ? "pl-1" : "pr-0.5")}>
+      <span
+        className={clsx(
+          "mono-tabular shrink-0 text-[9px] text-mist",
+          mirrored ? "pl-1" : "pr-0.5",
+        )}
+      >
         {team.seed}
       </span>
       <TeamLogo abbr={team.abbr} size={large ? 26 : 20} accent={team.accent} />
-      <span className={clsx("flex min-w-0 flex-1 items-baseline gap-2", mirrored && "flex-row-reverse")}>
-        <span className={clsx("mono-tabular shrink-0 font-bold", large ? "text-[14px]" : "text-[12px]")}>
+      <span
+        className={clsx(
+          "flex min-w-0 flex-1 items-baseline gap-2",
+          mirrored && "flex-row-reverse",
+        )}
+      >
+        <span
+          className={clsx(
+            "mono-tabular shrink-0 font-bold",
+            large ? "text-[14px]" : "text-[12px]",
+          )}
+        >
           {team.abbr}
         </span>
         {/* Desktop bracket columns are ~140px; a phone's are full width. Only
@@ -84,7 +121,7 @@ function Side({ team, source, score, won, lost, mirrored, size, onPick }: SidePr
         className={clsx(
           "mono-tabular shrink-0",
           large ? "text-[12px]" : "text-[11px]",
-          score !== null ? "font-bold" : "opacity-70"
+          score !== null ? "font-bold" : "opacity-70",
         )}
       >
         {score !== null ? score : team.record}
@@ -97,7 +134,7 @@ export function BracketMatchCard({
   match,
   onPick,
   onOpenGame,
-  openGameId,
+  morphCardId,
   mirrored = false,
   size = "sm",
 }: BracketMatchCardProps) {
@@ -110,7 +147,7 @@ export function BracketMatchCard({
   return (
     <div
       style={
-        match.gameId && match.gameId !== openGameId
+        match.gameId && match.gameId === morphCardId
           ? { viewTransitionName: `game-${match.gameId}` }
           : undefined
       }
@@ -120,7 +157,7 @@ export function BracketMatchCard({
           ? "border-brand/45"
           : match.decidedBy === "played"
             ? "border-line"
-            : "border-line/70 hover:border-line"
+            : "border-line/70 hover:border-line",
       )}
     >
       {/* Only a real fixture gets this. A projected matchup has no game to open. */}
@@ -170,25 +207,56 @@ export function BracketMatchCard({
 }
 
 /** The 1 seed enters at the divisional round, so it needs a slot of its own. */
-export function ByeCard({ team, mirrored = false }: { team: TeamEntry | null; mirrored?: boolean }) {
+export function ByeCard({
+  team,
+  mirrored = false,
+}: {
+  team: TeamEntry | null;
+  mirrored?: boolean;
+}) {
   if (!team) return null;
 
   return (
     <div
       className="@container/match overflow-hidden rounded-lg border border-gold/30"
-      style={{ background: `linear-gradient(${mirrored ? "270deg" : "90deg"}, color-mix(in srgb, ${team.accent} 24%, var(--color-ink)), var(--color-ink) 85%)` }}
+      style={{
+        background: `linear-gradient(${mirrored ? "270deg" : "90deg"}, color-mix(in srgb, ${team.accent} 24%, var(--color-ink)), var(--color-ink) 85%)`,
+      }}
     >
-      <div className={clsx("flex h-9 items-center gap-2 px-2.5", mirrored && "flex-row-reverse")}>
+      <div
+        className={clsx(
+          "flex h-9 items-center gap-2 px-2.5",
+          mirrored && "flex-row-reverse",
+        )}
+      >
         <span className="mono-tabular shrink-0 text-[9px] text-gold">1</span>
         <TeamLogo abbr={team.abbr} size={20} accent={team.accent} />
-        <span className={clsx("flex min-w-0 flex-1 items-baseline gap-2", mirrored && "flex-row-reverse")}>
-          <span className="mono-tabular shrink-0 text-[12px] font-bold text-paper">{team.abbr}</span>
-          <span className="hidden truncate font-display text-[13px] text-fog @[260px]/match:inline">{team.name}</span>
+        <span
+          className={clsx(
+            "flex min-w-0 flex-1 items-baseline gap-2",
+            mirrored && "flex-row-reverse",
+          )}
+        >
+          <span className="mono-tabular shrink-0 text-[12px] font-bold text-paper">
+            {team.abbr}
+          </span>
+          <span className="hidden truncate font-display text-[13px] text-fog @[260px]/match:inline">
+            {team.name}
+          </span>
         </span>
-        <span className="mono-tabular shrink-0 text-[10px] text-mist">{team.record}</span>
+        <span className="mono-tabular shrink-0 text-[10px] text-mist">
+          {team.record}
+        </span>
       </div>
-      <div className={clsx("flex h-6 items-center bg-gold/10 px-2.5", mirrored && "justify-end")}>
-        <span className="font-mono text-[8.5px] tracking-[0.16em] text-gold">FIRST-ROUND BYE</span>
+      <div
+        className={clsx(
+          "flex h-6 items-center bg-gold/10 px-2.5",
+          mirrored && "justify-end",
+        )}
+      >
+        <span className="font-mono text-[8.5px] tracking-[0.16em] text-gold">
+          FIRST-ROUND BYE
+        </span>
       </div>
     </div>
   );

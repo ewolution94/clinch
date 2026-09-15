@@ -29,6 +29,8 @@ export default function App() {
   const { snapshot, connection } = useSnapshot();
   const { route, navigate, game, openGame, closeGame } = useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
+  /** The one game whose card is mid-morph, if any. */
+  const [morphing, setMorphing] = useState<string | null>(null);
   const wide = useMediaQuery(DESKTOP_QUERY);
 
   const conferences = useMemo(() => {
@@ -70,12 +72,24 @@ export default function App() {
    * update. Without it the browser captures the *old* DOM twice and nothing
    * animates.
    */
-  const withTransition = useCallback((update: () => void) => {
+  /**
+   * Runs `update` inside a view transition, with exactly one card wearing the
+   * shared name for the duration.
+   *
+   * A `view-transition-name` is not a label — it lifts the element out of the
+   * page into the transition layer, which paints above everything. Leaving one
+   * on all sixteen cards meant sixteen floating groups over the opening modal:
+   * the reported bug. So the name is granted to the single card being morphed,
+   * immediately before the snapshot, and surrendered when the transition ends.
+   */
+  const morph = useCallback((id: string, update: () => void) => {
     if (!document.startViewTransition) {
       update();
       return;
     }
-    document.startViewTransition(() => flushSync(update));
+    flushSync(() => setMorphing(id));
+    const transition = document.startViewTransition(() => flushSync(update));
+    void transition.finished.finally(() => setMorphing(null));
   }, []);
 
   const onOpenGame = useCallback(
@@ -84,14 +98,18 @@ export default function App() {
       // inside the transition produces the Suspense fallback, the browser
       // captures no panel, and there is nothing for the card to morph into.
       await import("./components/GameModal");
-      withTransition(() => openGame(id));
+      morph(id, () => openGame(id));
     },
-    [withTransition, openGame],
+    [morph, openGame],
   );
-  const onCloseGame = useCallback(
-    () => withTransition(closeGame),
-    [withTransition, closeGame],
-  );
+
+  const onCloseGame = useCallback(() => {
+    if (game) morph(game, closeGame);
+    else closeGame();
+  }, [morph, game, closeGame]);
+
+  // The card holds the shared name only until the panel takes it over.
+  const morphCardId = morphing !== null && morphing !== game ? morphing : null;
 
   return (
     <div className="min-h-screen">
@@ -129,7 +147,7 @@ export default function App() {
                     games={snapshot.games}
                     label={snapshot.week.label}
                     onOpenGame={onOpenGame}
-                    openGameId={game}
+                    morphCardId={morphCardId}
                   />
                   <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
                     {conferences.map((c) => (
@@ -142,7 +160,7 @@ export default function App() {
                 <BracketTree
                   snapshot={snapshot}
                   onOpenGame={onOpenGame}
-                  openGameId={game}
+                  morphCardId={morphCardId}
                 />
               ) : (
                 <>
