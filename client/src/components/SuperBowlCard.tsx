@@ -34,7 +34,7 @@ function Contender({
   if (!team) {
     return (
       <div className="flex h-[60px] items-center justify-center rounded-xl border border-dashed border-line/70">
-        <span className="font-mono text-[9px] tracking-[0.14em] text-mist/60 uppercase">
+        <span className="font-mono text-[10.5px] tracking-[0.14em] text-mist/60 uppercase">
           {source || `${label} champion`}
         </span>
       </div>
@@ -50,20 +50,36 @@ function Contender({
       className={clsx(
         "relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border px-2.5 transition-all",
         compact ? "h-[60px]" : "h-[64px]",
-        won ? "border-gold/50" : decided ? "border-line opacity-55" : "border-line hover:border-fog/30"
+        won
+          ? "border-gold/50"
+          : decided
+            ? "border-line opacity-55"
+            : "border-line hover:border-fog/30",
       )}
       style={{
         background: `linear-gradient(96deg, color-mix(in srgb, ${team.accent} ${won ? 34 : 18}%, var(--color-ink)) 0%, var(--color-ink) 78%)`,
       }}
     >
-      <TeamWatermark abbr={team.abbr} size={96} className="-right-6 -bottom-8 opacity-[0.12]" />
-      <TeamLogo abbr={team.abbr} size={compact ? 34 : 36} accent={team.accent} />
+      <TeamWatermark
+        abbr={team.abbr}
+        size={96}
+        className="-right-6 -bottom-8 opacity-[0.12]"
+      />
+      <TeamLogo
+        abbr={team.abbr}
+        size={compact ? 34 : 36}
+        accent={team.accent}
+      />
       {/* Stacked rather than name-beside-record: this column is the narrowest
           part of the bracket, and a side-by-side layout collides here. */}
       <span className="relative flex min-w-0 flex-1 flex-col items-start gap-0.5 leading-none">
-        <span className="font-mono text-[8px] tracking-[0.18em] text-mist">{label}</span>
-        <span className="w-full truncate font-display text-[15px] font-semibold text-paper">{team.name}</span>
-        <span className="mono-tabular text-[10px] text-fog opacity-80">
+        <span className="font-mono text-[9.5px] tracking-[0.18em] text-mist">
+          {label}
+        </span>
+        <span className="w-full truncate font-display text-[15px] font-semibold text-paper">
+          {team.name}
+        </span>
+        <span className="mono-tabular text-[11.5px] text-fog opacity-80">
           {score !== null ? `${score} pts` : team.record}
         </span>
       </span>
@@ -71,14 +87,22 @@ function Contender({
         <span
           aria-hidden="true"
           className="absolute inset-0 rounded-xl"
-          style={{ boxShadow: "inset 0 0 32px color-mix(in srgb, var(--color-gold) 22%, transparent)" }}
+          style={{
+            boxShadow:
+              "inset 0 0 32px color-mix(in srgb, var(--color-gold) 22%, transparent)",
+          }}
         />
       )}
     </button>
   );
 }
 
-export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: SuperBowlCardProps) {
+export function SuperBowlCard({
+  match,
+  seasonYear,
+  onPick,
+  compact = false,
+}: SuperBowlCardProps) {
   const numeral = superBowlNumeral(seasonYear);
   const champion = match?.winner ?? null;
   const decided = champion !== null;
@@ -92,11 +116,14 @@ export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: Su
       }}
     >
       <header className="relative mb-3 flex flex-col items-center gap-0.5">
-        <span className="font-mono text-[9px] tracking-[0.26em] text-gold">SUPER BOWL</span>
+        <span className="font-mono text-[10.5px] tracking-[0.26em] text-gold">
+          SUPER BOWL
+        </span>
         <span
           className="font-display text-[30px] leading-none font-bold tracking-[-0.02em] sm:text-[36px]"
           style={{
-            background: "linear-gradient(180deg, #fff3d4 20%, var(--color-gold) 90%)",
+            background:
+              "linear-gradient(180deg, #fff3d4 20%, var(--color-gold) 90%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -119,7 +146,9 @@ export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: Su
         />
         <div className="flex items-center gap-2">
           <span className="h-px flex-1 bg-line" />
-          <span className="font-mono text-[8.5px] tracking-[0.2em] text-mist">NEUTRAL SITE</span>
+          <span className="font-mono text-[10px] tracking-[0.2em] text-mist">
+            NEUTRAL SITE
+          </span>
           <span className="h-px flex-1 bg-line" />
         </div>
         <Contender
@@ -134,7 +163,7 @@ export function SuperBowlCard({ match, seasonYear, onPick, compact = false }: Su
         />
       </div>
 
-      <p className="relative mt-3 text-center font-mono text-[9px] tracking-[0.14em] text-mist">
+      <p className="relative mt-3 text-center font-mono text-[10.5px] tracking-[0.14em] text-mist">
         {champion ? (
           <span className="text-gold">
             {champion.location.toUpperCase()} {champion.name.toUpperCase()}

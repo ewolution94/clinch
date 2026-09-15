@@ -30,8 +30,13 @@ export function Legend() {
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
-        <span className="font-mono text-[10px] tracking-[0.18em] text-mist">HOW THE NFL PLAYOFF FIELD WORKS</span>
-        <span className="font-mono text-[13px] text-mist transition-transform" style={{ transform: open ? "rotate(45deg)" : "none" }}>
+        <span className="font-mono text-[11.5px] tracking-[0.18em] text-mist">
+          HOW THE NFL PLAYOFF FIELD WORKS
+        </span>
+        <span
+          className="font-mono text-[14px] text-mist transition-transform"
+          style={{ transform: open ? "rotate(45deg)" : "none" }}
+        >
           +
         </span>
       </button>
@@ -40,8 +45,12 @@ export function Legend() {
           <div className="grid gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-4">
             {RULES.map((rule) => (
               <div key={rule.title} className="flex flex-col gap-1.5">
-                <h4 className="font-display text-[13px] font-semibold text-paper">{rule.title}</h4>
-                <p className="font-display text-[12px] leading-relaxed text-mist">{rule.body}</p>
+                <h4 className="font-display text-[14px] font-semibold text-paper">
+                  {rule.title}
+                </h4>
+                <p className="font-display text-[13px] leading-relaxed text-mist">
+                  {rule.body}
+                </p>
               </div>
             ))}
           </div>

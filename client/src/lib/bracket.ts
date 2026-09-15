@@ -153,7 +153,8 @@ function buildConference(
     reseeded = byeOpponent?.abbr !== wildcard[0].winner?.abbr;
   } else {
     divisional = [
-      { ...blank(`${id}-DV1`, "divisional", 4, "", "Lowest remaining seed"), home: bye },
+      // Kept short: the bracket's divisional column is ~140px wide.
+      { ...blank(`${id}-DV1`, "divisional", 4, "", "Lowest survivor"), home: bye },
       blank(`${id}-DV2`, "divisional", 5, "Wild card winner", "Wild card winner"),
     ];
   }

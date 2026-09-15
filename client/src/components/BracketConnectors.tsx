@@ -21,7 +21,11 @@ const DIM = "color-mix(in srgb, var(--color-mist) 38%, transparent)";
  * JS and re-measured on every resize. `preserveAspectRatio="none"` lets the
  * box stretch; `vector-effect` keeps the strokes hairlines while it does.
  */
-export function BracketConnectors({ incoming, flow, arms = [] }: BracketConnectorsProps) {
+export function BracketConnectors({
+  incoming,
+  flow,
+  arms = [],
+}: BracketConnectorsProps) {
   const outgoing = Math.max(1, Math.floor(incoming / 2));
   const mirrored = flow === "left";
   const near = mirrored ? 100 : 0;
@@ -32,7 +36,11 @@ export function BracketConnectors({ incoming, flow, arms = [] }: BracketConnecto
 
   if (incoming === 1) {
     const accent = arms[0];
-    segments.push({ d: `M${near} 50 H${far}`, stroke: accent ?? DIM, lit: Boolean(accent) });
+    segments.push({
+      d: `M${near} 50 H${far}`,
+      stroke: accent ?? DIM,
+      lit: Boolean(accent),
+    });
   } else {
     for (let j = 0; j < outgoing; j++) {
       const top = ((2 * j + 0.5) / incoming) * 100;
@@ -41,10 +49,26 @@ export function BracketConnectors({ incoming, flow, arms = [] }: BracketConnecto
       const topAccent = arms[2 * j];
       const bottomAccent = arms[2 * j + 1];
 
-      segments.push({ d: `M${near} ${top} H${mid}`, stroke: topAccent ?? DIM, lit: Boolean(topAccent) });
-      segments.push({ d: `M${near} ${bottom} H${mid}`, stroke: bottomAccent ?? DIM, lit: Boolean(bottomAccent) });
-      segments.push({ d: `M${mid} ${top} V${bottom}`, stroke: DIM, lit: false });
-      segments.push({ d: `M${mid} ${centre} H${far}`, stroke: DIM, lit: false });
+      segments.push({
+        d: `M${near} ${top} H${mid}`,
+        stroke: topAccent ?? DIM,
+        lit: Boolean(topAccent),
+      });
+      segments.push({
+        d: `M${near} ${bottom} H${mid}`,
+        stroke: bottomAccent ?? DIM,
+        lit: Boolean(bottomAccent),
+      });
+      segments.push({
+        d: `M${mid} ${top} V${bottom}`,
+        stroke: DIM,
+        lit: false,
+      });
+      segments.push({
+        d: `M${mid} ${centre} H${far}`,
+        stroke: DIM,
+        lit: false,
+      });
     }
   }
 

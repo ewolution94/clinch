@@ -40,7 +40,7 @@ function RoundLabel({
   return (
     <span
       className={clsx(
-        "block text-center font-mono text-[9px] tracking-[0.18em]",
+        "block text-center font-mono text-[10.5px] tracking-[0.18em]",
         muted ? "text-mist/60" : "text-mist",
       )}
     >
@@ -51,7 +51,7 @@ function RoundLabel({
 
 function ReseedNote() {
   return (
-    <p className="mt-1 rounded-md border border-brand/25 bg-brand/8 px-2 py-1 text-center font-mono text-[8.5px] leading-relaxed tracking-[0.08em] text-brand">
+    <p className="mt-1 rounded-md border border-brand/25 bg-brand/8 px-2 py-1 text-center font-mono text-[10px] leading-relaxed tracking-[0.08em] text-brand">
       RESEEDED — THE 1 SEED ALWAYS DRAWS THE LOWEST SURVIVOR, SO THESE LINES NO
       LONGER MATCH
     </p>
@@ -191,7 +191,7 @@ export function BracketTree({
           <h2 className="font-display text-[clamp(30px,5vw,46px)] leading-none font-bold tracking-[-0.03em] text-paper">
             The road to {superBowlShort(snapshot.season.year)}
           </h2>
-          <p className="max-w-2xl font-display text-[12px] leading-relaxed text-mist">
+          <p className="max-w-2xl font-display text-[13px] leading-relaxed text-mist">
             The field as today&apos;s standings seed it. Later rounds stay empty
             until the games are actually played — nothing here assumes a winner.
             Tap a team to try a result of your own; the bracket reseeds after
@@ -202,7 +202,7 @@ export function BracketTree({
           <button
             type="button"
             onClick={() => setPicks({})}
-            className="shrink-0 rounded-full border border-brand/35 bg-brand/10 px-3.5 py-1.5 font-mono text-[10px] tracking-[0.14em] text-brand transition-colors hover:bg-brand/18"
+            className="shrink-0 rounded-full border border-brand/35 bg-brand/10 px-3.5 py-1.5 font-mono text-[11.5px] tracking-[0.14em] text-brand transition-colors hover:bg-brand/18"
           >
             CLEAR MY PICKS
           </button>

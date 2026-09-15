@@ -16,12 +16,21 @@ interface TeamLogoProps {
   eager?: boolean;
 }
 
-export function TeamLogo({ abbr, size = 28, className, accent, eager }: TeamLogoProps) {
+export function TeamLogo({
+  abbr,
+  size = 28,
+  className,
+  accent,
+  eager,
+}: TeamLogoProps) {
   const plated = Boolean(accent);
 
   return (
     <span
-      className={clsx("relative inline-flex shrink-0 items-center justify-center", className)}
+      className={clsx(
+        "relative inline-flex shrink-0 items-center justify-center",
+        className,
+      )}
       style={{ width: size, height: size }}
     >
       {plated && (
@@ -29,7 +38,8 @@ export function TeamLogo({ abbr, size = 28, className, accent, eager }: TeamLogo
           aria-hidden="true"
           className="absolute inset-0 rounded-full"
           style={{
-            background: "color-mix(in srgb, var(--color-paper) 13%, transparent)",
+            background:
+              "color-mix(in srgb, var(--color-paper) 13%, transparent)",
             border: `1px solid color-mix(in srgb, ${accent} 45%, transparent)`,
           }}
         />

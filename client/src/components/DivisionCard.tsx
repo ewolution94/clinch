@@ -7,7 +7,9 @@ interface DivisionCardProps {
   division: DivisionView;
 }
 
-export const DivisionCard = memo(function DivisionCard({ division }: DivisionCardProps) {
+export const DivisionCard = memo(function DivisionCard({
+  division,
+}: DivisionCardProps) {
   const leader = division.teams[0];
   const accent = leader?.accent ?? "var(--color-mist)";
   const inField = division.teams.filter((t) => t.seed <= 7).length;
@@ -15,7 +17,9 @@ export const DivisionCard = memo(function DivisionCard({ division }: DivisionCar
   return (
     <section
       className="@container/card group/card animate-rise relative overflow-hidden rounded-2xl border border-line bg-ink/55 backdrop-blur-sm transition-colors"
-      style={{ boxShadow: `inset 0 1px 0 0 color-mix(in srgb, ${accent} 14%, transparent)` }}
+      style={{
+        boxShadow: `inset 0 1px 0 0 color-mix(in srgb, ${accent} 14%, transparent)`,
+      }}
     >
       {/* Division banner, carrying the current leader's colours. */}
       <header
@@ -24,7 +28,13 @@ export const DivisionCard = memo(function DivisionCard({ division }: DivisionCar
           background: `linear-gradient(102deg, color-mix(in srgb, ${accent} 30%, transparent) 0%, color-mix(in srgb, ${accent} 7%, transparent) 52%, transparent 100%)`,
         }}
       >
-        {leader && <TeamWatermark abbr={leader.abbr} size={104} className="-top-7 right-0 opacity-[0.13]" />}
+        {leader && (
+          <TeamWatermark
+            abbr={leader.abbr}
+            size={104}
+            className="-top-7 right-0 opacity-[0.13]"
+          />
+        )}
         <span
           aria-hidden="true"
           className="animate-sheen pointer-events-none absolute inset-0"
@@ -40,10 +50,13 @@ export const DivisionCard = memo(function DivisionCard({ division }: DivisionCar
         {/* How much of the division is currently holding a seed — the one thing
             the table below doesn't already say at a glance. */}
         <span
-          className="relative mono-tabular shrink-0 rounded-md px-2 py-1 text-[9.5px] font-semibold tracking-[0.1em]"
+          className="relative mono-tabular shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold tracking-[0.1em]"
           style={{
             color: inField > 0 ? accent : "var(--color-mist)",
-            background: inField > 0 ? `color-mix(in srgb, ${accent} 14%, transparent)` : "transparent",
+            background:
+              inField > 0
+                ? `color-mix(in srgb, ${accent} 14%, transparent)`
+                : "transparent",
             border: `1px solid ${inField > 0 ? `color-mix(in srgb, ${accent} 26%, transparent)` : "transparent"}`,
           }}
         >
@@ -53,7 +66,9 @@ export const DivisionCard = memo(function DivisionCard({ division }: DivisionCar
 
       <div
         className="h-[2px] w-full"
-        style={{ background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 20%, transparent) 45%, transparent 78%)` }}
+        style={{
+          background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 20%, transparent) 45%, transparent 78%)`,
+        }}
       />
 
       <div>

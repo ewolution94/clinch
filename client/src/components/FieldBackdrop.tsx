@@ -17,8 +17,10 @@ export function FieldBackdrop() {
         style={{
           backgroundImage:
             "repeating-linear-gradient(90deg, transparent 0 46px, var(--color-line-soft) 46px 47px, transparent 47px 96px)",
-          maskImage: "repeating-linear-gradient(180deg, #000 0 6px, transparent 6px 34px)",
-          WebkitMaskImage: "repeating-linear-gradient(180deg, #000 0 6px, transparent 6px 34px)",
+          maskImage:
+            "repeating-linear-gradient(180deg, #000 0 6px, transparent 6px 34px)",
+          WebkitMaskImage:
+            "repeating-linear-gradient(180deg, #000 0 6px, transparent 6px 34px)",
         }}
       />
 
@@ -30,7 +32,10 @@ export function FieldBackdrop() {
 
       <div
         className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse 90% 55% at 50% 0%, transparent 0%, var(--color-abyss) 80%)" }}
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 55% at 50% 0%, transparent 0%, var(--color-abyss) 80%)",
+        }}
       />
     </div>
   );

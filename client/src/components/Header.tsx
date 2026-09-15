@@ -31,7 +31,10 @@ export function Header({
 }: HeaderProps) {
   const live = snapshot?.live ?? false;
   const weekLabel = snapshot ? snapshot.week.label : "Loading";
-  const progress = snapshot && snapshot.week.number > 0 ? snapshot.week.number / snapshot.week.total : 0;
+  const progress =
+    snapshot && snapshot.week.number > 0
+      ? snapshot.week.number / snapshot.week.total
+      : 0;
 
   return (
     <header>
@@ -39,36 +42,48 @@ export function Header({
         <div className="flex items-center gap-3">
           <ClinchMark size={38} />
           <div className="flex flex-col leading-none">
-            <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">CLINCH</span>
-            <span className="mt-1 font-mono text-[10px] tracking-[0.22em] text-mist">WHO&apos;S IN, WHO&apos;S OUT</span>
+            <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">
+              CLINCH
+            </span>
+            <span className="mt-1 font-mono text-[11.5px] tracking-[0.22em] text-mist">
+              WHO&apos;S IN, WHO&apos;S OUT
+            </span>
           </div>
         </div>
 
         <div className="flex flex-col items-end gap-2">
           {live ? (
-            <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[10px] tracking-[0.15em] text-live">
+            <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[11.5px] tracking-[0.15em] text-live">
               <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
               LIVE
             </span>
           ) : (
             <span
               className={clsx(
-                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] tracking-[0.15em]",
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11.5px] tracking-[0.15em]",
                 connection === "live"
                   ? "border-line bg-ink/60 text-mist"
-                  : "border-line bg-ink/60 text-mist opacity-70"
+                  : "border-line bg-ink/60 text-mist opacity-70",
               )}
             >
               <span
                 className={clsx(
                   "h-1.5 w-1.5 rounded-full",
-                  connection === "live" ? "bg-jade" : connection === "connecting" ? "bg-mist" : "bg-live"
+                  connection === "live"
+                    ? "bg-jade"
+                    : connection === "connecting"
+                      ? "bg-mist"
+                      : "bg-live",
                 )}
               />
-              {connection === "live" ? "SYNCED" : connection === "connecting" ? "SYNCING" : "OFFLINE"}
+              {connection === "live"
+                ? "SYNCED"
+                : connection === "connecting"
+                  ? "SYNCING"
+                  : "OFFLINE"}
             </span>
           )}
-          <span className="font-mono text-[10px] tracking-[0.14em] text-mist">
+          <span className="font-mono text-[11.5px] tracking-[0.14em] text-mist">
             {weekLabel.toUpperCase()}
             {snapshot ? ` · ${snapshot.season.year}` : ""}
           </span>
@@ -79,7 +94,10 @@ export function Header({
           standings the full height of a phone screen. */}
       <div className="sticky top-0 z-30 border-b border-line/70 bg-abyss/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-10">
-          <nav className="flex rounded-full border border-line bg-ink/70 p-0.5" aria-label="Views">
+          <nav
+            className="flex rounded-full border border-line bg-ink/70 p-0.5"
+            aria-label="Views"
+          >
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -87,8 +105,10 @@ export function Header({
                 onClick={() => onRoute(tab.id)}
                 aria-current={route === tab.id ? "page" : undefined}
                 className={clsx(
-                  "rounded-full px-3 py-1.5 font-display text-[13px] font-medium transition-colors sm:px-5",
-                  route === tab.id ? "bg-paper text-abyss" : "text-mist hover:text-fog"
+                  "rounded-full px-3 py-1.5 font-display text-[14px] font-medium transition-colors sm:px-5",
+                  route === tab.id
+                    ? "bg-paper text-abyss"
+                    : "text-mist hover:text-fog",
                 )}
               >
                 <span className="sm:hidden">{tab.short}</span>
@@ -98,7 +118,10 @@ export function Header({
           </nav>
 
           {showConferenceSwitch && (
-            <nav className="flex rounded-full border border-line bg-ink/70 p-0.5" aria-label="Conference">
+            <nav
+              className="flex rounded-full border border-line bg-ink/70 p-0.5"
+              aria-label="Conference"
+            >
               {(["AFC", "NFC"] as const).map((id) => (
                 <button
                   key={id}
@@ -106,8 +129,10 @@ export function Header({
                   onClick={() => onConference(id)}
                   aria-current={conference === id ? "true" : undefined}
                   className={clsx(
-                    "rounded-full px-3.5 py-1.5 font-mono text-[12px] font-medium tracking-wide transition-colors",
-                    conference === id ? "bg-brand/15 text-brand" : "text-mist hover:text-fog"
+                    "rounded-full px-3.5 py-1.5 font-mono text-[13px] font-medium tracking-wide transition-colors",
+                    conference === id
+                      ? "bg-brand/15 text-brand"
+                      : "text-mist hover:text-fog",
                   )}
                 >
                   {id}

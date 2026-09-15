@@ -12,17 +12,28 @@ interface PlayoffColumnProps {
 function SectionLabel({ children, hint }: { children: string; hint?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 px-1">
-      <h3 className="font-mono text-[10px] tracking-[0.18em] text-mist">{children}</h3>
-      {hint && <span className="font-mono text-[9px] tracking-[0.12em] text-mist opacity-70">{hint}</span>}
+      <h3 className="font-mono text-[11.5px] tracking-[0.18em] text-mist">
+        {children}
+      </h3>
+      {hint && (
+        <span className="font-mono text-[10.5px] tracking-[0.12em] text-mist opacity-70">
+          {hint}
+        </span>
+      )}
     </div>
   );
 }
 
-export const PlayoffColumn = memo(function PlayoffColumn({ conference }: PlayoffColumnProps) {
+export const PlayoffColumn = memo(function PlayoffColumn({
+  conference,
+}: PlayoffColumnProps) {
   const field = conference.seeds.filter((t) => t.seed <= 7);
-  const chasing = conference.seeds.filter((t) => t.seed > 7 && t.status !== "eliminated");
+  const chasing = conference.seeds.filter(
+    (t) => t.seed > 7 && t.status !== "eliminated",
+  );
   const eliminated = conference.seeds.filter((t) => t.status === "eliminated");
-  const tint = conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
+  const tint =
+    conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
   return (
     <section className="flex flex-col gap-3">
@@ -38,7 +49,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({ conference }: Playoff
         >
           {conference.id}
         </h2>
-        <span className="hidden font-mono text-[10px] tracking-[0.16em] text-mist sm:inline">
+        <span className="hidden font-mono text-[11.5px] tracking-[0.16em] text-mist sm:inline">
           {conference.name.toUpperCase()}
         </span>
       </header>
@@ -55,13 +66,17 @@ export const PlayoffColumn = memo(function PlayoffColumn({ conference }: Playoff
       {/* The cut line is the whole point of the page — make it a real object. */}
       <div className="flex items-center gap-3 px-1 py-1">
         <span className="h-px flex-1 bg-gradient-to-r from-transparent via-live/50 to-live/50" />
-        <span className="font-mono text-[9px] tracking-[0.2em] text-live/80">CUT LINE</span>
+        <span className="font-mono text-[10.5px] tracking-[0.2em] text-live/80">
+          CUT LINE
+        </span>
         <span className="h-px flex-1 bg-gradient-to-l from-transparent via-live/50 to-live/50" />
       </div>
 
       {chasing.length > 0 && (
         <>
-          <SectionLabel hint="GAMES BEHIND THE 7 SEED">STILL ALIVE</SectionLabel>
+          <SectionLabel hint="GAMES BEHIND THE 7 SEED">
+            STILL ALIVE
+          </SectionLabel>
           <div className="flex flex-col gap-1.5">
             {chasing.map((team) => (
               <SeedRow key={team.abbr} team={team} chasing />
@@ -72,7 +87,9 @@ export const PlayoffColumn = memo(function PlayoffColumn({ conference }: Playoff
 
       {eliminated.length > 0 && (
         <>
-          <SectionLabel hint={`${eliminated.length} TEAM${eliminated.length === 1 ? "" : "S"}`}>
+          <SectionLabel
+            hint={`${eliminated.length} TEAM${eliminated.length === 1 ? "" : "S"}`}
+          >
             ELIMINATED
           </SectionLabel>
           <div className="flex flex-wrap gap-1.5 rounded-2xl border border-line bg-ink/40 p-2.5">
@@ -83,8 +100,12 @@ export const PlayoffColumn = memo(function PlayoffColumn({ conference }: Playoff
                 title={`${team.location} ${team.name} — ${STATUS_META[team.status].label}`}
               >
                 <TeamLogo abbr={team.abbr} size={18} />
-                <span className="mono-tabular text-[10px] font-semibold text-fog">{team.abbr}</span>
-                <span className="mono-tabular text-[10px] text-mist">{team.record}</span>
+                <span className="mono-tabular text-[11.5px] font-semibold text-fog">
+                  {team.abbr}
+                </span>
+                <span className="mono-tabular text-[11.5px] text-mist">
+                  {team.record}
+                </span>
               </span>
             ))}
           </div>

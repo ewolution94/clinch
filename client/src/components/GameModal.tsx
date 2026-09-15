@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import { TeamWatermark } from "./TeamWatermark";
+import { Shimmer } from "./Shimmer";
 import { useGameDetail } from "../hooks/useGameDetail";
 import { useOverflowEdges, edgeFadeMask } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
@@ -58,13 +59,13 @@ function ScoringPlay({
         className="absolute top-0 bottom-0 left-0 w-[2px] rounded-full"
         style={{ background: accent, opacity: isTd ? 0.9 : 0.3 }}
       />
-      <span className="mono-tabular w-9 shrink-0 pt-0.5 text-right text-[10px] text-mist">
+      <span className="mono-tabular w-9 shrink-0 pt-0.5 text-right text-[11.5px] text-mist">
         {play.clock}
       </span>
       <TeamLogo abbr={play.teamAbbr} size={20} accent={accent} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
-          className="font-mono text-[8.5px] tracking-[0.14em] uppercase"
+          className="font-mono text-[10px] tracking-[0.14em] uppercase"
           style={{ color: kind === "fg" ? "var(--color-mist)" : accent }}
         >
           {play.type}
@@ -72,14 +73,14 @@ function ScoringPlay({
         </span>
         <span
           className={clsx(
-            "font-display text-[12px] leading-snug",
+            "font-display text-[13px] leading-snug",
             isTd ? "text-paper" : "text-fog",
           )}
         >
           {play.text}
         </span>
       </span>
-      <span className="mono-tabular shrink-0 pt-0.5 text-[11px] font-semibold text-fog">
+      <span className="mono-tabular shrink-0 pt-0.5 text-[12.5px] font-semibold text-fog">
         {play.away}–{play.home}
       </span>
     </li>
@@ -109,18 +110,18 @@ function Linescore({ detail }: { detail: GameDetail }) {
     <table className="w-full border-collapse">
       <thead>
         <tr>
-          <th className="px-2 py-1.5 text-left font-mono text-[9px] tracking-[0.14em] text-mist">
+          <th className="px-2 py-1.5 text-left font-mono text-[10.5px] tracking-[0.14em] text-mist">
             TEAM
           </th>
           {Array.from({ length: columns }, (_, i) => (
             <th
               key={i}
-              className="px-1 py-1.5 text-center font-mono text-[9px] tracking-[0.14em] text-mist"
+              className="px-1 py-1.5 text-center font-mono text-[10.5px] tracking-[0.14em] text-mist"
             >
               {periodLabel(i + 1, detail.regulationPeriods)}
             </th>
           ))}
-          <th className="px-2 py-1.5 text-right font-mono text-[9px] tracking-[0.14em] text-fog">
+          <th className="px-2 py-1.5 text-right font-mono text-[10.5px] tracking-[0.14em] text-fog">
             T
           </th>
         </tr>
@@ -134,7 +135,7 @@ function Linescore({ detail }: { detail: GameDetail }) {
               <td className="px-2 py-2">
                 <span className="flex items-center gap-2">
                   <TeamLogo abbr={team.abbr} size={22} accent={team.accent} />
-                  <span className="mono-tabular text-[12px] font-bold text-paper">
+                  <span className="mono-tabular text-[13px] font-bold text-paper">
                     {team.abbr}
                   </span>
                 </span>
@@ -142,7 +143,7 @@ function Linescore({ detail }: { detail: GameDetail }) {
               {Array.from({ length: columns }, (_, i) => (
                 <td
                   key={i}
-                  className="mono-tabular px-1 py-2 text-center text-[13px] text-fog"
+                  className="mono-tabular px-1 py-2 text-center text-[14px] text-fog"
                 >
                   {cell(team, i)}
                 </td>
@@ -181,14 +182,14 @@ function Header({ detail }: { detail: GameDetail }) {
         )}
       >
         <TeamLogo abbr={team.abbr} size={52} accent={team.accent} eager />
-        <span className="font-mono text-[8.5px] tracking-[0.16em] text-mist uppercase">
+        <span className="font-mono text-[10px] tracking-[0.16em] text-mist uppercase">
           {team.location}
         </span>
         <span className="font-display text-[17px] leading-none font-bold text-paper">
           {team.name}
         </span>
         {team.record && (
-          <span className="mono-tabular text-[10px] text-mist">
+          <span className="mono-tabular text-[11.5px] text-mist">
             {team.record}
           </span>
         )}
@@ -227,16 +228,16 @@ function Header({ detail }: { detail: GameDetail }) {
       <div className="relative flex items-start gap-3">
         {side(away, "left")}
         <div className="flex shrink-0 flex-col items-center gap-2 pt-4">
-          <span className="font-mono text-[9px] tracking-[0.18em] text-mist">
+          <span className="font-mono text-[10.5px] tracking-[0.18em] text-mist">
             @
           </span>
           {live ? (
-            <span className="flex items-center gap-1.5 rounded-full border border-live/35 bg-live/10 px-2 py-1 font-mono text-[9px] tracking-[0.14em] text-live">
+            <span className="flex items-center gap-1.5 rounded-full border border-live/35 bg-live/10 px-2 py-1 font-mono text-[10.5px] tracking-[0.14em] text-live">
               <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
               {detail.clock} · {detail.statusDetail.split(" - ")[1] ?? ""}
             </span>
           ) : (
-            <span className="rounded-full border border-line bg-abyss-2/70 px-2.5 py-1 text-center font-mono text-[9px] tracking-[0.14em] text-mist">
+            <span className="rounded-full border border-line bg-abyss-2/70 px-2.5 py-1 text-center font-mono text-[10.5px] tracking-[0.14em] text-mist">
               {detail.state === "pre"
                 ? formatKickoff(detail.kickoff)
                 : detail.statusDetail}
@@ -272,14 +273,14 @@ function Body({ detail }: { detail: GameDetail }) {
         )}
         {detail.venue && (
           <Section label="VENUE">
-            <p className="font-display text-[13px] text-fog">
+            <p className="font-display text-[14px] text-fog">
               {detail.venue.name}
               {detail.venue.city &&
                 ` · ${detail.venue.city}, ${detail.venue.state}`}
             </p>
           </Section>
         )}
-        <p className="font-display text-[12px] leading-relaxed text-mist">
+        <p className="font-display text-[13px] leading-relaxed text-mist">
           Quarter scores, scoring plays and team numbers appear here once the
           game kicks off.
         </p>
@@ -315,10 +316,10 @@ function Body({ detail }: { detail: GameDetail }) {
               return (
                 <div key={period}>
                   <div className="flex items-baseline justify-between gap-3 border-b border-line-soft pb-1">
-                    <span className="font-mono text-[10px] tracking-[0.16em] text-fog">
+                    <span className="font-mono text-[11.5px] tracking-[0.16em] text-fog">
                       {periodLabel(period, detail.regulationPeriods)}
                     </span>
-                    <span className="mono-tabular text-[10px] text-mist">
+                    <span className="mono-tabular text-[11.5px] text-mist">
                       {away.abbr} {last.away} — {home.abbr} {last.home}
                     </span>
                   </div>
@@ -349,19 +350,19 @@ function Body({ detail }: { detail: GameDetail }) {
               >
                 <span className="flex items-center gap-2">
                   <TeamLogo abbr={team.abbr} size={18} accent={team.accent} />
-                  <span className="mono-tabular text-[11px] font-bold text-paper">
+                  <span className="mono-tabular text-[12.5px] font-bold text-paper">
                     {team.abbr}
                   </span>
                 </span>
                 {team.leaders.map((leader) => (
                   <div key={leader.category} className="flex flex-col">
-                    <span className="font-mono text-[8.5px] tracking-[0.14em] text-mist uppercase">
+                    <span className="font-mono text-[10px] tracking-[0.14em] text-mist uppercase">
                       {leader.category}
                     </span>
-                    <span className="font-display text-[12px] text-paper">
+                    <span className="font-display text-[13px] text-paper">
                       {leader.athlete}
                     </span>
-                    <span className="mono-tabular text-[10.5px] text-mist">
+                    <span className="mono-tabular text-[12px] text-mist">
                       {leader.line}
                     </span>
                   </div>
@@ -380,13 +381,13 @@ function Body({ detail }: { detail: GameDetail }) {
                 key={stat.label}
                 className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2"
               >
-                <span className="mono-tabular text-left text-[13px] font-semibold text-paper">
+                <span className="mono-tabular text-left text-[14px] font-semibold text-paper">
                   {stat.value}
                 </span>
-                <span className="font-mono text-[9px] tracking-[0.12em] text-mist uppercase">
+                <span className="font-mono text-[10.5px] tracking-[0.12em] text-mist uppercase">
                   {stat.label}
                 </span>
-                <span className="mono-tabular text-right text-[13px] font-semibold text-paper">
+                <span className="mono-tabular text-right text-[14px] font-semibold text-paper">
                   {home.stats[i]?.value ?? "—"}
                 </span>
               </div>
@@ -396,7 +397,7 @@ function Body({ detail }: { detail: GameDetail }) {
       )}
 
       {(detail.venue || detail.attendance) && (
-        <p className="font-mono text-[9px] tracking-[0.1em] text-mist">
+        <p className="font-mono text-[10.5px] tracking-[0.1em] text-mist">
           {detail.venue?.name}
           {detail.venue?.city &&
             ` · ${detail.venue.city}, ${detail.venue.state}`}
@@ -418,11 +419,55 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="font-mono text-[9px] tracking-[0.18em] text-mist">
+      <h3 className="font-mono text-[10.5px] tracking-[0.18em] text-mist">
         {label}
       </h3>
       {children}
     </section>
+  );
+}
+
+/** Shaped like the loaded modal, so opening one doesn't resize under you. */
+function GameSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading game detail">
+      <div className="flex items-start gap-3 px-4 pt-5 pb-4 sm:px-6">
+        {[0, 1].map((side) => (
+          <div
+            key={side}
+            className={`flex flex-1 flex-col gap-2 ${side === 1 ? "items-end" : ""}`}
+          >
+            <Shimmer
+              className="h-[52px] w-[52px] rounded-full"
+              delay={side * 90}
+            />
+            <Shimmer className="h-2.5 w-20 rounded" delay={side * 90 + 40} />
+            <Shimmer className="h-4 w-28 rounded" delay={side * 90 + 80} />
+            <Shimmer
+              className="mt-1 h-[44px] w-20 rounded-lg"
+              delay={side * 90 + 120}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-5 px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-2">
+          <Shimmer className="h-2.5 w-24 rounded" />
+          <Shimmer className="h-[96px] w-full rounded-lg" delay={80} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Shimmer className="h-2.5 w-32 rounded" delay={120} />
+          {[0, 1, 2, 3].map((i) => (
+            <Shimmer
+              key={i}
+              className="h-[46px] w-full rounded"
+              delay={160 + i * 70}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -497,7 +542,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-abyss/70 font-mono text-[13px] text-mist backdrop-blur transition-colors hover:border-fog/40 hover:text-paper"
+          className="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-abyss/70 font-mono text-[14px] text-mist backdrop-blur transition-colors hover:border-fog/40 hover:text-paper"
         >
           ✕
         </button>
@@ -507,12 +552,14 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
             <Header detail={detail} />
             <Body detail={detail} />
           </>
-        ) : (
+        ) : error && !loading ? (
           <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
-            <p className="font-mono text-[11px] tracking-[0.14em] text-mist">
-              {error && !loading ? "COULDN'T LOAD THIS GAME" : "LOADING…"}
+            <p className="font-mono text-[12.5px] tracking-[0.14em] text-mist">
+              COULDN&apos;T LOAD THIS GAME
             </p>
           </div>
+        ) : (
+          <GameSkeleton />
         )}
       </div>
     </div>

@@ -7,9 +7,12 @@ interface ConferenceStandingsProps {
   conference: ConferenceView;
 }
 
-export const ConferenceStandings = memo(function ConferenceStandings({ conference }: ConferenceStandingsProps) {
+export const ConferenceStandings = memo(function ConferenceStandings({
+  conference,
+}: ConferenceStandingsProps) {
   const inField = conference.seeds.slice(0, 7);
-  const tint = conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
+  const tint =
+    conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
   return (
     <section className="@container flex flex-col gap-4">
@@ -18,7 +21,9 @@ export const ConferenceStandings = memo(function ConferenceStandings({ conferenc
           <span
             aria-hidden="true"
             className="pointer-events-none absolute -top-6 -left-6 h-32 w-52 rounded-full blur-[54px]"
-            style={{ background: `color-mix(in srgb, ${tint} 22%, transparent)` }}
+            style={{
+              background: `color-mix(in srgb, ${tint} 22%, transparent)`,
+            }}
           />
           <h2
             className="relative font-display text-[clamp(46px,10vw,82px)] leading-[0.8] font-bold tracking-[-0.05em]"
@@ -31,7 +36,7 @@ export const ConferenceStandings = memo(function ConferenceStandings({ conferenc
           >
             {conference.id}
           </h2>
-          <span className="relative hidden pb-1.5 font-mono text-[9px] tracking-[0.18em] text-mist @2xl:inline">
+          <span className="relative hidden pb-1.5 font-mono text-[10.5px] tracking-[0.18em] text-mist @2xl:inline">
             {conference.name.toUpperCase()}
           </span>
         </div>
@@ -39,7 +44,9 @@ export const ConferenceStandings = memo(function ConferenceStandings({ conferenc
         {/* The seven teams currently holding a seed, as marks rather than a
             legend — the fastest read on the page. */}
         <div className="relative flex items-center gap-2 pb-1.5">
-          <span className="font-mono text-[8.5px] tracking-[0.18em] text-mist">IN THE FIELD</span>
+          <span className="font-mono text-[10px] tracking-[0.18em] text-mist">
+            IN THE FIELD
+          </span>
           <div className="flex items-center -space-x-1">
             {inField.map((team, i) => (
               <span

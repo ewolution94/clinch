@@ -10,7 +10,14 @@ interface ClinchMarkProps {
  */
 export function ClinchMark({ size = 32, className }: ClinchMarkProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" className={className} aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id="clinch-arm" x1="0" y1="4" x2="0" y2="28">
           <stop offset="0" stopColor="#ff9a52" />

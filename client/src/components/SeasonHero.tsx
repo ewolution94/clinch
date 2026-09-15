@@ -7,7 +7,15 @@ interface SeasonHeroProps {
   snapshot: Snapshot;
 }
 
-function TopSeed({ team, conference, align }: { team: TeamEntry; conference: string; align: "left" | "right" }) {
+function TopSeed({
+  team,
+  conference,
+  align,
+}: {
+  team: TeamEntry;
+  conference: string;
+  align: "left" | "right";
+}) {
   return (
     <div
       className="relative flex flex-1 items-center gap-3 overflow-hidden rounded-xl border border-line/70 px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3"
@@ -22,13 +30,16 @@ function TopSeed({ team, conference, align }: { team: TeamEntry; conference: str
       />
       <TeamLogo abbr={team.abbr} size={48} accent={team.accent} eager />
       <div className="relative flex min-w-0 flex-col leading-none">
-        <span className="font-mono text-[8.5px] tracking-[0.2em]" style={{ color: team.accent }}>
+        <span
+          className="font-mono text-[10px] tracking-[0.2em]"
+          style={{ color: team.accent }}
+        >
           {conference} NO. 1 SEED
         </span>
         <span className="mt-1 truncate font-display text-[17px] font-bold tracking-tight text-paper sm:text-[20px]">
           {team.name}
         </span>
-        <span className="mono-tabular mt-1 text-[11px] text-mist">
+        <span className="mono-tabular mt-1 text-[12.5px] text-mist">
           {team.record} · {team.streak}
         </span>
       </div>
@@ -41,7 +52,9 @@ function TopSeed({ team, conference, align }: { team: TeamEntry; conference: str
  * on top of each conference. Every colour on it comes from those two teams, so
  * it changes character as the season turns over.
  */
-export const SeasonHero = memo(function SeasonHero({ snapshot }: SeasonHeroProps) {
+export const SeasonHero = memo(function SeasonHero({
+  snapshot,
+}: SeasonHeroProps) {
   const afc = snapshot.conferences.find((c) => c.id === "AFC")?.seeds[0];
   const nfc = snapshot.conferences.find((c) => c.id === "NFC")?.seeds[0];
   const played = snapshot.week.number;
@@ -53,9 +66,10 @@ export const SeasonHero = memo(function SeasonHero({ snapshot }: SeasonHeroProps
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{
-          background: afc && nfc
-            ? `radial-gradient(ellipse 60% 120% at 0% 50%, color-mix(in srgb, ${afc.accent} 16%, transparent), transparent 70%), radial-gradient(ellipse 60% 120% at 100% 50%, color-mix(in srgb, ${nfc.accent} 16%, transparent), transparent 70%)`
-            : undefined,
+          background:
+            afc && nfc
+              ? `radial-gradient(ellipse 60% 120% at 0% 50%, color-mix(in srgb, ${afc.accent} 16%, transparent), transparent 70%), radial-gradient(ellipse 60% 120% at 100% 50%, color-mix(in srgb, ${nfc.accent} 16%, transparent), transparent 70%)`
+              : undefined,
         }}
       />
 
@@ -63,9 +77,13 @@ export const SeasonHero = memo(function SeasonHero({ snapshot }: SeasonHeroProps
         <div className="shrink-0">
           <div className="flex items-baseline gap-2.5">
             <h1 className="font-display text-[clamp(38px,9vw,76px)] leading-[0.85] font-bold tracking-[-0.045em] text-paper">
-              {snapshot.season.type === 2 ? `WEEK ${played}` : snapshot.week.label.toUpperCase()}
+              {snapshot.season.type === 2
+                ? `WEEK ${played}`
+                : snapshot.week.label.toUpperCase()}
             </h1>
-            <span className="mono-tabular text-[13px] text-mist">/ {snapshot.week.total}</span>
+            <span className="mono-tabular text-[14px] text-mist">
+              / {snapshot.week.total}
+            </span>
           </div>
 
           <div className="mt-3 flex items-center gap-3 lg:w-[260px]">
@@ -75,7 +93,7 @@ export const SeasonHero = memo(function SeasonHero({ snapshot }: SeasonHeroProps
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="mono-tabular shrink-0 text-[10px] tracking-wide text-mist">
+            <span className="mono-tabular shrink-0 text-[11.5px] tracking-wide text-mist">
               {snapshot.season.year}
             </span>
           </div>
