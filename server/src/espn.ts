@@ -1,4 +1,4 @@
-import type { ScoreboardGame } from "./types.js";
+import type { CalendarWeek, ScoreboardGame } from "./types.js";
 import { teamMeta } from "./teams.js";
 
 export const SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl";
@@ -87,10 +87,20 @@ interface RawEvent {
   status?: { type?: { state?: string; shortDetail?: string; detail?: string } };
   competitions: { competitors: RawCompetitor[]; status?: { type?: { state?: string; shortDetail?: string } } }[];
 }
+interface RawCalendarEntry {
+  value?: string;
+  label?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 interface RawScoreboard {
   season?: { year?: number; type?: number };
-  week?: { number?: number };
+  week?: { number?: number; teamsOnBye?: { abbreviation?: string }[] };
   events?: RawEvent[];
+  leagues?: {
+    calendar?: { value?: string; label?: string; entries?: RawCalendarEntry[] }[];
+  }[];
 }
 
 export interface ScoreboardPayload {
@@ -98,6 +108,34 @@ export interface ScoreboardPayload {
   seasonType: number;
   week: number;
   games: ScoreboardGame[];
+  /** Teams idle this week. Only populated for the week actually requested. */
+  byeTeams: string[];
+  /** The season's own week list, present on every scoreboard response. */
+  calendar: CalendarWeek[];
+}
+
+/** The Pro Bowl sits in the postseason calendar but isn't a round. */
+const PRO_BOWL_WEEK = 4;
+
+function parseCalendar(raw: RawScoreboard): CalendarWeek[] {
+  const out: CalendarWeek[] = [];
+  for (const section of raw.leagues?.[0]?.calendar ?? []) {
+    const seasonType = Number.parseInt(section.value ?? "", 10);
+    if (seasonType !== 2 && seasonType !== 3) continue;
+    for (const entry of section.entries ?? []) {
+      const week = Number.parseInt(entry.value ?? "", 10);
+      if (!Number.isFinite(week)) continue;
+      if (seasonType === 3 && week === PRO_BOWL_WEEK) continue;
+      out.push({
+        seasonType,
+        week,
+        label: entry.label ?? `Week ${week}`,
+        startDate: entry.startDate ?? "",
+        endDate: entry.endDate ?? "",
+      });
+    }
+  }
+  return out;
 }
 
 function parseScore(value: string | undefined): number | null {
@@ -156,5 +194,9 @@ export async function fetchScoreboard(
     seasonType: raw.season?.type ?? opts.seasonType ?? 2,
     week,
     games,
+    byeTeams: (raw.week?.teamsOnBye ?? [])
+      .map((t) => teamMeta(t.abbreviation ?? "")?.abbr)
+      .filter((a): a is string => a !== undefined),
+    calendar: parseCalendar(raw),
   };
 }

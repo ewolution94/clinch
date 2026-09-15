@@ -1,7 +1,13 @@
 import { fetchScoreboard, fetchStandings } from "./espn.js";
 import { buildConferences } from "./derive.js";
 import { config } from "./config.js";
-import type { PostseasonGame, PostseasonRound, ScoreboardGame, Snapshot } from "./types.js";
+import type {
+  PostseasonGame,
+  PostseasonRound,
+  ScoreboardGame,
+  Snapshot,
+  WeekView,
+} from "./types.js";
 
 const REGULAR_SEASON_WEEKS = 18;
 
@@ -10,6 +16,12 @@ interface CachedWeek {
   fetchedAt: number;
   /** A week whose games have all finished never changes again. */
   settled: boolean;
+  byeTeams: string[];
+}
+
+/** One cache for every week of either season type. */
+function weekKey(seasonType: number, week: number): string {
+  return `${seasonType}:${week}`;
 }
 
 const SEASON_TYPE_LABEL: Record<number, string> = { 1: "Preseason", 2: "Regular season", 3: "Postseason" };
@@ -24,8 +36,8 @@ const POSTSEASON_WEEKS: [number, PostseasonRound][] = [
 
 export class SnapshotStore {
   private snapshot: Snapshot | null = null;
-  private weeks = new Map<number, CachedWeek>();
-  private postseasonWeeks = new Map<number, CachedWeek>();
+  private weeks = new Map<string, CachedWeek>();
+
   private listeners = new Set<(snapshot: Snapshot) => void>();
   private timer: NodeJS.Timeout | null = null;
   private refreshing = false;
@@ -54,13 +66,18 @@ export class SnapshotStore {
   }
 
   private async weekGames(season: number, week: number): Promise<ScoreboardGame[]> {
-    const cached = this.weeks.get(week);
+    const cached = this.weeks.get(weekKey(2, week));
     if (cached?.settled) return cached.games;
     if (cached && Date.now() - cached.fetchedAt < config.scheduleTtlMs) return cached.games;
 
     const payload = await fetchScoreboard({ season, seasonType: 2, week }, config.requestTimeoutMs);
     const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
-    this.weeks.set(week, { games: payload.games, fetchedAt: Date.now(), settled });
+    this.weeks.set(weekKey(2, week), {
+      games: payload.games,
+      fetchedAt: Date.now(),
+      settled,
+      byeTeams: payload.byeTeams,
+    });
     return payload.games;
   }
 
@@ -73,7 +90,7 @@ export class SnapshotStore {
     const out: PostseasonGame[] = [];
 
     for (const [week, round] of POSTSEASON_WEEKS) {
-      const cached = this.postseasonWeeks.get(week);
+      const cached = this.weeks.get(weekKey(3, week));
       if (cached?.settled) {
         out.push(...cached.games.map((g) => ({ ...g, round })));
         continue;
@@ -81,7 +98,12 @@ export class SnapshotStore {
       try {
         const payload = await fetchScoreboard({ season, seasonType: 3, week }, config.requestTimeoutMs);
         const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
-        this.postseasonWeeks.set(week, { games: payload.games, fetchedAt: Date.now(), settled });
+        this.weeks.set(weekKey(3, week), {
+          games: payload.games,
+          fetchedAt: Date.now(),
+          settled,
+          byeTeams: payload.byeTeams,
+        });
         out.push(...payload.games.map((g) => ({ ...g, round })));
       } catch {
         if (cached) out.push(...cached.games.map((g) => ({ ...g, round })));
@@ -89,6 +111,52 @@ export class SnapshotStore {
     }
 
     return out;
+  }
+
+  /**
+   * Any week, for the browser. Shares the cache the poll loop already fills, so
+   * asking for the current week costs nothing and a settled week is fetched
+   * once ever.
+   */
+  async week(seasonType: number, week: number): Promise<WeekView> {
+    const season = this.snapshot?.season.year ?? config.season ?? new Date().getFullYear();
+    const key = weekKey(seasonType, week);
+    const cached = this.weeks.get(key);
+    const label =
+      this.snapshot?.calendar.find((c) => c.seasonType === seasonType && c.week === week)?.label ??
+      `Week ${week}`;
+
+    // Settled weeks are frozen. Everything else has a short life: kickoff times
+    // and odds move, and the live week is refreshed by the poll loop anyway.
+    const ttl = cached?.settled ? Number.POSITIVE_INFINITY : config.weekTtlMs;
+    if (cached && Date.now() - cached.fetchedAt < ttl) {
+      return {
+        seasonType,
+        week,
+        label,
+        games: cached.games,
+        byeTeams: cached.byeTeams,
+        settled: cached.settled,
+      };
+    }
+
+    const payload = await fetchScoreboard({ season, seasonType, week }, config.requestTimeoutMs);
+    const settled = payload.games.length > 0 && payload.games.every((g) => g.state === "post");
+    this.weeks.set(key, {
+      games: payload.games,
+      fetchedAt: Date.now(),
+      settled,
+      byeTeams: payload.byeTeams,
+    });
+
+    return {
+      seasonType,
+      week,
+      label,
+      games: payload.games,
+      byeTeams: payload.byeTeams,
+      settled,
+    };
   }
 
   private async refresh(): Promise<void> {
@@ -118,10 +186,11 @@ export class SnapshotStore {
       // number instead.
       const liveIsCurrent = !pinnedToPast && seasonType === 2;
       if (liveIsCurrent) {
-        this.weeks.set(currentWeek, {
+        this.weeks.set(weekKey(2, currentWeek), {
           games: live.games,
           fetchedAt: Date.now(),
           settled: live.games.length > 0 && live.games.every((g) => g.state === "post"),
+          byeTeams: live.byeTeams,
         });
       }
 
@@ -162,6 +231,7 @@ export class SnapshotStore {
         conferences,
         games: weekGames,
         postseason,
+        calendar: live.calendar,
       });
 
       this.schedule(anyLive ? config.liveRefreshMs : config.refreshMs);

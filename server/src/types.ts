@@ -122,6 +122,26 @@ export interface PostseasonGame {
   awayScore: number | null;
 }
 
+/** One selectable week, straight from ESPN's own season calendar. */
+export interface CalendarWeek {
+  seasonType: number;
+  week: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface WeekView {
+  seasonType: number;
+  week: number;
+  label: string;
+  games: ScoreboardGame[];
+  /** Abbreviations of the teams idle that week. */
+  byeTeams: string[];
+  /** Every game final, so this week will never change again. */
+  settled: boolean;
+}
+
 export interface Snapshot {
   generatedAt: number;
   season: { year: number; type: number; label: string };
@@ -136,6 +156,8 @@ export interface Snapshot {
    * season — the bracket leaves its later rounds blank rather than guessing.
    */
   postseason: PostseasonGame[];
+  /** Every week that can be browsed, in order. */
+  calendar: CalendarWeek[];
 }
 
 /* ------------------------------------------------------------ game detail */

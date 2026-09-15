@@ -36,6 +36,24 @@ app.get("/api/snapshot", (_req, res) => {
   res.json(snapshot);
 });
 
+app.get("/api/week/:seasonType/:week", async (req, res) => {
+  const seasonType = Number.parseInt(req.params.seasonType, 10);
+  const week = Number.parseInt(req.params.week, 10);
+  // Both land in an upstream URL, so both are checked rather than trusted.
+  if ((seasonType !== 2 && seasonType !== 3) || !Number.isFinite(week) || week < 1 || week > 25) {
+    res.status(400).json({ error: "bad week" });
+    return;
+  }
+
+  try {
+    res.setHeader("cache-control", "no-store");
+    res.json(await store.week(seasonType, week));
+  } catch (error) {
+    console.error("[clinch] week failed:", error instanceof Error ? error.message : error);
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
 app.get("/api/game/:id", async (req, res) => {
   const { id } = req.params;
   // The id lands in an upstream URL, so it is checked rather than trusted.

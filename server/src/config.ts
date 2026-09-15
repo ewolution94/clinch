@@ -15,5 +15,7 @@ export const config = {
   liveRefreshMs: int("CLINCH_LIVE_REFRESH_MS", 25_000),
   /** How long a future week's schedule is trusted before re-fetching. */
   scheduleTtlMs: int("CLINCH_SCHEDULE_TTL_MS", 3_600_000),
+  /** How long an unsettled week is trusted when browsed — odds and times move. */
+  weekTtlMs: int("CLINCH_WEEK_TTL_MS", 1_800_000),
   requestTimeoutMs: int("CLINCH_TIMEOUT_MS", 12_000),
 };
