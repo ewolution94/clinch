@@ -1,4 +1,4 @@
-Session handover — disposable, delete once absorbed. Written 2026-09 by Claude.
+Session handover — disposable, delete once absorbed. Updated 2026-09-15 by Claude.
 
 **CLINCH** — NFL standings + playoff picture. Tagline "who's in, who's out."
 Tech matches the house pattern: Express+TS backend (`server/`) + Vite/React/TS/
@@ -9,6 +9,23 @@ dev dashboard) — same stack, same design language, separate repos.
 Run locally: `npm run install:all && npm run dev` — client `:5176`, server
 `:4600`. Production is one process: `npm run build && npm start`, which is also
 what the Dockerfile does.
+
+## Where it stands
+
+Deployed and in daily use — Eric watches the NFL from Germany and reads this on
+his phone. Four views work: standings, schedule (any week), the tiered playoff
+picture, and a playable bracket. The last several sessions were his feedback on
+a live app rather than new features, so expect small, specific, visual asks.
+
+**Open threads, none started:**
+
+- **Records "as of" a past week.** Repeatedly out of scope — ESPN exposes only
+  *current* seeds, so a historical table could show records but never seeds.
+  Eric has been told he can ask for it as its own clearly-labelled view; he
+  hasn't. Don't fold it into the week browser.
+- **The standings page's week strip** is still current-week only. Whether it
+  should gain arrows now the `/week` view exists was left open on purpose.
+- **Preseason** is filtered out of the calendar. One line either way if wanted.
 
 ## Ports
 
@@ -24,10 +41,10 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 - **Derivation** (`server/src/derive.ts`): seeding, division order, clinch and
   elimination, games back, the wild card bracket. README's "How the labels are
   derived" is the spec; read it before touching this file.
-- **UI**: three routes — `/` (standings), `/playoffs` (the tiered picture) and
-  `/bracket` (the tournament tree) — via a ~25-line history router, no
-  react-router. Dark only. Mobile shows one conference with a switch; from
-  1280px both render side by side.
+- **UI**: four routes — `/` (standings), `/week/:slug` (schedule), `/playoffs`
+  (the tiered picture) and `/bracket` (the tournament tree) — via a small
+  history router, no react-router. Dark only. Mobile shows one conference with
+  a switch below the tabs; from 1280px both render side by side.
 - **Game detail** (`server/src/gameDetail*.ts`, `client/src/components/GameModal.tsx`):
   `/api/game/:id` trims ESPN's ~590 kB summary to ~3 kB. The modal is lazy-loaded
   and owns a `?game=` history entry so back closes it. Opened from the standings
@@ -149,6 +166,16 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   that hasn't happened as `'0'`, not as absent, so a game in the 1st quarter
   would otherwise render as three scoreless ones. Overtime adds linescore
   entries beyond `format.regulation.periods` — don't assume four columns.
+- **The modal panel must never be the scrolling element.** The close button is
+  absolutely positioned on it; when the panel scrolled, expanding the folded
+  sections carried the button off-screen and the dialog could not be closed.
+  The panel is a flex column with `overflow: hidden` and an inner
+  `.game-dialog__scroll` does the scrolling. Heights use `dvh`, not `vh` —
+  `vh` on iOS counts the area behind the browser chrome.
+- **Locking background scroll needs `position: fixed` on the body.**
+  `overflow: hidden` alone does not hold on iOS. The body is pinned and its
+  offset restored on close; the scroll container has `overscroll-behavior:
+  contain` and the scrim `touch-action: none`.
 - **Team colour never goes *behind* a logo.** The first version put a blurred
   disc of the team's accent behind the mark, which erased the Jets, Eagles,
   Seahawks and Giants — their logos are the same hue as their brand. `TeamLogo`
@@ -161,31 +188,49 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 
 ## Process notes
 
-- **Not pushed to GitHub yet.** Local repo initialised, five commits on `main`.
-  Plan mirrors
-  Pulse: create `ewolution94/clinch`, add the remote, push `main`, then push a
-  `release` branch to trigger the first GHCR build. Before that first release
-  push the repo needs **Settings → Actions → General → Workflow permissions →
-  "Read and write permissions"**, or the push to GHCR fails — not the default
-  on new repos.
-- **CI** is `.github/workflows/docker-publish.yml`, copied from Pulse's working
-  pattern: push to `release` → multi-arch (amd64 + arm64, for the NAS) → GHCR.
+- **Deployed and live.** `github.com/ewolution94/clinch` is **public**, CI is
+  green, and `ghcr.io/ewolution94/clinch:latest` is **public and multi-arch**
+  (amd64 + arm64) — verified pullable anonymously, so Portainer needs no
+  registry credentials. Running on the NAS behind the Cloudflare Tunnel at
+  **clinch.ewolution.cloud**, port 4600, no volume.
+- **To redeploy:** commit on `main`, then `git push origin main:release`. That
+  branch is the CI trigger; a green run publishes `:latest`, then pull the image
+  in Portainer. The Portainer stack must NOT be the repo's `docker-compose.yml`
+  — that has `build: .` and would make Portainer build instead of pull. Use an
+  `image:`-only stack.
+- **⚠️ `release` is currently 3 commits ahead of `main`.** Eric was left checked
+  out on `release` after deploying and later work landed there. It fast-forwards
+  cleanly; the fix (which is also the redeploy) is:
+  `git checkout main && git merge --ff-only release && git push origin main && git push origin main:release`.
+  Check `git branch --show-current` before committing anything.
+- **No Docker on the dev machine.** The image is only ever built by CI, so a
+  Dockerfile change cannot be smoke-tested locally — push to `release` and watch
+  the Actions run.
 - **View transitions cannot be verified in the Claude Code browser pane.** It
   reports `document.visibilityState === "hidden"` even when fronted, and
   `startViewTransition` always skips in a hidden document ("Transition was
   aborted because of invalid state"). Name handover, focus, inert and layout are
   all testable there; whether the morph actually *runs* is not. Check that in a
   real browser.
-- **Verified this session**: derivation checked against the *finished* 2025
-  season (every clinch/elimination label came out exactly right, including the
-  1 seed and the 8-9 division winner) and against a synthetic week-13 table for
-  the mid-season branches. Live 2026 week 1 verified in the browser at 390px,
-  1200px and 1800px, plus the production single-process build (SPA fallback,
-  immutable asset headers, SSE). No automated test suite exists.
+- **Verified over these sessions**: derivation against the *finished* 2025
+  season (every clinch/elimination label exactly right, including the 1 seed and
+  the 8-9 division winner) and a synthetic week-13 table for the mid-season
+  branches; the week endpoint against a settled, a future, a flex-scheduled and
+  a postseason week; the modal against final, live, scheduled and overtime
+  games. Live 2026 data checked at 390px, 1200px and 1800px, plus the production
+  single-process build. **No automated test suite exists** — everything is
+  verified by hand in the browser, so budget for that.
+- **Eric reviews on a phone first.** Several rounds of feedback were purely
+  mobile: type too small, a dialog that couldn't be closed, the page scrolling
+  behind a sheet. Check 390px before calling anything done.
 - `CLINCH_SEASON=2025` is the fastest way to see the UI with a full season of
   data in it — worth doing before judging any change to the playoff view, since
   week 1 shows almost everything tied.
-- **A Clinch dev server is still running** on `:5176`/`:4600`, started this
-  session so Eric could keep looking at it — stop it with `npm run dev`'s own
-  process or by exact PID, not a broad `pkill -f vite` (that once killed his
-  unrelated projects). Every throwaway verification server was stopped.
+- **A Clinch dev server is still running** on `:5176`/`:4600`, started so Eric
+  could keep looking at it — stop it by exact PID, never a broad
+  `pkill -f vite` (that once killed his unrelated projects). Every throwaway
+  verification server was stopped.
+- **Give commands with a `cd` in them.** Two separate steps were lost to
+  commands run from `~/Documents/development` instead of the repo
+  (`npm --prefix clinch` resolving to `clinch/clinch`, and a `git push` outside
+  a work tree). Self-contained one-liners only.
