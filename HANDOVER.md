@@ -37,6 +37,18 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
   viewBox — see the comment in `BracketConnectors.tsx` before changing any of it.
 
+## Planned next
+
+`docs/PLAN-week-browser.md` — browse any week of the season (schedule, results,
+byes, odds) as its own view. Written 2026-09-15 with the ESPN side researched:
+the scoreboard's `leagues[0].calendar` already describes every week and names
+the postseason rounds, future weeks carry byes/odds/broadcast but **no team
+records** (join those from the snapshot instead), and a fourth tab does not fit
+at 390px — measured, and the plan proposes moving the AFC/NFC switch out of the
+global bar to make room. Deliberately out of scope: standings *as of* a past
+week, since ESPN only exposes current seeds and inventing historical ones would
+break the rule the rest of the app rests on. Not started.
+
 ## Decisions already made — don't re-litigate
 
 - **The bracket's connectors are arithmetic, not measurement.** Round columns
