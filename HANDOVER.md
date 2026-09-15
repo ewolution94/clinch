@@ -95,6 +95,18 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   Escape handler, scroll lock, and focus returned to the card **by
   `data-game-id`** (going inert blurs the card before the modal's effect runs,
   so `document.activeElement` is already the body by then).
+- **Nothing above a `view-transition-name`d element may animate opacity.** The
+  modal's dim/blur started life *on* the overlay that wraps the panel. At
+  capture time that ancestor is at `opacity: 0` (the fade has just begun), so
+  the panel's snapshot is captured transparent: the morph runs and is invisible,
+  and all you see is the fade with the old page snapshot over it. The dim is now
+  a **sibling** scrim, and `.game-overlay` is deliberately effect-free — no
+  opacity, filter, backdrop-filter, transform or animation. If you add any of
+  those to it, the morph silently disappears again.
+- **The modal's chunk is awaited before the transition starts.** It is still
+  lazy, but `onOpenGame` does `await import(...)` first — otherwise the render
+  inside the transition can produce the Suspense fallback, and the browser
+  captures no panel to morph into.
 - **The view-transition morph needs `flushSync`, and a unique name.**
   `startViewTransition` snapshots the DOM the moment its callback returns, and
   React would still be holding the state update — without `flushSync` the

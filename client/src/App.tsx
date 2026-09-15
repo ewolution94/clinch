@@ -79,7 +79,13 @@ export default function App() {
   }, []);
 
   const onOpenGame = useCallback(
-    (id: string) => withTransition(() => openGame(id)),
+    async (id: string) => {
+      // Resolve the modal's chunk *first*. If it is still pending, the render
+      // inside the transition produces the Suspense fallback, the browser
+      // captures no panel, and there is nothing for the card to morph into.
+      await import("./components/GameModal");
+      withTransition(() => openGame(id));
+    },
     [withTransition, openGame],
   );
   const onCloseGame = useCallback(

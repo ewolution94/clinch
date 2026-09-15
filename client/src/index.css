@@ -135,11 +135,19 @@
   /* The dialog is unstyled by default; these are its own layout + entrance. */
   /* A normal fixed overlay rather than a top-layer dialog — see the comment in
      GameModal.tsx: the top layer is invisible to view transitions. */
+  /* Deliberately effect-free: no opacity, no filter, no animation. It is only a
+     positioning context, so that the panel inside it is captured cleanly by a
+     view transition. Everything visual lives on the scrim below. */
   .game-overlay {
     position: fixed;
     inset: 0;
     z-index: 60;
     overflow: hidden;
+  }
+
+  .game-overlay__scrim {
+    position: absolute;
+    inset: 0;
     background: color-mix(in srgb, var(--color-abyss) 72%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
