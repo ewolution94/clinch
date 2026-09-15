@@ -69,33 +69,40 @@ function GameRow({
     away.conference === home.conference &&
     away.division === home.division;
 
+  /**
+   * Teams stack rather than sitting side by side. Two names across a 358px card
+   * clipped "Buccaneers" and "Commanders"; stacked, each gets the full width,
+   * and it matches how every scoreboard is read — away on top, home below.
+   */
   const side = (
     abbr: string,
     team: TeamEntry | undefined,
     score: number | null,
     won: boolean,
+    home: boolean,
   ) => (
-    <span className="flex flex-1 items-center gap-2.5">
+    <span className="flex items-center gap-2.5">
+      <span className="w-3 shrink-0 text-center font-mono text-[12px] text-mist">
+        {home ? "@" : ""}
+      </span>
       <TeamLogo abbr={abbr} size={30} accent={team?.accent} />
-      <span className="flex min-w-0 flex-col leading-tight">
+      <span className="flex min-w-0 flex-1 flex-col leading-tight">
         <span
           className={clsx(
-            "mono-tabular text-[15.5px] font-bold",
+            "truncate font-display text-[15.5px] font-bold",
             final && !won ? "text-mist" : "text-paper",
           )}
         >
-          {abbr}
+          {team ? `${team.location} ${team.name}` : abbr}
         </span>
-        {team?.record && (
-          <span className="mono-tabular text-[12px] text-mist">
-            {team.record}
-          </span>
-        )}
+        <span className="mono-tabular text-[12px] text-mist">
+          {team?.record ? `${abbr} · ${team.record}` : abbr}
+        </span>
       </span>
       {(final || live) && (
         <span
           className={clsx(
-            "mono-tabular ml-auto text-[18.5px] font-bold",
+            "mono-tabular shrink-0 text-[18.5px] font-bold",
             final && !won ? "text-mist" : "text-paper",
           )}
         >
@@ -121,10 +128,9 @@ function GameRow({
         live ? "border-live/40" : "border-line",
       )}
     >
-      <div className="flex items-center gap-3">
-        {side(game.away, away, game.awayScore, awayWon)}
-        <span className="shrink-0 font-mono text-[11.5px] text-mist">@</span>
-        {side(game.home, home, game.homeScore, homeWon)}
+      <div className="flex flex-col gap-2">
+        {side(game.away, away, game.awayScore, awayWon, false)}
+        {side(game.home, home, game.homeScore, homeWon, true)}
       </div>
 
       <div className="flex items-center gap-2 border-t border-line-soft pt-2">
