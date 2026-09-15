@@ -10,11 +10,12 @@ interface HeaderProps {
   onRoute: (route: Route) => void;
 }
 
+// Where the season is now, then where it's heading.
 const TABS: { id: Route; label: string; short: string }[] = [
   { id: "standings", label: "Standings", short: "Table" },
+  { id: "week", label: "Schedule", short: "Week" },
   { id: "playoffs", label: "Playoff picture", short: "Picture" },
   { id: "bracket", label: "Bracket", short: "Bracket" },
-  { id: "week", label: "Schedule", short: "Week" },
 ];
 
 export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
