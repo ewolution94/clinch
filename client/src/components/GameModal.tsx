@@ -219,12 +219,12 @@ function Header({ detail }: { detail: GameDetail }) {
       <TeamWatermark
         abbr={away.abbr}
         size={190}
-        className="-top-10 -left-12 opacity-[0.3]"
+        className="-top-10 -left-12 opacity-[0.2]"
       />
       <TeamWatermark
         abbr={home.abbr}
         size={190}
-        className="-top-10 -right-12 opacity-[0.3]"
+        className="-top-10 -right-12 opacity-[0.2]"
       />
 
       <div className="relative flex items-start gap-3">
