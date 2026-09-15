@@ -12,11 +12,11 @@ interface PlayoffColumnProps {
 function SectionLabel({ children, hint }: { children: string; hint?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 px-1">
-      <h3 className="font-mono text-[11.5px] tracking-[0.18em] text-mist">
+      <h3 className="font-mono text-[13px] tracking-[0.18em] text-mist">
         {children}
       </h3>
       {hint && (
-        <span className="font-mono text-[10.5px] tracking-[0.12em] text-mist opacity-70">
+        <span className="font-mono text-[12px] tracking-[0.12em] text-mist opacity-70">
           {hint}
         </span>
       )}
@@ -49,7 +49,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
         >
           {conference.id}
         </h2>
-        <span className="hidden font-mono text-[11.5px] tracking-[0.16em] text-mist sm:inline">
+        <span className="hidden font-mono text-[13px] tracking-[0.16em] text-mist sm:inline">
           {conference.name.toUpperCase()}
         </span>
       </header>
@@ -66,7 +66,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
       {/* The cut line is the whole point of the page — make it a real object. */}
       <div className="flex items-center gap-3 px-1 py-1">
         <span className="h-px flex-1 bg-gradient-to-r from-transparent via-live/50 to-live/50" />
-        <span className="font-mono text-[10.5px] tracking-[0.2em] text-live/80">
+        <span className="font-mono text-[12px] tracking-[0.2em] text-live/80">
           CUT LINE
         </span>
         <span className="h-px flex-1 bg-gradient-to-l from-transparent via-live/50 to-live/50" />
@@ -100,10 +100,10 @@ export const PlayoffColumn = memo(function PlayoffColumn({
                 title={`${team.location} ${team.name} — ${STATUS_META[team.status].label}`}
               >
                 <TeamLogo abbr={team.abbr} size={18} />
-                <span className="mono-tabular text-[11.5px] font-semibold text-fog">
+                <span className="mono-tabular text-[13px] font-semibold text-fog">
                   {team.abbr}
                 </span>
-                <span className="mono-tabular text-[11.5px] text-mist">
+                <span className="mono-tabular text-[13px] text-mist">
                   {team.record}
                 </span>
               </span>

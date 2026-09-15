@@ -45,7 +45,7 @@ export function Header({
             <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">
               CLINCH
             </span>
-            <span className="mt-1 font-mono text-[11.5px] tracking-[0.22em] text-mist">
+            <span className="mt-1 font-mono text-[11px] tracking-[0.16em] whitespace-nowrap text-mist sm:text-[12.5px] sm:tracking-[0.2em]">
               WHO&apos;S IN, WHO&apos;S OUT
             </span>
           </div>
@@ -53,14 +53,14 @@ export function Header({
 
         <div className="flex flex-col items-end gap-2">
           {live ? (
-            <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[11.5px] tracking-[0.15em] text-live">
+            <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-live">
               <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
               LIVE
             </span>
           ) : (
             <span
               className={clsx(
-                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11.5px] tracking-[0.15em]",
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[13px] tracking-[0.15em]",
                 connection === "live"
                   ? "border-line bg-ink/60 text-mist"
                   : "border-line bg-ink/60 text-mist opacity-70",
@@ -83,7 +83,7 @@ export function Header({
                   : "OFFLINE"}
             </span>
           )}
-          <span className="font-mono text-[11.5px] tracking-[0.14em] text-mist">
+          <span className="font-mono text-[12.5px] tracking-[0.12em] whitespace-nowrap text-mist">
             {weekLabel.toUpperCase()}
             {snapshot ? ` · ${snapshot.season.year}` : ""}
           </span>
@@ -105,7 +105,7 @@ export function Header({
                 onClick={() => onRoute(tab.id)}
                 aria-current={route === tab.id ? "page" : undefined}
                 className={clsx(
-                  "rounded-full px-3 py-1.5 font-display text-[14px] font-medium transition-colors sm:px-5",
+                  "rounded-full px-3 py-1.5 font-display text-[15.5px] font-medium transition-colors sm:px-5",
                   route === tab.id
                     ? "bg-paper text-abyss"
                     : "text-mist hover:text-fog",
@@ -129,7 +129,7 @@ export function Header({
                   onClick={() => onConference(id)}
                   aria-current={conference === id ? "true" : undefined}
                   className={clsx(
-                    "rounded-full px-3.5 py-1.5 font-mono text-[13px] font-medium tracking-wide transition-colors",
+                    "rounded-full px-3.5 py-1.5 font-mono text-[14.5px] font-medium tracking-wide transition-colors",
                     conference === id
                       ? "bg-brand/15 text-brand"
                       : "text-mist hover:text-fog",

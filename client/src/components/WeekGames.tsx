@@ -31,7 +31,7 @@ function Side({
       <TeamLogo abbr={abbr} size={18} />
       <span
         className={clsx(
-          "mono-tabular text-[12.5px] font-semibold",
+          "mono-tabular text-[14px] font-semibold",
           dim ? "text-mist" : "text-paper",
         )}
       >
@@ -39,7 +39,7 @@ function Side({
       </span>
       <span
         className={clsx(
-          "mono-tabular ml-auto text-[13px]",
+          "mono-tabular ml-auto text-[14.5px]",
           dim ? "text-mist" : "text-paper",
         )}
       >
@@ -64,10 +64,10 @@ export const WeekGames = memo(function WeekGames({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3 px-1">
-        <h3 className="font-mono text-[11.5px] tracking-[0.18em] text-mist">
+        <h3 className="font-mono text-[13px] tracking-[0.18em] text-mist">
           {label.toUpperCase()}
         </h3>
-        <span className="font-mono text-[10.5px] tracking-[0.12em] text-mist opacity-70">
+        <span className="font-mono text-[12px] tracking-[0.12em] text-mist opacity-70">
           {games.length} GAMES
         </span>
       </div>
@@ -120,7 +120,7 @@ export const WeekGames = memo(function WeekGames({
                   )}
                   <span
                     className={clsx(
-                      "mono-tabular truncate text-[10.5px] tracking-wide",
+                      "mono-tabular truncate text-[12px] tracking-wide",
                       game.state === "in" ? "text-live" : "text-mist",
                     )}
                   >

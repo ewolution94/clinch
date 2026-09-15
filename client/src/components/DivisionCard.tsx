@@ -12,7 +12,6 @@ export const DivisionCard = memo(function DivisionCard({
 }: DivisionCardProps) {
   const leader = division.teams[0];
   const accent = leader?.accent ?? "var(--color-mist)";
-  const inField = division.teams.filter((t) => t.seed <= 7).length;
 
   return (
     <section
@@ -23,7 +22,7 @@ export const DivisionCard = memo(function DivisionCard({
     >
       {/* Division banner, carrying the current leader's colours. */}
       <header
-        className="relative flex items-center justify-between gap-3 overflow-hidden px-4 py-3"
+        className="relative flex items-center overflow-hidden px-4 py-3"
         style={{
           background: `linear-gradient(102deg, color-mix(in srgb, ${accent} 30%, transparent) 0%, color-mix(in srgb, ${accent} 7%, transparent) 52%, transparent 100%)`,
         }}
@@ -43,25 +42,9 @@ export const DivisionCard = memo(function DivisionCard({
           }}
         />
 
-        <h3 className="relative font-display text-[15px] font-bold tracking-[0.1em] text-paper uppercase">
+        <h3 className="relative font-display text-[16.5px] font-bold tracking-[0.1em] text-paper uppercase">
           {division.teams[0]?.conference} {division.name}
         </h3>
-
-        {/* How much of the division is currently holding a seed — the one thing
-            the table below doesn't already say at a glance. */}
-        <span
-          className="relative mono-tabular shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold tracking-[0.1em]"
-          style={{
-            color: inField > 0 ? accent : "var(--color-mist)",
-            background:
-              inField > 0
-                ? `color-mix(in srgb, ${accent} 14%, transparent)`
-                : "transparent",
-            border: `1px solid ${inField > 0 ? `color-mix(in srgb, ${accent} 26%, transparent)` : "transparent"}`,
-          }}
-        >
-          {inField} IN FIELD
-        </span>
       </header>
 
       <div

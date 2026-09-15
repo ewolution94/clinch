@@ -31,15 +31,15 @@ function TopSeed({
       <TeamLogo abbr={team.abbr} size={48} accent={team.accent} eager />
       <div className="relative flex min-w-0 flex-col leading-none">
         <span
-          className="font-mono text-[10px] tracking-[0.2em]"
+          className="font-mono text-[11.5px] tracking-[0.2em]"
           style={{ color: team.accent }}
         >
           {conference} NO. 1 SEED
         </span>
-        <span className="mt-1 truncate font-display text-[17px] font-bold tracking-tight text-paper sm:text-[20px]">
+        <span className="mt-1 truncate font-display text-[18.5px] font-bold tracking-tight text-paper sm:text-[21px]">
           {team.name}
         </span>
-        <span className="mono-tabular mt-1 text-[12.5px] text-mist">
+        <span className="mono-tabular mt-1 text-[14px] text-mist">
           {team.record} · {team.streak}
         </span>
       </div>
@@ -81,7 +81,7 @@ export const SeasonHero = memo(function SeasonHero({
                 ? `WEEK ${played}`
                 : snapshot.week.label.toUpperCase()}
             </h1>
-            <span className="mono-tabular text-[14px] text-mist">
+            <span className="mono-tabular text-[15.5px] text-mist">
               / {snapshot.week.total}
             </span>
           </div>
@@ -93,7 +93,7 @@ export const SeasonHero = memo(function SeasonHero({
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <span className="mono-tabular shrink-0 text-[11.5px] tracking-wide text-mist">
+            <span className="mono-tabular shrink-0 text-[13px] tracking-wide text-mist">
               {snapshot.season.year}
             </span>
           </div>

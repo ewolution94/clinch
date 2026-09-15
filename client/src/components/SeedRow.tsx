@@ -46,12 +46,12 @@ export const SeedRow = memo(function SeedRow({
         }}
       >
         <span
-          className="mono-tabular text-[22px] leading-none font-bold sm:text-[26px]"
+          className="mono-tabular text-[23px] leading-none font-bold sm:text-[26px]"
           style={{ color: tier }}
         >
           {chasing ? formatGames(team.gamesBack) : team.seed}
         </span>
-        <span className="font-mono text-[9.5px] tracking-[0.12em] text-mist">
+        <span className="font-mono text-[11px] tracking-[0.12em] text-mist">
           {chasing ? (team.gamesBack === 0 ? "LEVEL" : "BACK") : "SEED"}
         </span>
       </div>
@@ -60,14 +60,14 @@ export const SeedRow = memo(function SeedRow({
         <TeamLogo abbr={team.abbr} size={34} accent={team.accent} />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate font-display text-[11.5px] tracking-[0.1em] text-mist uppercase">
+          <span className="truncate font-display text-[13px] tracking-[0.1em] text-mist uppercase">
             {team.location}
           </span>
-          <span className="truncate font-display text-[15px] leading-tight font-semibold text-paper">
+          <span className="truncate font-display text-[16.5px] leading-tight font-semibold text-paper">
             {team.name}
           </span>
           <span
-            className="mt-0.5 truncate font-mono text-[11px] tracking-[0.06em]"
+            className="mt-0.5 truncate font-mono text-[12.5px] tracking-[0.06em]"
             style={{ color: tier }}
           >
             {chasing
@@ -77,7 +77,7 @@ export const SeedRow = memo(function SeedRow({
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="mono-tabular text-[17px] leading-none font-bold text-paper">
+          <span className="mono-tabular text-[18.5px] leading-none font-bold text-paper">
             {team.record}
           </span>
           <FormDots form={team.form} />

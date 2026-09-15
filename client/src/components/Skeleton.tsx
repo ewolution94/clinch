@@ -39,10 +39,10 @@ export function Skeleton({ connection }: { connection: string }) {
   if (connection === "offline") {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="font-display text-[15px] text-fog">
+        <p className="font-display text-[16.5px] text-fog">
           Can&apos;t reach the server
         </p>
-        <p className="font-mono text-[12.5px] tracking-[0.12em] text-mist">
+        <p className="font-mono text-[14px] tracking-[0.12em] text-mist">
           RETRYING
         </p>
       </div>

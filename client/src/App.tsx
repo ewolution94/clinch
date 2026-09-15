@@ -134,7 +134,7 @@ export default function App() {
           ) : (
             <div className="flex flex-col gap-6">
               {snapshot.stale && (
-                <p className="rounded-xl border border-gold/25 bg-gold/8 px-3.5 py-2 font-mono text-[12.5px] text-gold">
+                <p className="rounded-xl border border-gold/25 bg-gold/8 px-3.5 py-2 font-mono text-[14px] text-gold">
                   Showing the last good data — the league feed didn&apos;t
                   answer on the most recent refresh.
                 </p>
@@ -165,7 +165,7 @@ export default function App() {
               ) : (
                 <>
                   {snapshot.season.type === 2 && snapshot.week.number <= 4 && (
-                    <p className="rounded-xl border border-line bg-ink/50 px-3.5 py-2.5 font-display text-[13px] leading-relaxed text-mist">
+                    <p className="rounded-xl border border-line bg-ink/50 px-3.5 py-2.5 font-display text-[14.5px] leading-relaxed text-mist">
                       It&apos;s {snapshot.week.label.toLowerCase()} of{" "}
                       {snapshot.week.total} — nearly every team is still within
                       a game of the cut, so the seeding below moves a lot each
@@ -182,7 +182,7 @@ export default function App() {
               )}
 
               <footer className="border-t border-line-soft pt-5 text-center">
-                <p className="font-mono text-[11.5px] tracking-[0.1em] text-mist">
+                <p className="font-mono text-[13px] tracking-[0.1em] text-mist">
                   {snapshot.season.label.toUpperCase()} ·{" "}
                   {snapshot.week.label.toUpperCase()} OF {snapshot.week.total} ·
                   UPDATED {formatClock(snapshot.generatedAt)}

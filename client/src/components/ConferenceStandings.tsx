@@ -1,6 +1,5 @@
 import { memo } from "react";
 import { DivisionCard } from "./DivisionCard";
-import { TeamLogo } from "./TeamLogo";
 import type { ConferenceView } from "../lib/types";
 
 interface ConferenceStandingsProps {
@@ -10,13 +9,12 @@ interface ConferenceStandingsProps {
 export const ConferenceStandings = memo(function ConferenceStandings({
   conference,
 }: ConferenceStandingsProps) {
-  const inField = conference.seeds.slice(0, 7);
   const tint =
     conference.id === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
   return (
     <section className="@container flex flex-col gap-4">
-      <header className="relative flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-1">
+      <header className="relative flex items-end px-1">
         <div className="relative flex items-end gap-3">
           <span
             aria-hidden="true"
@@ -36,29 +34,9 @@ export const ConferenceStandings = memo(function ConferenceStandings({
           >
             {conference.id}
           </h2>
-          <span className="relative hidden pb-1.5 font-mono text-[10.5px] tracking-[0.18em] text-mist @2xl:inline">
+          <span className="relative hidden pb-1.5 font-mono text-[12px] tracking-[0.18em] text-mist @2xl:inline">
             {conference.name.toUpperCase()}
           </span>
-        </div>
-
-        {/* The seven teams currently holding a seed, as marks rather than a
-            legend — the fastest read on the page. */}
-        <div className="relative flex items-center gap-2 pb-1.5">
-          <span className="font-mono text-[10px] tracking-[0.18em] text-mist">
-            IN THE FIELD
-          </span>
-          <div className="flex items-center -space-x-1">
-            {inField.map((team, i) => (
-              <span
-                key={team.abbr}
-                className="relative rounded-full transition-transform hover:z-10 hover:scale-125"
-                style={{ zIndex: 7 - i }}
-                title={`${team.seed}. ${team.location} ${team.name} (${team.record})`}
-              >
-                <TeamLogo abbr={team.abbr} size={26} accent={team.accent} />
-              </span>
-            ))}
-          </div>
         </div>
       </header>
 

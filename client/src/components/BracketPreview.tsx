@@ -12,17 +12,17 @@ function Side({ team, seed }: { team: TeamEntry | undefined; seed: number }) {
   return (
     <div className="flex items-center gap-2">
       <span
-        className="mono-tabular w-3 text-[11.5px] font-bold"
+        className="mono-tabular w-3 text-[13px] font-bold"
         style={{ color: seedRole(seed, team.divisionRank).color }}
       >
         {seed}
       </span>
       <TeamLogo abbr={team.abbr} size={22} accent={team.accent} />
       <div className="flex min-w-0 flex-col leading-none">
-        <span className="mono-tabular truncate text-[12.5px] font-bold text-paper">
+        <span className="mono-tabular truncate text-[14px] font-bold text-paper">
           {team.abbr}
         </span>
-        <span className="mono-tabular mt-0.5 text-[10.5px] text-mist">
+        <span className="mono-tabular mt-0.5 text-[12px] text-mist">
           {team.record}
         </span>
       </div>
@@ -44,10 +44,10 @@ export const BracketPreview = memo(function BracketPreview({
   return (
     <div className="rounded-2xl border border-line bg-ink/55 p-3 backdrop-blur-sm sm:p-4">
       <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h3 className="font-mono text-[11.5px] tracking-[0.18em] text-mist">
+        <h3 className="font-mono text-[13px] tracking-[0.18em] text-mist">
           IF THE SEASON ENDED TODAY
         </h3>
-        <span className="font-mono text-[10.5px] tracking-[0.14em] text-mist">
+        <span className="font-mono text-[12px] tracking-[0.14em] text-mist">
           WILD CARD ROUND
         </span>
       </div>
@@ -63,16 +63,16 @@ export const BracketPreview = memo(function BracketPreview({
                 "color-mix(in srgb, var(--color-gold) 8%, transparent)",
             }}
           >
-            <span className="font-mono text-[10.5px] tracking-[0.14em] text-gold">
+            <span className="font-mono text-[12px] tracking-[0.14em] text-gold">
               FIRST-ROUND BYE
             </span>
             <div className="mt-2 flex items-center gap-2">
               <TeamLogo abbr={bye.abbr} size={26} accent={bye.accent} />
               <div className="flex min-w-0 flex-col leading-none">
-                <span className="mono-tabular truncate text-[13px] font-bold text-paper">
+                <span className="mono-tabular truncate text-[14.5px] font-bold text-paper">
                   {bye.abbr}
                 </span>
-                <span className="mono-tabular mt-0.5 text-[10.5px] text-mist">
+                <span className="mono-tabular mt-0.5 text-[12px] text-mist">
                   {bye.record}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export const BracketPreview = memo(function BracketPreview({
             <Side team={bySeed.get(game.higherSeed)} seed={game.higherSeed} />
             <div className="flex items-center gap-2 pl-3">
               <span className="h-px flex-1 bg-line" />
-              <span className="font-mono text-[9.5px] tracking-[0.14em] text-mist">
+              <span className="font-mono text-[11px] tracking-[0.14em] text-mist">
                 VS
               </span>
               <span className="h-px flex-1 bg-line" />

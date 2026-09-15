@@ -49,7 +49,7 @@ function Side({
           mirrored && "flex-row-reverse",
         )}
       >
-        <span className="truncate font-mono text-[10px] tracking-[0.12em] text-mist/55 uppercase">
+        <span className="truncate font-mono text-[10.5px] tracking-[0.08em] whitespace-nowrap text-mist/55 uppercase">
           {source || "TBD"}
         </span>
       </div>
@@ -90,7 +90,7 @@ function Side({
       />
       <span
         className={clsx(
-          "mono-tabular shrink-0 text-[10.5px] text-mist",
+          "mono-tabular shrink-0 text-[12px] text-mist",
           mirrored ? "pl-1" : "pr-0.5",
         )}
       >
@@ -106,21 +106,21 @@ function Side({
         <span
           className={clsx(
             "mono-tabular shrink-0 font-bold",
-            large ? "text-[14px]" : "text-[13px]",
+            large ? "text-[15.5px]" : "text-[14.5px]",
           )}
         >
           {team.abbr}
         </span>
         {/* Desktop bracket columns are ~140px; a phone's are full width. Only
             the wide ones have room for a name next to the abbreviation. */}
-        <span className="hidden truncate font-display text-[14px] opacity-85 @[260px]/match:inline">
+        <span className="hidden truncate font-display text-[15.5px] opacity-85 @[260px]/match:inline">
           {team.name}
         </span>
       </span>
       <span
         className={clsx(
           "mono-tabular shrink-0",
-          large ? "text-[13px]" : "text-[12.5px]",
+          large ? "text-[14.5px]" : "text-[14px]",
           score !== null ? "font-bold" : "opacity-70",
         )}
       >
@@ -168,14 +168,14 @@ export function BracketMatchCard({
           data-game-id={match.gameId}
           aria-label="Game detail"
           title="Game detail"
-          className="absolute right-1 bottom-1 z-10 flex h-5 w-5 items-center justify-center rounded-md border border-line bg-abyss/80 font-mono text-[10.5px] text-mist transition-colors hover:border-fog/40 hover:text-paper"
+          className="absolute right-1 bottom-1 z-10 flex h-5 w-5 items-center justify-center rounded-md border border-line bg-abyss/80 font-mono text-[12px] text-mist transition-colors hover:border-fog/40 hover:text-paper"
         >
           ↗
         </button>
       )}
       {match.decidedBy === "pick" && (
         <span
-          className="absolute top-0 right-0 z-10 rounded-bl-md bg-brand/18 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.14em] text-brand"
+          className="absolute top-0 right-0 z-10 rounded-bl-md bg-brand/18 px-1.5 py-0.5 font-mono text-[10.5px] tracking-[0.14em] text-brand"
           title="Your prediction, not a result"
         >
           PICK
@@ -229,7 +229,7 @@ export function ByeCard({
           mirrored && "flex-row-reverse",
         )}
       >
-        <span className="mono-tabular shrink-0 text-[10.5px] text-gold">1</span>
+        <span className="mono-tabular shrink-0 text-[12px] text-gold">1</span>
         <TeamLogo abbr={team.abbr} size={20} accent={team.accent} />
         <span
           className={clsx(
@@ -237,24 +237,24 @@ export function ByeCard({
             mirrored && "flex-row-reverse",
           )}
         >
-          <span className="mono-tabular shrink-0 text-[13px] font-bold text-paper">
+          <span className="mono-tabular shrink-0 text-[14.5px] font-bold text-paper">
             {team.abbr}
           </span>
-          <span className="hidden truncate font-display text-[14px] text-fog @[260px]/match:inline">
+          <span className="hidden truncate font-display text-[15.5px] text-fog @[260px]/match:inline">
             {team.name}
           </span>
         </span>
-        <span className="mono-tabular shrink-0 text-[11.5px] text-mist">
+        <span className="mono-tabular shrink-0 text-[13px] text-mist">
           {team.record}
         </span>
       </div>
       <div
         className={clsx(
-          "flex h-6 items-center bg-gold/10 px-2.5",
+          "flex min-h-6 items-center bg-gold/10 px-2.5 py-0.5",
           mirrored && "justify-end",
         )}
       >
-        <span className="font-mono text-[10px] tracking-[0.16em] text-gold">
+        <span className="font-mono text-[10.5px] tracking-[0.1em] whitespace-nowrap text-gold">
           FIRST-ROUND BYE
         </span>
       </div>
