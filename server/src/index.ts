@@ -71,6 +71,13 @@ app.get("/api/game/:id", async (req, res) => {
   }
 });
 
+/**
+ * Open event streams. An SSE response is a connection that by design never
+ * finishes, so `server.close()` — which waits for connections to end — would
+ * wait on them forever. Shutdown has to end them itself.
+ */
+const streams = new Set<() => void>();
+
 app.get("/api/stream", (req, res) => {
   res.writeHead(200, {
     "content-type": "text/event-stream",
@@ -86,11 +93,15 @@ app.get("/api/stream", (req, res) => {
   const unsubscribe = store.subscribe(send);
   const heartbeat = setInterval(() => res.write(": ping\n\n"), 25_000);
 
-  req.on("close", () => {
+  const close = () => {
     clearInterval(heartbeat);
     unsubscribe();
+    streams.delete(close);
     res.end();
-  });
+  };
+
+  streams.add(close);
+  req.on("close", close);
 });
 
 if (existsSync(clientDist)) {
@@ -113,9 +124,49 @@ const server = app.listen(config.port, () => {
   console.log(`[clinch] listening on :${config.port}`);
 });
 
+/**
+ * Shutdown used to hang whenever anyone had the page open.
+ *
+ * `server.close()` stops accepting new connections and then waits for the
+ * existing ones to end — but an SSE stream never ends, so with a single browser
+ * tab connected the callback never ran and the process sat there. Pressing
+ * Ctrl+C again didn't help: each press called `server.close(cb)` again, and each
+ * call registers another one-shot `close` listener, which is where
+ * "MaxListenersExceededWarning: 11 close listeners added to [Server]" came from.
+ * The warning was the symptom; the open stream was the cause.
+ *
+ * In a container it showed up as every restart taking the full ten seconds
+ * before Docker gave up on SIGTERM and sent SIGKILL.
+ */
+let shuttingDown = false;
+
+function shutdown(signal: string): void {
+  if (shuttingDown) {
+    // A second signal means the reader is no longer asking politely — and
+    // returning here is what stops the listeners from stacking up.
+    console.warn(`[clinch] ${signal} again — exiting now`);
+    process.exit(1);
+  }
+  shuttingDown = true;
+  console.log(`[clinch] ${signal} — shutting down`);
+
+  store.stop();
+  for (const close of [...streams]) close();
+
+  server.close(() => process.exit(0));
+  // Keep-alive sockets with nothing in flight would otherwise hold the door.
+  server.closeIdleConnections();
+
+  // Nothing here is worth waiting on: no writes, no disk, no state. If the
+  // drain hasn't finished shortly, drop what's left and go. Unref'd so a clean
+  // shutdown still exits immediately rather than sitting out the grace period.
+  setTimeout(() => {
+    console.warn("[clinch] drain timed out — forcing exit");
+    server.closeAllConnections();
+    process.exit(0);
+  }, 3_000).unref();
+}
+
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.on(signal, () => {
-    store.stop();
-    server.close(() => process.exit(0));
-  });
+  process.on(signal, () => shutdown(signal));
 }

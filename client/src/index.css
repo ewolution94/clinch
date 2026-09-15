@@ -27,6 +27,14 @@
   --color-fog: #b2bdd2;
   --color-paper: #eef2f9;
 
+  /**
+   * The disc every team mark sits on. Near-paper on purpose: measured across all
+   * 32 marks, a light plate is the only ground every one of them clears 3:1 on
+   * (worst case 4.2:1). On the card ground itself the Giants manage 1.24:1 and
+   * simply vanish. See TeamLogo.
+   */
+  --color-plate: color-mix(in srgb, #eef2f9 94%, #0c111c);
+
   /* Playoff tiers, brightest to dimmest: bye, division, wild card, chasing. */
   --color-brand: #ff6a1a;
   --color-gold: #ffc53d;

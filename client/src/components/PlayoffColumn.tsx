@@ -99,7 +99,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
                 className="flex items-center gap-1.5 rounded-lg border border-line-soft bg-abyss-2/60 px-2 py-1.5 opacity-55 transition-opacity hover:opacity-90"
                 title={`${team.location} ${team.name} — ${STATUS_META[team.status].label}`}
               >
-                <TeamLogo abbr={team.abbr} size={18} />
+                <TeamLogo abbr={team.abbr} size={18} accent={team.accent} />
                 <span className="mono-tabular text-[13px] font-semibold text-fog">
                   {team.abbr}
                 </span>

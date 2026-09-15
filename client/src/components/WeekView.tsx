@@ -5,6 +5,7 @@ import { Shimmer } from "./Shimmer";
 import { BroadcastBadge, BroadcastBand } from "./Broadcast";
 import { useWeek, prefetchWeek } from "../hooks/useWeek";
 import { currentWeek, findBySlug, relativeLabel, weekSlug } from "../lib/weeks";
+import { teamMap } from "../lib/teams";
 import type {
   CalendarWeek,
   ScoreboardGame,
@@ -240,13 +241,7 @@ export function WeekView({
     else go(previous, "back");
   };
 
-  const teams = useMemo(() => {
-    const map = new Map<string, TeamEntry>();
-    for (const conference of snapshot.conferences) {
-      for (const team of conference.seeds) map.set(team.abbr, team);
-    }
-    return map;
-  }, [snapshot.conferences]);
+  const teams = useMemo(() => teamMap(snapshot), [snapshot]);
 
   const days = useMemo(() => {
     const groups = new Map<string, ScoreboardGame[]>();

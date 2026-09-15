@@ -24,6 +24,8 @@ interface SideProps {
   mirrored: boolean;
   size: "sm" | "lg";
   onPick: () => void;
+  /** Keeps the score clear of the corner "open game" button. */
+  reserveCorner?: boolean;
 }
 
 function Side({
@@ -35,6 +37,7 @@ function Side({
   mirrored,
   size,
   onPick,
+  reserveCorner,
 }: SideProps) {
   const large = size === "lg";
   const height = large ? "h-12" : "h-9";
@@ -66,6 +69,11 @@ function Side({
         "group/side relative flex w-full items-center gap-2 overflow-hidden px-2.5 transition-colors",
         height,
         mirrored && "flex-row-reverse",
+        /* The "open game" affordance is pinned to this card's bottom-right
+           corner — which is exactly where this row puts its score. Without a
+           reserved gutter the button sits on top of the number, and a played
+           wild card game reads "30" as "3". */
+        reserveCorner && "pr-7",
         won
           ? "text-paper"
           : lost
@@ -194,6 +202,7 @@ export function BracketMatchCard({
       <div className="h-px bg-line-soft" />
       <Side
         team={match.away}
+        reserveCorner={openable}
         source={match.awaySource}
         score={match.score?.away ?? null}
         won={awayWon}

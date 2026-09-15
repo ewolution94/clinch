@@ -147,6 +147,20 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   That page is hand-written and ships typos ("Los Ageles Rams"), which is why
   one recognised team is enough to resolve a game — within a week a team plays
   once.
+- **Shutdown must end the SSE streams itself.** `server.close()` waits for open
+  connections to finish, and an event stream never finishes — so with a single
+  browser tab connected the close callback never fired and the process just sat
+  there. Pressing Ctrl+C again made it worse: every press called
+  `server.close(cb)` again and each call registers another one-shot `close`
+  listener, which is where `MaxListenersExceededWarning: 11 close listeners
+  added to [Server]` came from. The warning was the symptom, the open stream was
+  the cause. `index.ts` now tracks open streams, ends them on the signal, guards
+  against a second signal re-entering, and force-exits after a 3s unref'd grace.
+  If you add another long-lived connection type, it has to join that set.
+  Reproduce the old behaviour with: start the server, `curl -sN .../api/stream`,
+  then `kill -TERM` — it used to hang forever.
+  In production this was every container restart eating Docker's full 10s
+  SIGTERM grace before the SIGKILL.
 - **ESPN's `playoffSeed` is authoritative.** It has the NFL's full tiebreaker
   chain applied. Reimplementing head-to-head/common-games/strength-of-victory
   would be a lot of code that is subtly wrong all season.
@@ -231,9 +245,49 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
 - **Team colour never goes *behind* a logo.** The first version put a blurred
   disc of the team's accent behind the mark, which erased the Jets, Eagles,
   Seahawks and Giants — their logos are the same hue as their brand. `TeamLogo`
-  now draws a neutral light plate ringed in the team colour, plus a faint white
-  halo to lift dark marks off the page. All 32 were compared side by side before
-  settling on it; don't "restore the glow".
+  draws a neutral plate ringed in the team colour instead. Don't "restore the
+  glow".
+- **The logo plate is light for every team, and that is arithmetic.** Measured
+  over all 32 marks (percentile luminance of the opaque pixels, WCAG contrast
+  against each candidate ground): the marks span **34×**, NYG 0.019 to PIT 0.643.
+  On the card ground NYG is 1.24:1, LAR 1.77:1, NYJ 2.21:1 — the Jets were a
+  green blob. On a near-paper disc the worst team in the league is **4.2:1**, and
+  contrast improves monotonically as the plate lightens past ~70% paper. There is
+  no dark plate that serves both ends of that range, so don't "tone the disc down
+  to fit the theme" — it will silently re-break those three. The white halo that
+  used to lift dark marks is gone; on a light plate it only muddied the bright
+  ones.
+- **Watermarks are the real artwork, and must stay that way.** They shipped once
+  as accent-filled silhouettes (logo-as-mask). It was perfectly uniform and Eric
+  rejected it on sight — "less cool", he wanted the logos back in full glory.
+  Uniformity now comes from measurement instead: `scripts/measure-marks.py`
+  measures each asset's *ink* (`mean sRGB × √coverage`) and writes
+  `client/src/lib/markWeight.ts`; `TeamWatermark` applies a per-mark opacity
+  multiplier plus a gentle `brightness()`. Don't reintroduce masking, and don't
+  hand-edit the generated table.
+- **Use "ink", not relative luminance, to judge a mark's weight.** Luminance
+  weights blue at 0.072, so the Giants' solid navy measures 34× below the
+  Steelers; correcting by that factor produced `brightness(3.4)` and a vivid blue
+  slab that dominated the NFC East card — visibly worse than the problem. Mean
+  sRGB tracks apparent presence far better, and the √coverage term separates a
+  big solid shape from a thin outline. Under ink the faintest marks are the
+  Panthers and Jets, which is what the eye agrees with. Spread: 11× raw → 1.7×
+  corrected, with brightness never above 1.7.
+- **The brightness/alpha caps are deliberately mild.** This is artwork; pushing
+  harder to close the last of the gap distorts it. A near-black mark being
+  slightly quieter than a bright one is honest.
+- **Watermark placement lives in the component, deliberately.** One edge,
+  vertically centred; `side="left"` exists only for the genuinely mirrored game
+  dialog. It used to take a className and the call sites diverged — SeasonHero
+  mirrored the NFC card's mark onto the left, straight under its own logo, and
+  SeedRow bled its mark into the bottom-right corner where the record and form
+  dots live. **A watermark may only go where the right side carries no data**,
+  which is why `SeedRow` now has none.
+- **Accents come from context (`lib/accents.tsx`), not props.** A chip could
+  otherwise render grey simply because its caller only had an abbreviation — that
+  was the real reason the schedule strip and the opponent chips inside an
+  expanded row looked different from every other mark. Don't reintroduce
+  "pass the accent down three levels".
 - **Fonts and logos are served locally** (two variable woff2 files, 32 webp
   marks, ~290 kB total). The page makes no third-party requests — no Google
   Fonts, no ESPN CDN hotlinking.
@@ -246,10 +300,26 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   registry credentials. Running on the NAS behind the Cloudflare Tunnel at
   **clinch.ewolution.cloud**, port 4600, no volume.
 - **To redeploy:** commit on `main`, then `git push origin main:release`. That
-  branch is the CI trigger; a green run publishes `:latest`, then pull the image
-  in Portainer. The Portainer stack must NOT be the repo's `docker-compose.yml`
-  — that has `build: .` and would make Portainer build instead of pull. Use an
-  `image:`-only stack.
+  branch is the CI trigger; a green run publishes `:latest` and **Watchtower on
+  the NAS picks it up within ~5 minutes** — no Portainer click needed any more.
+  The stack is `deploy/portainer-stack.yml`; it must NOT be the repo's
+  `docker-compose.yml`, which has `build: .` and would make Portainer build
+  instead of pull.
+- **Portainer does not poll, and never did.** `:latest` is a tag, not a
+  subscription — before Watchtower, a green CI run changed nothing on the NAS
+  until someone hit Recreate with "re-pull image". Worth remembering if
+  Watchtower is ever removed.
+- **Watchtower is scoped by label and that is load-bearing.**
+  `WATCHTOWER_LABEL_ENABLE=true` means it only touches containers carrying
+  `com.centurylinklabs.watchtower.enable=true`. Drop that env var and it starts
+  auto-updating everything else on the NAS — Axioma, PLANUM, the landing page.
+- **Watchtower's image is pinned and carries no enable label of its own**, so it
+  never updates itself: it mounts the Docker socket, which is root-equivalent on
+  the host, and an unattended auto-update of that is a worse trade than a manual
+  version bump. Note the upstream `containrrr/watchtower` is **archived** (last
+  release Nov 2023); the stack uses the maintained fork
+  `nickfedor/watchtower` (github.com/nicholas-fedor/watchtower), same flags and
+  the same `com.centurylinklabs.*` labels.
 - **The `release`/`main` divergence is resolved locally.** `main` was
   fast-forwarded onto `release` on 2026-09-15 and is the checked-out branch
   again; nothing was pushed. `origin/main` is therefore still behind — the next
@@ -274,6 +344,17 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   aborted because of invalid state"). Name handover, focus, inert and layout are
   all testable there; whether the morph actually *runs* is not. Check that in a
   real browser.
+- **Logo sweep verified 2026-09-15** on all four routes at 375px and 1280px, live
+  2026 and `CLINCH_SEASON=2025` (filled bracket + Super Bowl card): 169 chips,
+  none missing the plate/ring, none without a team colour, and **zero overlaps**
+  between any watermark and any text in its card — measured in the page, not
+  eyeballed. Also fixed while sweeping: the bracket's corner "open game" button
+  sat on top of the lower team's score, so a played wild card game read "30" as
+  "3" (`reserveCorner` on the bottom `Side`). Re-verified after watermarks went
+  back to real artwork: 169 chips clean, zero glyph overlaps on all four routes.
+  The game dialog is the one intentional exception — its two large marks sit
+  behind the header text by design, and are now *lighter* than they were before
+  the sweep because the weight correction applies there too.
 - **Broadcast feature verified** against live listings on 2026-09-15: week 2 six
   of sixteen (five RTL + the RTL+ exclusive Bengals–Texans), week 3 three
   confirmed night games with the Sunday slots correctly `candidate` ("1 of 9"),

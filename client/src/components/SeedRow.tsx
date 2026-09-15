@@ -1,6 +1,5 @@
 import { memo } from "react";
 import { TeamLogo } from "./TeamLogo";
-import { TeamWatermark } from "./TeamWatermark";
 import { FormDots } from "./FormDots";
 import { STATUS_META, seedRole } from "../lib/status";
 import { formatGames } from "../lib/format";
@@ -24,20 +23,20 @@ export const SeedRow = memo(function SeedRow({
   const clinched =
     team.gamesRemaining > 0 && team.status.startsWith("clinched");
 
+  /*
+   * No watermark on this row, deliberately. The record and the form dots live in
+   * the bottom-right corner, which is exactly where the mark used to be bled —
+   * so every row had its two most-read values sitting on top of a logo. There is
+   * no free corner in a row this dense; the accent wash and the chip carry the
+   * team identity instead.
+   */
   return (
     <article
       className="animate-rise relative flex items-stretch overflow-hidden rounded-xl border border-line bg-ink/60"
       style={{
-        background: `linear-gradient(90deg, color-mix(in srgb, ${team.accent} 17%, var(--color-ink)) 0%, color-mix(in srgb, ${team.accent} 5%, var(--color-ink)) 40%, var(--color-ink) 78%)`,
+        background: `linear-gradient(90deg, color-mix(in srgb, ${team.accent} 22%, var(--color-ink)) 0%, color-mix(in srgb, ${team.accent} 7%, var(--color-ink)) 42%, var(--color-ink) 78%)`,
       }}
     >
-      {/* The team's own mark, blown up and bled off the right edge — the banner. */}
-      <TeamWatermark
-        abbr={team.abbr}
-        size={110}
-        className="-right-5 -bottom-7 opacity-[0.1]"
-      />
-
       <div
         className="flex w-11 shrink-0 flex-col items-center justify-center gap-0.5 border-r sm:w-14"
         style={{

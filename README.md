@@ -113,6 +113,17 @@ Then point the Cloudflare Tunnel's public hostname at container port `4600`.
 Clinch has no hardcoded origin assumptions and stores nothing, so the container
 is disposable — restarting it just re-pulls the league.
 
+That command builds from source. **The deployed stack doesn't** — it pulls the
+image CI publishes to `ghcr.io/ewolution94/clinch:latest`, and lives in
+[`deploy/portainer-stack.yml`](deploy/portainer-stack.yml). Don't point Portainer
+at `docker-compose.yml`: the `build: .` in it would make the NAS compile Clinch
+instead of pulling it.
+
+The stack also runs **Watchtower**, which polls the registry every five minutes
+and recreates Clinch when a new image appears — so `git push origin main:release`
+is the entire deploy. It is scoped by label (`WATCHTOWER_LABEL_ENABLE`), so it
+only ever touches containers that opt in, and nothing else on the host.
+
 ### Environment variables
 
 | Variable                  | Default   | Purpose                                                    |
@@ -198,6 +209,56 @@ game that kicks off at 02:20 Monday is printed on Sunday's page; and the listing
 only run about a fortnight ahead, which is why a week further out than that says
 so instead of showing an empty set.
 
+## How team marks are drawn
+
+Every logo in the app is the same object: a mark on a near-paper disc, ringed in
+the team's colour. That uniformity is a measurement, not a preference.
+
+The 32 marks span **34× in luminance** — the Giants' at 0.019, the Steelers' at
+0.643. On the near-black card ground three of them (NYG, LAR, NYJ) land between
+1.2:1 and 2.2:1 and read as coloured smudges; the Jets in particular were a green
+blob. On a light disc the *worst* mark in the league is 4.2:1. No single dark
+treatment can serve both ends of that range, so the disc is light for all 32 and
+the team's colour does its work as a ring — never behind the mark, which is what
+erased the Jets, Eagles, Seahawks and Giants in the first place.
+
+The accent is resolved from context rather than passed down, so a chip can't end
+up colourless just because whatever drew it only had an abbreviation to hand.
+
+### Watermarks
+
+The oversized mark that turns a card into a banner is the **real artwork, in its
+own colours** — full detail, not a silhouette or a tinted wash.
+
+Uniformity comes from measuring instead of flattening. Drawn at one fixed opacity
+the 32 marks differ by ~11× in how much of their tile they fill, so the Steelers
+and Titans shouted while the Panthers and Jets disappeared, and every card looked
+individually tuned. Each asset is measured once at author time — `mean sRGB ×
+√coverage`, what the generator calls *ink* — and the correction is baked into
+[`markWeight.ts`](client/src/lib/markWeight.ts): opacity trims the heavy marks
+back, and a gentle `brightness()` (never more than 1.7×) lifts the faintest.
+Measured spread after correction is 1.7×. Regenerate with:
+
+```bash
+python3 scripts/measure-marks.py
+```
+
+Relative luminance was the obvious measure and it is the wrong one here: it
+weights blue at 0.07, so the Giants' solid navy scores 34× below the Steelers,
+and correcting by that much turned the mark into a vivid blue slab that dominated
+its card.
+
+Two rules keep them out of the way:
+
+- **Placement belongs to the component.** A watermark bleeds off one edge, always
+  vertically centred — the right, unless a layout is genuinely mirrored, as the
+  game dialog is. It used to take a free-form class and the call sites disagreed:
+  mirrored onto the left of one card, dropped into the bottom-right corner of
+  another, directly under the score.
+- **Only where the right side carries no data.** A dense row has no free corner,
+  so the playoff rows have no watermark at all — their record and form dots live
+  exactly where it would go.
+
 ## How the labels are derived
 
 Every status is settled arithmetic, never a projection. A win counts 1 and a tie
@@ -256,7 +317,7 @@ clinch/
 │   └── logos/              32 team marks, 160px webp, ~230 kB total
 ├── client/src/
 │   ├── components/         Header, SeasonHero, DivisionCard, TeamRow, SeedRow,
-│   │                       BracketTree, BracketConnectors, Broadcast…
+│   │                       TeamLogo, TeamWatermark, BracketTree, Broadcast…
 │   ├── hooks/              useSnapshot (SSE), useRoute, useMediaQuery
 │   └── lib/                types, status ladder, bracket resolver, formatting
 ├── Dockerfile              multi-stage build → single runtime image

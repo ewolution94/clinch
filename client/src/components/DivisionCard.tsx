@@ -30,8 +30,9 @@ export const DivisionCard = memo(function DivisionCard({
         {leader && (
           <TeamWatermark
             abbr={leader.abbr}
-            size={104}
-            className="-top-7 right-0 opacity-[0.33]"
+            size={84}
+            opacity={0.22}
+            bleed={6}
           />
         )}
         <span

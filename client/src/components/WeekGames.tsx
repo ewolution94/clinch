@@ -3,10 +3,12 @@ import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import { edgeFadeMask, useOverflowEdges } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
-import type { ScoreboardGame } from "../lib/types";
+import type { ScoreboardGame, TeamEntry } from "../lib/types";
 
 interface WeekGamesProps {
   games: ScoreboardGame[];
+  /** Joined by abbreviation, only so the marks can carry their team's colour. */
+  teams: Map<string, TeamEntry>;
   label: string;
   onOpenGame: (id: string) => void;
   /**
@@ -19,16 +21,18 @@ interface WeekGamesProps {
 
 function Side({
   abbr,
+  accent,
   score,
   dim,
 }: {
   abbr: string;
+  accent: string | undefined;
   score: number | null;
   dim: boolean;
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <TeamLogo abbr={abbr} size={18} />
+      <TeamLogo abbr={abbr} size={18} accent={accent} />
       <span
         className={clsx(
           "mono-tabular text-[14px] font-semibold",
@@ -51,6 +55,7 @@ function Side({
 
 export const WeekGames = memo(function WeekGames({
   games,
+  teams,
   label,
   onOpenGame,
   morphCardId,
@@ -106,11 +111,13 @@ export const WeekGames = memo(function WeekGames({
               >
                 <Side
                   abbr={game.away}
+                  accent={teams.get(game.away)?.accent}
                   score={game.awayScore}
                   dim={final && !awayWon}
                 />
                 <Side
                   abbr={game.home}
+                  accent={teams.get(game.home)?.accent}
                   score={game.homeScore}
                   dim={final && !homeWon}
                 />

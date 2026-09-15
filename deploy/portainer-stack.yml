@@ -1,0 +1,63 @@
+# The stack Portainer runs on the NAS.
+#
+# This is deliberately NOT the repo's docker-compose.yml. That one carries
+# `build: .`, which makes Portainer try to build Clinch from source on the NAS
+# instead of pulling the image CI already published. Paste this into Portainer's
+# stack editor (or point a Git-backed stack at this file) — never that one.
+#
+# Kept in the repo so the deployed shape is reviewable. Portainer holds the
+# authoritative copy; reconcile before pasting if you've changed it there.
+
+services:
+  clinch:
+    image: ghcr.io/ewolution94/clinch:latest
+    container_name: clinch
+    restart: unless-stopped
+    ports:
+      - "4600:4600"
+    environment:
+      # How often the league is re-polled when nothing is being played.
+      - CLINCH_REFRESH_MS=120000
+      # …and while a game is in progress.
+      - CLINCH_LIVE_REFRESH_MS=25000
+      # German outlets that count as watchable on the schedule. The listings
+      # parser already sees Nitro and Sky, so adding either is a change here
+      # rather than in code.
+      - CLINCH_OUTLETS=RTL,RTL+
+      # Stop looking broadcasts up entirely:
+      # - CLINCH_BROADCAST=off
+      # Pin a completed season instead of following the live one:
+      # - CLINCH_SEASON=2025
+    labels:
+      # The opt-in Watchtower looks for. Without this label the container is
+      # ignored — see the note on label-enable below.
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # Polls GHCR and recreates Clinch when CI publishes a new :latest, so pushing
+  # `main:release` is the whole deploy. Outbound only — nothing new is exposed
+  # through the Cloudflare Tunnel.
+  #
+  # Image note: the original containrrr/watchtower is ARCHIVED upstream and its
+  # last release was November 2023. This is the actively maintained fork
+  # (github.com/nicholas-fedor/watchtower), same flags and same labels.
+  watchtower:
+    image: nickfedor/watchtower:1.22.2
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      # Load-bearing. Without it Watchtower updates EVERY container on the NAS —
+      # Axioma, PLANUM, the landing page — not just the one we labelled. With it
+      # set, only containers carrying the enable label above are touched.
+      - WATCHTOWER_LABEL_ENABLE=true
+      # A manifest check is cheap, so this is roughly the delay between a green
+      # CI run and the NAS following it. 86400 (a day) is the default.
+      - WATCHTOWER_POLL_INTERVAL=300
+      # Bin the superseded image, or the NAS accretes one per deploy.
+      - WATCHTOWER_CLEANUP=true
+      - TZ=Europe/Berlin
+    volumes:
+      # Root-equivalent access to the host: this is what lets Watchtower recreate
+      # a container, and the reason the tag is pinned rather than :latest, and
+      # why Watchtower carries no enable label of its own — it does not update
+      # itself. Bump the pin by hand when you want a newer one.
+      - /var/run/docker.sock:/var/run/docker.sock

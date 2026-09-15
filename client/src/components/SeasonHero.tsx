@@ -7,26 +7,32 @@ interface SeasonHeroProps {
   snapshot: Snapshot;
 }
 
+/**
+ * The two cards used to mirror each other — the AFC card's gradient and mark ran
+ * left-to-right, the NFC card's right-to-left. But their *contents* never
+ * mirrored: the logo and the name stayed left on both. So the NFC card put its
+ * watermark directly underneath its own logo, and the pair read as a bug rather
+ * than as symmetry. They are now identical, which is what "consistent" means
+ * when the thing being repeated is a card in a row.
+ */
 function TopSeed({
   team,
   conference,
-  align,
 }: {
   team: TeamEntry;
   conference: string;
-  align: "left" | "right";
 }) {
   return (
     <div
       className="relative flex flex-1 items-center gap-3 overflow-hidden rounded-xl border border-line/70 px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3"
       style={{
-        background: `linear-gradient(${align === "left" ? "95deg" : "265deg"}, color-mix(in srgb, ${team.accent} 24%, transparent) 0%, transparent 72%)`,
+        background: `linear-gradient(95deg, color-mix(in srgb, ${team.accent} 24%, transparent) 0%, transparent 72%)`,
       }}
     >
       <TeamWatermark
         abbr={team.abbr}
-        size={130}
-        className={`${align === "left" ? "-right-8" : "-left-8"} -bottom-10 opacity-[0.1]`}
+        size={112}
+        opacity={0.18}
       />
       <TeamLogo abbr={team.abbr} size={48} accent={team.accent} eager />
       <div className="relative flex min-w-0 flex-col leading-none">
@@ -100,8 +106,8 @@ export const SeasonHero = memo(function SeasonHero({
         </div>
 
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:gap-3">
-          {afc && <TopSeed team={afc} conference="AFC" align="left" />}
-          {nfc && <TopSeed team={nfc} conference="NFC" align="right" />}
+          {afc && <TopSeed team={afc} conference="AFC" />}
+          {nfc && <TopSeed team={nfc} conference="NFC" />}
         </div>
       </div>
     </section>

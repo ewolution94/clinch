@@ -60,11 +60,7 @@ function Contender({
         background: `linear-gradient(96deg, color-mix(in srgb, ${team.accent} ${won ? 34 : 18}%, var(--color-ink)) 0%, var(--color-ink) 78%)`,
       }}
     >
-      <TeamWatermark
-        abbr={team.abbr}
-        size={96}
-        className="-right-6 -bottom-8 opacity-[0.12]"
-      />
+      <TeamWatermark abbr={team.abbr} size={72} opacity={0.18} bleed={10} />
       <TeamLogo
         abbr={team.abbr}
         size={compact ? 34 : 36}

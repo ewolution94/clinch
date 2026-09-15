@@ -218,13 +218,17 @@ function Header({ detail }: { detail: GameDetail }) {
           so they are bigger and far less faint than a background wash. */}
       <TeamWatermark
         abbr={away.abbr}
-        size={190}
-        className="-top-10 -left-12 opacity-[0.2]"
+        size={140}
+        opacity={0.16}
+        bleed={26}
+        side="left"
       />
       <TeamWatermark
         abbr={home.abbr}
-        size={190}
-        className="-top-10 -right-12 opacity-[0.2]"
+        size={140}
+        opacity={0.16}
+        bleed={26}
+        side="right"
       />
 
       <div className="relative flex items-start gap-3">
