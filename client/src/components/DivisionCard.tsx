@@ -31,7 +31,7 @@ export const DivisionCard = memo(function DivisionCard({
           <TeamWatermark
             abbr={leader.abbr}
             size={104}
-            className="-top-7 right-0 opacity-[0.13]"
+            className="-top-7 right-0 opacity-[0.23]"
           />
         )}
         <span
