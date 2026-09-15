@@ -62,13 +62,6 @@ function GameRow({
   const live = game.state === "in";
   const homeWon = final && (game.homeScore ?? 0) > (game.awayScore ?? 0);
   const awayWon = final && (game.awayScore ?? 0) > (game.homeScore ?? 0);
-  // Both teams in the same division — the games that decide the race.
-  const divisional =
-    away &&
-    home &&
-    away.conference === home.conference &&
-    away.division === home.division;
-
   /**
    * Teams stack rather than sitting side by side. Two names across a 358px card
    * clipped "Buccaneers" and "Commanders"; stacked, each gets the full width,
@@ -147,11 +140,6 @@ function GameRow({
             ? kickoffLabel(game)
             : game.statusDetail || "Final"}
         </span>
-        {divisional && (
-          <span className="rounded border border-brand/25 bg-brand/10 px-1.5 py-0.5 font-mono text-[10.5px] tracking-[0.1em] text-brand">
-            DIVISION
-          </span>
-        )}
       </div>
     </button>
   );
