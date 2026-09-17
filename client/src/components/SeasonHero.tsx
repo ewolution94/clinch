@@ -79,10 +79,10 @@ export const SeasonHero = memo(function SeasonHero({
           a floodlight crossing the banner. Inert everywhere else. */}
       <span
         aria-hidden="true"
-        className="hero-sweep animate-sheen pointer-events-none absolute inset-y-0 -left-1/3 w-1/2 skew-x-[-18deg]"
+        className="hero-sweep pointer-events-none absolute inset-y-0 left-0 w-1/3"
         style={{
           background:
-            "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-paper) 8%, transparent), transparent)",
+            "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-paper) 14%, transparent), transparent)",
         }}
       />
 

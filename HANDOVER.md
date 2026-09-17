@@ -179,6 +179,22 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   *artwork* — a light disc is the only ground all 32 marks clear 3:1 on. It is
   written with literal hexes for that reason. Inverting it on light brings back
   the invisible Giants.
+- **⚠️ A keyframe must never restate an element's resting transform.** Tailwind
+  v4 centres with the *individual* `translate` property (`translate: 0 -50%`),
+  and CSS applies `translate` and `transform` independently — so a keyframe whose
+  `transform` repeats that -50% gets it applied **twice**. That was the bug
+  behind "lots of team logos mispositioned": every watermark sat 61px above its
+  card. Keyframes here express only the movement (`translate3d(0, -9px, 0)`),
+  never the position. Same trap bit `bloom-wander` horizontally. Check with
+  `getComputedStyle(el).translate` — if it isn't `none`, your transform stacks.
+- **Creative's motion has to be fast enough to see.** The first pass ran at
+  26s / 19s / 15s with ±5px amplitudes, and Eric's verdict was simply "not
+  motion" — a sway that slow is an expensive still image. Now 13s / 9s / 7.5s /
+  6s with ±9px drift, 80px bloom travel and a 1.0→1.22 breathe. Verified by
+  sampling the computed transform over time rather than by eye, since the
+  Claude Code browser pane paints nothing while hidden even though the
+  animation clock keeps running (`document.visibilityState` is always "hidden"
+  there — sample `currentTime` and the matrix, don't screenshot).
 - **Creative is CSS-only, deliberately.** `field-drift`, `bloom-wander`,
   `mark-drift` and `.hero-sweep` are keyframes gated on
   `:root[data-theme="creative"]`. That is why "creative but reduced-motion"
@@ -334,8 +350,12 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   (amd64 + arm64) — verified pullable anonymously, so Portainer needs no
   registry credentials. Running on the NAS behind the Cloudflare Tunnel at
   **clinch.ewolution.cloud**, port 4600, no volume.
-- **To redeploy:** commit on `main`, then `git push origin main:release`. That
-  branch is the CI trigger; a green run publishes `:latest` and **Watchtower on
+- **⚠️ Work on `release`. Never check out `main`.** Eric said so directly on
+  2026-09-17 after it happened twice. `release` is the CI branch and the one he
+  lives on; don't "tidy up" the divergence between the two, and don't
+  fast-forward `main` onto it. This supersedes the older advice in this section.
+- **To redeploy:** commit on `release` and push it. That branch is the CI
+  trigger; a green run publishes `:latest` and **Watchtower on
   the NAS picks it up within ~5 minutes** — no Portainer click needed any more.
   The stack is `deploy/portainer-stack.yml`; it must NOT be the repo's
   `docker-compose.yml`, which has `build: .` and would make Portainer build

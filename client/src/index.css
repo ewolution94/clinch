@@ -426,14 +426,22 @@
   }
 }
 
+/*
+ * These keyframes must express *only* the movement, never the element's resting
+ * position. Tailwind v4 centres with the individual `translate` property
+ * (`translate: 0 -50%`), and CSS applies `translate` and `transform`
+ * independently — so a keyframe that restates the -50% gets it applied twice and
+ * the mark jumps half its own height out of the card. That was the bug behind
+ * "lots of team logos mispositioned": every watermark sat 61px high.
+ */
 @keyframes bloom-wander {
   0%,
   100% {
-    transform: translate3d(-50%, 0, 0) scale(1);
-    opacity: 0.85;
+    transform: translate3d(-40px, 0, 0) scale(1);
+    opacity: 0.8;
   }
   50% {
-    transform: translate3d(-50%, 40px, 0) scale(1.18);
+    transform: translate3d(40px, 55px, 0) scale(1.22);
     opacity: 1;
   }
 }
@@ -441,29 +449,54 @@
 @keyframes mark-drift {
   0%,
   100% {
-    transform: translate3d(0, calc(-50% - 5px), 0) rotate(-1.4deg);
+    transform: translate3d(0, -9px, 0) rotate(-2.6deg);
   }
   50% {
-    transform: translate3d(0, calc(-50% + 5px), 0) rotate(1.4deg);
+    transform: translate3d(0, 9px, 0) rotate(2.6deg);
   }
 }
 
+@keyframes hero-sweep {
+  0% {
+    transform: translate3d(-40%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+  35%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(320%, 0, 0) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+/*
+ * Durations are the other half of the earlier failure. The first pass ran at
+ * 26s / 19s / 15s, which is slow enough that nothing appears to move at all —
+ * "maximal motion" you have to stare at is just a slower still image. These are
+ * paced to read as movement within a few seconds of arriving.
+ */
 :root[data-theme="creative"] .field-lines {
   /* 96px is the yard-line period, so the loop is seamless. */
-  animation: field-drift 26s linear infinite;
+  animation: field-drift 13s linear infinite;
 }
 
 :root[data-theme="creative"] .field-bloom {
-  animation: bloom-wander 15s ease-in-out infinite;
+  animation: bloom-wander 9s ease-in-out infinite;
 }
 
 :root[data-theme="creative"] .team-watermark {
-  animation: mark-drift 19s ease-in-out infinite;
+  animation: mark-drift 7.5s ease-in-out infinite;
 }
 
-/* The hero's floodlight sweep only earns its keep at this setting. */
 :root[data-theme="creative"] .hero-sweep {
-  opacity: 1;
+  animation: hero-sweep 6s ease-in-out infinite;
+}
+
+/* Inert outside the creative theme. */
+.hero-sweep {
+  opacity: 0;
 }
 
 .hero-sweep {
