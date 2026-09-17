@@ -56,7 +56,9 @@ export function TeamLogo({
         background: "var(--color-plate)",
         // Inset ring rather than a border, so the chip's box stays exactly `size`
         // and never nudges the row it sits in.
-        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${ring} 60%, transparent), 0 1px 2px rgba(0,0,0,0.5)`,
+        // Both strengths are theme variables: on paper the chip has no edge of
+        // its own, so the ring carries the separation the dark page got for free.
+        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${ring} var(--ring-strength), transparent), var(--shadow-lift)`,
       }}
     >
       <img

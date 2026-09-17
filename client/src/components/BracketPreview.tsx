@@ -2,6 +2,7 @@ import { memo } from "react";
 import { TeamLogo } from "./TeamLogo";
 import { seedRole } from "../lib/status";
 import type { ConferenceView, TeamEntry } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 interface BracketPreviewProps {
   conference: ConferenceView;
@@ -38,17 +39,18 @@ function Side({ team, seed }: { team: TeamEntry | undefined; seed: number }) {
 export const BracketPreview = memo(function BracketPreview({
   conference,
 }: BracketPreviewProps) {
-  const bySeed = new Map(conference.seeds.map((t) => [t.seed, t]));
+  const t = useStrings();
+  const bySeed = new Map(conference.seeds.map((team) => [team.seed, team]));
   const bye = conference.byeTeam ? bySeed.get(1) : undefined;
 
   return (
     <div className="rounded-2xl border border-line bg-ink/55 p-3 backdrop-blur-sm sm:p-4">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h3 className="font-mono text-[13px] tracking-[0.18em] text-mist">
-          IF THE SEASON ENDED TODAY
+          {t.ifSeasonEnded}
         </h3>
         <span className="font-mono text-[12px] tracking-[0.14em] text-mist">
-          WILD CARD ROUND
+          {t.wildCardRound}
         </span>
       </div>
 
@@ -64,7 +66,7 @@ export const BracketPreview = memo(function BracketPreview({
             }}
           >
             <span className="font-mono text-[12px] tracking-[0.14em] text-gold">
-              FIRST-ROUND BYE
+              {t.firstRoundBye}
             </span>
             <div className="mt-2 flex items-center gap-2">
               <TeamLogo abbr={bye.abbr} size={26} accent={bye.accent} />

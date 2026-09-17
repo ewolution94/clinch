@@ -11,9 +11,9 @@ export function formatGames(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-export function formatKickoff(iso: string): string {
+export function formatKickoff(iso: string, locale?: string): string {
   const date = new Date(iso);
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale, {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
@@ -21,8 +21,8 @@ export function formatKickoff(iso: string): string {
   });
 }
 
-export function formatClock(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString(undefined, {
+export function formatClock(timestamp: number, locale?: string): string {
+  return new Date(timestamp).toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,

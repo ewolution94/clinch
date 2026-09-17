@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { useStrings } from "../lib/useSettings";
 import { ClinchMark } from "./ClinchMark";
 import type { Route } from "../hooks/useRoute";
 import type { ConnectionState, Snapshot } from "../lib/types";
@@ -8,17 +9,39 @@ interface HeaderProps {
   connection: ConnectionState;
   route: Route;
   onRoute: (route: Route) => void;
+  onOpenSettings: () => void;
 }
 
-// Where the season is now, then where it's heading.
-const TABS: { id: Route; label: string; short: string }[] = [
-  { id: "standings", label: "Standings", short: "Table" },
-  { id: "week", label: "Schedule", short: "Week" },
-  { id: "playoffs", label: "Playoff picture", short: "Picture" },
-  { id: "bracket", label: "Bracket", short: "Bracket" },
-];
+// Where the season is now, then where it's heading. Labels come from the string
+// table so the order lives here and the wording lives there.
+const TAB_IDS: Route[] = ["standings", "week", "playoffs", "bracket"];
 
-export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
+export function Header({
+  snapshot,
+  connection,
+  route,
+  onRoute,
+  onOpenSettings,
+}: HeaderProps) {
+  const t = useStrings();
+  const tabs = [
+    {
+      id: "standings" as const,
+      label: t.routeStandingsLong,
+      short: t.routeStandings,
+    },
+    { id: "week" as const, label: t.routeWeekLong, short: t.routeWeek },
+    {
+      id: "playoffs" as const,
+      label: t.routePlayoffsLong,
+      short: t.routePlayoffs,
+    },
+    {
+      id: "bracket" as const,
+      label: t.routeBracketLong,
+      short: t.routeBracket,
+    },
+  ].sort((a, b) => TAB_IDS.indexOf(a.id) - TAB_IDS.indexOf(b.id));
   const live = snapshot?.live ?? false;
   const weekLabel = snapshot ? snapshot.week.label : "Loading";
   const progress =
@@ -36,7 +59,7 @@ export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
               CLINCH
             </span>
             <span className="mt-1 font-mono text-[11px] tracking-[0.16em] whitespace-nowrap text-mist sm:text-[12.5px] sm:tracking-[0.2em]">
-              WHO&apos;S IN, WHO&apos;S OUT
+              {t.tagline}
             </span>
           </div>
         </div>
@@ -45,7 +68,7 @@ export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
           {live ? (
             <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-live">
               <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
-              LIVE
+              {t.live}
             </span>
           ) : (
             <span
@@ -86,9 +109,9 @@ export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
         <div className="mx-auto flex max-w-[1800px] items-center px-4 py-2.5 sm:px-6 lg:px-10">
           <nav
             className="flex rounded-full border border-line bg-ink/70 p-0.5"
-            aria-label="Views"
+            aria-label={t.views}
           >
-            {TABS.map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
@@ -106,6 +129,38 @@ export function Header({ snapshot, connection, route, onRoute }: HeaderProps) {
               </button>
             ))}
           </nav>
+
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label={t.settings}
+            title={t.settings}
+            className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-ink/70 text-mist transition-colors hover:border-fog/40 hover:text-paper"
+          >
+            {/* Inline rather than an icon package — the app ships none, and the
+                page makes no third-party requests. */}
+            <svg
+              viewBox="0 0 24 24"
+              width="17"
+              height="17"
+              aria-hidden="true"
+              fill="none"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="3.2"
+                stroke="currentColor"
+                strokeWidth="1.7"
+              />
+              <path
+                d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
         </div>
 
         <div className="h-px w-full bg-line/60">

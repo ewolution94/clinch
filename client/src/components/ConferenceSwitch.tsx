@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import type { ConferenceId } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 interface ConferenceSwitchProps {
   value: ConferenceId;
@@ -14,10 +15,11 @@ interface ConferenceSwitchProps {
  * tab. Here it is both better placed and out of the way.
  */
 export function ConferenceSwitch({ value, onChange }: ConferenceSwitchProps) {
+  const t = useStrings();
   return (
     <nav
       className="flex self-start rounded-full border border-line bg-ink/70 p-0.5"
-      aria-label="Conference"
+      aria-label={t.conference}
     >
       {(["AFC", "NFC"] as const).map((id) => (
         <button

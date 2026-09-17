@@ -1,6 +1,10 @@
 import type { PlayoffStatus } from "./types";
 
+import type { StringKey } from "./strings";
+
 export interface StatusMeta {
+  /** Resolved through the string table so the label follows the language. */
+  labelKey: StringKey;
   /** Full label, for the playoff view. */
   label: string;
   /** Two or three characters, for a dense standings row. */
@@ -13,48 +17,56 @@ export interface StatusMeta {
 export const STATUS_META: Record<PlayoffStatus, StatusMeta> = {
   "clinched-bye": {
     label: "Clinched bye",
+    labelKey: "statusClinchedBye" as const,
     short: "BYE",
     color: "var(--color-gold)",
     inField: true,
   },
   "clinched-division": {
     label: "Clinched division",
+    labelKey: "statusClinchedDivision" as const,
     short: "DIV",
     color: "var(--color-brand)",
     inField: true,
   },
   clinched: {
     label: "Clinched berth",
+    labelKey: "statusClinched" as const,
     short: "IN",
     color: "var(--color-jade)",
     inField: true,
   },
   in: {
     label: "In the field",
+    labelKey: "statusIn" as const,
     short: "IN",
     color: "var(--color-jade)",
     inField: true,
   },
   bubble: {
     label: "On the bubble",
+    labelKey: "statusBubble" as const,
     short: "BUB",
     color: "var(--color-ice)",
     inField: false,
   },
   hunt: {
     label: "In the hunt",
+    labelKey: "statusHunt" as const,
     short: "HNT",
     color: "var(--color-mist)",
     inField: false,
   },
   longshot: {
     label: "Long shot",
+    labelKey: "statusLongshot" as const,
     short: "LNG",
     color: "var(--color-mist)",
     inField: false,
   },
   eliminated: {
     label: "Eliminated",
+    labelKey: "statusEliminated" as const,
     short: "OUT",
     color: "#4e5a70",
     inField: false,

@@ -10,6 +10,7 @@
 import { clsx } from "clsx";
 
 import type { GameBroadcast, WeekBroadcasts } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 function startLabel(iso: string): string {
   const date = new Date(iso);
@@ -32,9 +33,7 @@ export function BroadcastBadge({
     const outlets = [...new Set(broadcast.slots.map((s) => s.outlet))];
     // The programme starts before kickoff for the pregame, so the time on the
     // badge is when to turn it on — which is not the time already on the card.
-    const earliest = broadcast.slots
-      .map((s) => s.startsAt)
-      .sort()[0];
+    const earliest = broadcast.slots.map((s) => s.startsAt).sort()[0];
     return (
       <span
         className="ml-auto flex h-[19px] shrink-0 items-center gap-1.5 rounded-full border border-jade/35 bg-jade/12 px-2 leading-none"
@@ -81,15 +80,14 @@ export function BroadcastBand({
   broadcasts: WeekBroadcasts | undefined;
   className?: string;
 }) {
+  const t = useStrings();
   if (!broadcasts || broadcasts.upcoming === 0) return null;
 
   const { published, confirmed, candidates, upcoming, outlets } = broadcasts;
   const where = outlets.join(" or ");
 
   const body = !published ? (
-    <span className="text-mist">
-      German listings for this week aren’t published yet
-    </span>
+    <span className="text-mist">{t.listingsNotOut}</span>
   ) : (
     <>
       <span className="mono-tabular font-semibold text-jade">{confirmed}</span>

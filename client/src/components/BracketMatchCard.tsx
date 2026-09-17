@@ -2,6 +2,7 @@ import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import type { BracketMatch } from "../lib/bracket";
 import type { TeamEntry } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 interface BracketMatchCardProps {
   match: BracketMatch;
@@ -146,6 +147,7 @@ export function BracketMatchCard({
   mirrored = false,
   size = "sm",
 }: BracketMatchCardProps) {
+  const t = useStrings();
   const settled = match.winner !== null;
   const homeWon = settled && match.winner?.abbr === match.home?.abbr;
   const awayWon = settled && match.winner?.abbr === match.away?.abbr;
@@ -174,8 +176,8 @@ export function BracketMatchCard({
           type="button"
           onClick={() => onOpenGame?.(match.gameId!)}
           data-game-id={match.gameId}
-          aria-label="Game detail"
-          title="Game detail"
+          aria-label={t.gameDetail}
+          title={t.gameDetail}
           className="absolute right-1 bottom-1 z-10 flex h-5 w-5 items-center justify-center rounded-md border border-line bg-abyss/80 font-mono text-[12px] text-mist transition-colors hover:border-fog/40 hover:text-paper"
         >
           ↗
@@ -184,9 +186,9 @@ export function BracketMatchCard({
       {match.decidedBy === "pick" && (
         <span
           className="absolute top-0 right-0 z-10 rounded-bl-md bg-brand/18 px-1.5 py-0.5 font-mono text-[10.5px] tracking-[0.14em] text-brand"
-          title="Your prediction, not a result"
+          title={t.pickHint}
         >
-          PICK
+          {t.pick}
         </span>
       )}
       <Side

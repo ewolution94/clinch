@@ -10,6 +10,7 @@ import {
 } from "../lib/bracket";
 import { superBowlNumeral } from "../lib/format";
 import type { ConferenceView, Snapshot } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 interface BracketTreeProps {
   snapshot: Snapshot;
@@ -80,6 +81,7 @@ function ConferencePath({
   onOpenGame: (id: string) => void;
   morphCardId: string | null;
 }) {
+  const t = useStrings();
   const tint =
     bracket.conference === "AFC" ? "var(--color-brand)" : "var(--color-jade)";
 
@@ -97,7 +99,7 @@ function ConferencePath({
         {conference.id}
       </h3>
 
-      <RoundLabel>WILD CARD</RoundLabel>
+      <RoundLabel>{t.wildCardRound}</RoundLabel>
       <div className="flex flex-col gap-1.5">
         <ByeCard team={bracket.bye} />
         {bracket.wildcard.map((m) => (
@@ -164,6 +166,7 @@ export function BracketTree({
   onOpenGame,
   morphCardId,
 }: BracketTreeProps) {
+  const t = useStrings();
   const [picks, setPicks] = useState<Picks>({});
 
   const bracket = useMemo(
@@ -204,7 +207,7 @@ export function BracketTree({
             onClick={() => setPicks({})}
             className="shrink-0 rounded-full border border-brand/35 bg-brand/10 px-3.5 py-1.5 font-mono text-[13px] tracking-[0.14em] text-brand transition-colors hover:bg-brand/18"
           >
-            CLEAR MY PICKS
+            {t.clearMyPicks}
           </button>
         )}
       </header>
@@ -239,7 +242,7 @@ export function BracketTree({
           className="grid items-end gap-y-2 pb-2"
           style={{ gridTemplateColumns: COLUMNS }}
         >
-          <RoundLabel>WILD CARD</RoundLabel>
+          <RoundLabel>{t.wildCardRound}</RoundLabel>
           <span />
           <RoundLabel>DIVISIONAL</RoundLabel>
           <span />
@@ -251,7 +254,7 @@ export function BracketTree({
           <span />
           <RoundLabel>DIVISIONAL</RoundLabel>
           <span />
-          <RoundLabel>WILD CARD</RoundLabel>
+          <RoundLabel>{t.wildCardRound}</RoundLabel>
         </div>
 
         <div

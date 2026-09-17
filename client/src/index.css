@@ -43,13 +43,81 @@
   --color-live: #ff3d5a;
 
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
 
   --animate-live-dot: live-dot 2s ease-in-out infinite;
   --animate-rise: rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-week-forward: week-in-forward 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-week-forward: week-in-forward 0.3s cubic-bezier(0.16, 1, 0.3, 1)
+    both;
   --animate-week-back: week-in-back 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-sheen: sheen 9s ease-in-out infinite;
+}
+
+/**
+ * Light theme.
+ *
+ * The tokens are an ordered scale rather than a set of names — abyss is
+ * furthest back, paper furthest forward — so light is that ramp reversed, not a
+ * second vocabulary. Every utility resolves through var(), so redefining them
+ * here rethemes the whole app.
+ *
+ * Deliberately absent: --color-plate. That disc is calibrated to the *artwork*
+ * (measured across all 32 marks, a light plate is the only ground every one
+ * clears 3:1 on), so it is a constant of the logos, not of the theme. Inverting
+ * it here would make the Giants, Rams and Jets vanish all over again.
+ */
+@layer base {
+  :root[data-theme="light"] {
+    --color-abyss: #eef2f9;
+    --color-abyss-2: #e6ebf4;
+    --color-ink: #ffffff;
+    --color-ink-2: #f4f7fb;
+    --color-line: #d2dae7;
+    --color-line-soft: #e3e9f2;
+    --color-mist: #5b6880;
+    --color-fog: #364054;
+    --color-paper: #0b1220;
+
+    /* The accents are picked for a near-black page; on paper the pale ones
+       (Miami, the Raiders, New Orleans) wash out. Consumers darken them via
+       lib/accentFor.ts — this flag is what tells them to. */
+    --accent-needs-darkening: 1;
+
+    /*
+     * The semantic palette needs the same treatment as the team accents, and
+     * for the same reason — it was picked for a near-black page. Measured on
+     * white the dark values run 1.58:1 (gold) to 3.46:1 (live). These are aimed
+     * at ~5.4:1 against white rather than exactly 4.5, because the card grounds
+     * are tinted rather than pure — measured in the page, a 4.5 target landed
+     * the differentials at 4.06 on a real row. Hue is preserved, so a win is
+     * still green and a loss still red. They carry point differentials and W/L
+     * letters at 12–13px, which is small text, so 4.5 is the bar to clear.
+     */
+    --color-brand: #b14a12;
+    --color-gold: #82651f;
+    --color-jade: #2a7568;
+    --color-ice: #506a8d;
+    --color-live: #c22e44;
+
+    /* Shadows tuned for a dark page read as smudges on a light one. */
+    --shadow-lift: 0 1px 3px rgb(15 23 42 / 0.16);
+    /* A near-white chip on a white card has no edge of its own, so the accent
+       ring has to do more work here than it does on the dark page. */
+    --ring-strength: 92%;
+    /* The watermark sits on paper now: no lifting, and a lighter hand. */
+    --watermark-scale: 0.62;
+    /* The coloured blooms in the backdrop turn to mud on a light ground. */
+    --backdrop-bloom: 0.25;
+  }
+
+  :root {
+    --accent-needs-darkening: 0;
+    --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.5);
+    --ring-strength: 60%;
+    --watermark-scale: 1;
+    --backdrop-bloom: 1;
+  }
 }
 
 @layer base {
@@ -58,6 +126,7 @@
   }
 
   html {
+    /* Set from the stored preference by the boot script and applySettings(). */
     color-scheme: dark;
     /* The header is sticky; anchor jumps shouldn't hide behind it. */
     scroll-padding-top: 7rem;
@@ -248,7 +317,6 @@
       border-radius: 20px;
     }
   }
-
 }
 
 @keyframes backdrop-in {
@@ -341,14 +409,92 @@
   }
 }
 
+/*
+ * Creative — the dark palette with the motion turned up.
+ *
+ * Deliberately built out of CSS animations rather than JS timers, which means
+ * the reduced-motion rules further down already switch every part of it off:
+ * they clamp `animation-duration` globally, so "creative but still" needs no
+ * special case anywhere. That is the whole reason it is written this way.
+ */
+@keyframes field-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-96px, 0, 0);
+  }
+}
+
+@keyframes bloom-wander {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(-50%, 40px, 0) scale(1.18);
+    opacity: 1;
+  }
+}
+
+@keyframes mark-drift {
+  0%,
+  100% {
+    transform: translate3d(0, calc(-50% - 5px), 0) rotate(-1.4deg);
+  }
+  50% {
+    transform: translate3d(0, calc(-50% + 5px), 0) rotate(1.4deg);
+  }
+}
+
+:root[data-theme="creative"] .field-lines {
+  /* 96px is the yard-line period, so the loop is seamless. */
+  animation: field-drift 26s linear infinite;
+}
+
+:root[data-theme="creative"] .field-bloom {
+  animation: bloom-wander 15s ease-in-out infinite;
+}
+
+:root[data-theme="creative"] .team-watermark {
+  animation: mark-drift 19s ease-in-out infinite;
+}
+
+/* The hero's floodlight sweep only earns its keep at this setting. */
+:root[data-theme="creative"] .hero-sweep {
+  opacity: 1;
+}
+
+.hero-sweep {
+  opacity: 0;
+}
+
+/*
+ * Motion has three states, not two. `system` keeps honouring the media query as
+ * the app always has; `reduced` stands motion down even where the OS doesn't ask
+ * for it; `full` opts back in on a machine whose OS asks for less — which is why
+ * the media query is scoped to :not([data-motion="full"]) rather than left bare.
+ *
+ * Reduced beats the creative theme deliberately: creative is a taste, this is an
+ * accessibility preference, and a preference outranks a preference for flair.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) *::before,
+  :root:not([data-motion="full"]) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 /* Shared-element morph between a game card and its dialog. */
@@ -363,9 +509,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
+  :root:not([data-motion="full"])::view-transition-group(*),
+  :root:not([data-motion="full"])::view-transition-old(*),
+  :root:not([data-motion="full"])::view-transition-new(*) {
     animation-duration: 0.01ms !important;
   }
+}
+
+:root[data-motion="reduced"]::view-transition-group(*),
+:root[data-motion="reduced"]::view-transition-old(*),
+:root[data-motion="reduced"]::view-transition-new(*) {
+  animation-duration: 0.01ms !important;
 }

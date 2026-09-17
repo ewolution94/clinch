@@ -161,6 +161,41 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   then `kill -TERM` — it used to hang forever.
   In production this was every container restart eating Docker's full 10s
   SIGTERM grace before the SIGKILL.
+- **Settings live in `clinch-settings-v1`, ported from PLANUM.** One key, and
+  `normalize()` merges field by field onto the defaults — a corrupt value costs
+  that one setting, not all of them. Verified: `{"theme":42,"lang":"de",
+  "landing":"nonsense","motion":"reduced"}` keeps the German and the reduced
+  motion and defaults only the two bad fields. Don't replace it with a trusting
+  `JSON.parse`.
+- **The light theme is measured, and the measurement is the feature.** The token
+  ramp reverses cleanly, but the 32 team accents *and* the five semantic colours
+  (brand/gold/jade/ice/live) were picked for a near-black page: on white only
+  3 of 32 accents and 0 of 5 semantics cleared 4.5:1, gold at 1.58:1. Both are
+  darkened — accents at runtime in `lib/accentFor.ts`, semantics as literals in
+  the `[data-theme="light"]` block. Both target ~5.4:1 against white rather than
+  4.5, because the card grounds are tinted; targeting 4.5 exactly left real rows
+  at 4.06. Re-run the in-page contrast audit after touching any of it.
+- **`--color-plate` must not follow the theme.** It is a constant of the
+  *artwork* — a light disc is the only ground all 32 marks clear 3:1 on. It is
+  written with literal hexes for that reason. Inverting it on light brings back
+  the invisible Giants.
+- **Creative is CSS-only, deliberately.** `field-drift`, `bloom-wander`,
+  `mark-drift` and `.hero-sweep` are keyframes gated on
+  `:root[data-theme="creative"]`. That is why "creative but reduced-motion"
+  needs no code: the existing reduced-motion rules clamp every animation to
+  0.01ms. Verified — 21 animations, none running meaningfully. If you add
+  creative motion in JS, you have to defeat it by hand, so don't.
+- **Motion has three states and the media query is scoped.**
+  `@media (prefers-reduced-motion: reduce)` is wrapped in
+  `:root:not([data-motion="full"])` so a reader can opt *back into* motion on an
+  OS that asks for less. Removing that scope silently breaks the Full setting.
+- **The settings dialog does not reuse `GameModal`'s overlay,** on purpose.
+  `lib/useDismissable.ts` duplicates ~20 lines of escape/scroll-lock/inert
+  rather than refactoring the component that four separate view-transition bugs
+  were paid for. Leave them apart.
+- **Accents are themed once, in `themedSnapshot()`.** Components read
+  `team.accent` in 35 places; rewriting the snapshot is what keeps a theme from
+  being a 35-site change. It is a no-op on dark and creative.
 - **ESPN's `playoffSeed` is authoritative.** It has the NFL's full tiebreaker
   chain applied. Reimplementing head-to-head/common-games/strength-of-victory
   would be a lot of code that is subtly wrong all season.
@@ -344,6 +379,14 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   aborted because of invalid state"). Name handover, focus, inert and layout are
   all testable there; whether the morph actually *runs* is not. Check that in a
   real browser.
+- **Settings verified 2026-09-17**: both themes measured with the in-page
+  contrast audit — light went 55 failing → **0 of 608**, dark is 0 (the one
+  flagged "AFC" is the gradient-clipped heading, whose `color` is transparent,
+  so the probe can't read it). German renders German day and month names
+  ("FREITAG, 18. SEPTEMBER") while Wild Card and Bye stay English. Landing route
+  redirects from `/` only — `/week/3` deep-links straight through. Creative runs
+  `field-drift`/`bloom-wander`/`mark-drift`; creative + reduced clamps all 21
+  animations. Corrupt-value guard confirmed.
 - **Logo sweep verified 2026-09-15** on all four routes at 375px and 1280px, live
   2026 and `CLINCH_SEASON=2025` (filled bracket + Super Bowl card): 169 chips,
   none missing the plate/ring, none without a team colour, and **zero overlaps**

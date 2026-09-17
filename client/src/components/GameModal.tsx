@@ -6,6 +6,7 @@ import { Shimmer } from "./Shimmer";
 import { useGameDetail } from "../hooks/useGameDetail";
 import { useOverflowEdges, edgeFadeMask } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
+import { useLocale, useStrings } from "../lib/useSettings";
 import type {
   GameDetail,
   GameTeamDetail,
@@ -167,6 +168,7 @@ function Linescore({ detail }: { detail: GameDetail }) {
 /* ---------------------------------------------------------------- header */
 
 function Header({ detail }: { detail: GameDetail }) {
+  const locale = useLocale();
   const [away, home] = detail.teams;
   const live = detail.state === "in";
 
@@ -245,7 +247,7 @@ function Header({ detail }: { detail: GameDetail }) {
           ) : (
             <span className="rounded-full border border-line bg-abyss-2/70 px-2.5 py-1 text-center font-mono text-[12px] tracking-[0.14em] text-mist">
               {detail.state === "pre"
-                ? formatKickoff(detail.kickoff)
+                ? formatKickoff(detail.kickoff, locale)
                 : detail.statusDetail}
             </span>
           )}
@@ -259,6 +261,7 @@ function Header({ detail }: { detail: GameDetail }) {
 /* ----------------------------------------------------------------- modal */
 
 function Body({ detail }: { detail: GameDetail }) {
+  const locale = useLocale();
   const [away, home] = detail.teams;
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);
@@ -269,7 +272,7 @@ function Body({ detail }: { detail: GameDetail }) {
       <div className="flex flex-col gap-4 px-4 py-4 sm:px-6">
         <Section label="KICKOFF">
           <p className="font-display text-[15.5px] text-fog">
-            {formatKickoff(detail.kickoff)}
+            {formatKickoff(detail.kickoff, locale)}
           </p>
         </Section>
         {detail.odds && (
@@ -411,7 +414,7 @@ function Body({ detail }: { detail: GameDetail }) {
           {detail.venue?.city &&
             ` · ${detail.venue.city}, ${detail.venue.state}`}
           {detail.attendance
-            ? ` · ${detail.attendance.toLocaleString()} in attendance`
+            ? ` · ${detail.attendance.toLocaleString(locale)} in attendance`
             : ""}
         </p>
       )}
@@ -488,8 +491,9 @@ function Section({
 
 /** Shaped like the loaded modal, so opening one doesn't resize under you. */
 function GameSkeleton() {
+  const t = useStrings();
   return (
-    <div aria-busy="true" aria-label="Loading game detail">
+    <div aria-busy="true" aria-label={t.loadingGame}>
       <div className="flex items-start gap-3 px-4 pt-5 pb-4 sm:px-6">
         {[0, 1].map((side) => (
           <div
@@ -531,6 +535,7 @@ function GameSkeleton() {
 }
 
 export default function GameModal({ gameId, onClose }: GameModalProps) {
+  const t = useStrings();
   const overlay = useRef<HTMLDivElement>(null);
   const scrim = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -597,7 +602,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       className="game-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Game detail"
+      aria-label={t.gameDetail}
       onMouseDown={(event) => {
         if (event.target === overlay.current || event.target === scrim.current)
           onClose();
@@ -618,7 +623,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.close}
           className="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-abyss/70 font-mono text-[15.5px] text-mist backdrop-blur transition-colors hover:border-fog/40 hover:text-paper"
         >
           ✕
@@ -633,7 +638,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
           ) : error && !loading ? (
             <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
               <p className="font-mono text-[14px] tracking-[0.14em] text-mist">
-                COULDN&apos;T LOAD THIS GAME
+                {t.gameFailed}
               </p>
             </div>
           ) : (

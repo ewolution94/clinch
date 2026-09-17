@@ -4,6 +4,7 @@ import { TeamWatermark } from "./TeamWatermark";
 import type { BracketMatch } from "../lib/bracket";
 import { superBowlNumeral } from "../lib/format";
 import type { TeamEntry } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 interface SuperBowlCardProps {
   match: BracketMatch | null;
@@ -99,6 +100,7 @@ export function SuperBowlCard({
   onPick,
   compact = false,
 }: SuperBowlCardProps) {
+  const t = useStrings();
   const numeral = superBowlNumeral(seasonYear);
   const champion = match?.winner ?? null;
   const decided = champion !== null;
@@ -113,7 +115,7 @@ export function SuperBowlCard({
     >
       <header className="relative mb-3 flex flex-col items-center gap-0.5">
         <span className="font-mono text-[12px] tracking-[0.26em] text-gold">
-          SUPER BOWL
+          {t.superBowl}
         </span>
         <span
           className="font-display text-[30px] leading-none font-bold tracking-[-0.02em] sm:text-[36px]"

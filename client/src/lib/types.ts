@@ -111,7 +111,8 @@ export type Outlet = "RTL" | "RTL+" | "Nitro" | "Sky";
  * "this is not being shown" are completely different answers to the only
  * question the week view is being asked.
  */
-export type BroadcastStatus = "confirmed" | "candidate" | "unavailable" | "unknown";
+export type BroadcastStatus =
+  "confirmed" | "candidate" | "unavailable" | "unknown";
 
 export interface BroadcastSlot {
   outlet: Outlet;

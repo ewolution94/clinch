@@ -3,6 +3,7 @@ import { TeamLogo } from "./TeamLogo";
 import { FormDots } from "./FormDots";
 import { STATUS_META } from "../lib/status";
 import { formatDiff, formatKickoff, formatPct } from "../lib/format";
+import { useLocale, useStrings } from "../lib/useSettings";
 import type { TeamEntry } from "../lib/types";
 
 interface TeamRowProps {
@@ -35,6 +36,8 @@ export const TeamRow = memo(function TeamRow({
   team,
   showRank = true,
 }: TeamRowProps) {
+  const locale = useLocale();
+  const t = useStrings();
   const [open, setOpen] = useState(false);
   const status = STATUS_META[team.status];
 
@@ -144,10 +147,10 @@ export const TeamRow = memo(function TeamRow({
             <Detail label="Division" value={team.divisionRecord} />
             <Detail label="Home" value={team.homeRecord} />
             <Detail label="Away" value={team.roadRecord} />
-            <Detail label="Points for" value={String(team.pointsFor)} />
+            <Detail label="{t.pointsFor}" value={String(team.pointsFor)} />
             <Detail label="Against" value={String(team.pointsAgainst)} />
             <Detail label="Streak" value={team.streak || "—"} />
-            <Detail label="Win pct" value={formatPct(team.winPct)} />
+            <Detail label="{t.winPct}" value={formatPct(team.winPct)} />
             <Detail label="Conf. seed" value={`#${team.seed}`} />
 
             <div className="col-span-2 sm:col-span-4">
@@ -157,7 +160,7 @@ export const TeamRow = memo(function TeamRow({
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {team.recent.length === 0 && (
                   <span className="font-display text-[14.5px] text-mist">
-                    No games played yet
+                    {t.noGamesYet}
                   </span>
                 )}
                 {team.recent.map((game) => (
@@ -182,7 +185,7 @@ export const TeamRow = memo(function TeamRow({
             {team.nextGame && (
               <div className="col-span-2 sm:col-span-4">
                 <p className="font-mono text-[12px] tracking-[0.16em] text-mist">
-                  NEXT
+                  {t.next}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2">
                   <span className="font-mono text-[14px] text-mist">
@@ -195,7 +198,7 @@ export const TeamRow = memo(function TeamRow({
                   <span className="mono-tabular text-[14px] text-mist">
                     {team.nextGame.state === "in"
                       ? "in progress"
-                      : formatKickoff(team.nextGame.kickoff)}
+                      : formatKickoff(team.nextGame.kickoff, locale)}
                   </span>
                 </div>
               </div>
@@ -205,7 +208,7 @@ export const TeamRow = memo(function TeamRow({
               className="col-span-2 font-display text-[14.5px] sm:col-span-4"
               style={{ color: status.color }}
             >
-              {status.label}
+              {t[status.labelKey]}
               {team.status === "bubble" ||
               team.status === "hunt" ||
               team.status === "longshot"

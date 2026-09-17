@@ -6,6 +6,7 @@ import { BroadcastBadge, BroadcastBand } from "./Broadcast";
 import { useWeek, prefetchWeek } from "../hooks/useWeek";
 import { currentWeek, findBySlug, relativeLabel, weekSlug } from "../lib/weeks";
 import { teamMap } from "../lib/teams";
+import { useLocale, useStrings } from "../lib/useSettings";
 import type {
   CalendarWeek,
   ScoreboardGame,
@@ -27,20 +28,20 @@ function dayKey(iso: string): string {
   return Number.isNaN(date.getTime()) ? "TBD" : date.toDateString();
 }
 
-function dayLabel(iso: string): string {
+function dayLabel(iso: string, locale: string, tbd: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Date to be confirmed";
-  return date.toLocaleDateString(undefined, {
+  if (Number.isNaN(date.getTime())) return tbd;
+  return date.toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
 }
 
-function kickoffLabel(game: ScoreboardGame): string {
+function kickoffLabel(game: ScoreboardGame, locale: string): string {
   const date = new Date(game.kickoff);
   if (Number.isNaN(date.getTime())) return "TBD";
-  return date.toLocaleTimeString(undefined, {
+  return date.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -58,6 +59,7 @@ function GameRow({
   onOpenGame: (id: string) => void;
   morphCardId: string | null;
 }) {
+  const locale = useLocale();
   const away = teams.get(game.away);
   const home = teams.get(game.home);
   const final = game.state === "post";
@@ -139,7 +141,7 @@ function GameRow({
           )}
         >
           {game.state === "pre"
-            ? kickoffLabel(game)
+            ? kickoffLabel(game, locale)
             : game.statusDetail || "Final"}
         </span>
         <BroadcastBadge broadcast={game.broadcast} />
@@ -149,11 +151,12 @@ function GameRow({
 }
 
 function WeekSkeleton() {
+  const t = useStrings();
   return (
     <div
       className="flex flex-col gap-4"
       aria-busy="true"
-      aria-label="Loading week"
+      aria-label={t.loadingWeek}
     >
       {[0, 1].map((group) => (
         <div key={group} className="flex flex-col gap-2">
@@ -178,6 +181,8 @@ export function WeekView({
   onOpenGame,
   morphCardId,
 }: WeekViewProps) {
+  const locale = useLocale();
+  const t = useStrings();
   const calendar = snapshot.calendar;
   const now = useMemo(
     () => currentWeek(calendar, snapshot.week.number, snapshot.season.type),
@@ -293,14 +298,13 @@ export function WeekView({
             onClick={() => onOpenWeek(weekSlug(now))}
             className="self-center rounded-full border border-brand/35 bg-brand/10 px-3.5 py-1.5 font-mono text-[11.5px] tracking-[0.12em] text-brand transition-colors hover:bg-brand/18"
           >
-            BACK TO THIS WEEK
+            {t.backToThisWeek}
           </button>
         )}
 
         {/* The standings never move with the week, so say so once, quietly. */}
         <p className="text-center font-display text-[12.5px] text-mist">
-          Schedule and results only — the standings and bracket always show
-          where the season stands today.
+          {t.scheduleOnly}
         </p>
 
         <BroadcastBand broadcasts={view?.broadcasts} />
@@ -324,7 +328,7 @@ export function WeekView({
           {days.map(([key, games]) => (
             <section key={key} className="flex flex-col gap-2">
               <h3 className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
-                {dayLabel(games[0].kickoff)}
+                {dayLabel(games[0].kickoff, locale, t.dateTbd)}
               </h3>
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {games.map((game) => (
@@ -349,7 +353,7 @@ export function WeekView({
           {view && view.byeTeams.length > 0 && (
             <section className="flex flex-col gap-2">
               <h3 className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
-                On bye
+                {t.onBye}
               </h3>
               <div className="flex flex-wrap gap-2 rounded-xl border border-line bg-ink/40 p-3">
                 {view.byeTeams.map((abbr) => (
@@ -387,6 +391,7 @@ function WeekArrow({
   onSelect: () => void;
   onHover: (seasonType: number, week: number) => void;
 }) {
+  const t = useStrings();
   return (
     <button
       type="button"
@@ -397,8 +402,8 @@ function WeekArrow({
         target
           ? `Go to ${target.label}`
           : direction === "prev"
-            ? "No earlier week"
-            : "No later week"
+            ? t.noEarlierWeek
+            : t.noLaterWeek
       }
       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-fog/25 bg-ink-2 font-mono text-[22px] leading-none font-bold text-paper shadow-lg shadow-abyss/50 transition-colors hover:border-brand/60 hover:bg-brand/15 hover:text-brand disabled:cursor-default disabled:border-line disabled:bg-ink/40 disabled:text-mist disabled:opacity-40 disabled:shadow-none"
     >

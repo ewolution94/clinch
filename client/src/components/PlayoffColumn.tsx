@@ -3,6 +3,7 @@ import { SeedRow } from "./SeedRow";
 import { BracketPreview } from "./BracketPreview";
 import { TeamLogo } from "./TeamLogo";
 import { STATUS_META } from "../lib/status";
+import { useStrings } from "../lib/useSettings";
 import type { ConferenceView } from "../lib/types";
 
 interface PlayoffColumnProps {
@@ -27,7 +28,8 @@ function SectionLabel({ children, hint }: { children: string; hint?: string }) {
 export const PlayoffColumn = memo(function PlayoffColumn({
   conference,
 }: PlayoffColumnProps) {
-  const field = conference.seeds.filter((t) => t.seed <= 7);
+  const t = useStrings();
+  const field = conference.seeds.filter((team) => team.seed <= 7);
   const chasing = conference.seeds.filter(
     (t) => t.seed > 7 && t.status !== "eliminated",
   );
@@ -56,7 +58,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
 
       <BracketPreview conference={conference} />
 
-      <SectionLabel hint="SEEDS 1–7">IN THE FIELD</SectionLabel>
+      <SectionLabel hint="SEEDS 1–7">{t.inTheField}</SectionLabel>
       <div className="flex flex-col gap-1.5">
         {field.map((team) => (
           <SeedRow key={team.abbr} team={team} />
@@ -67,7 +69,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
       <div className="flex items-center gap-3 px-1 py-1">
         <span className="h-px flex-1 bg-gradient-to-r from-transparent via-live/50 to-live/50" />
         <span className="font-mono text-[12px] tracking-[0.2em] text-live/80">
-          CUT LINE
+          {t.cutLine}
         </span>
         <span className="h-px flex-1 bg-gradient-to-l from-transparent via-live/50 to-live/50" />
       </div>
@@ -75,7 +77,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
       {chasing.length > 0 && (
         <>
           <SectionLabel hint="GAMES BEHIND THE 7 SEED">
-            STILL ALIVE
+            {t.stillAlive}
           </SectionLabel>
           <div className="flex flex-col gap-1.5">
             {chasing.map((team) => (
@@ -90,14 +92,14 @@ export const PlayoffColumn = memo(function PlayoffColumn({
           <SectionLabel
             hint={`${eliminated.length} TEAM${eliminated.length === 1 ? "" : "S"}`}
           >
-            ELIMINATED
+            {t.eliminated}
           </SectionLabel>
           <div className="flex flex-wrap gap-1.5 rounded-2xl border border-line bg-ink/40 p-2.5">
             {eliminated.map((team) => (
               <span
                 key={team.abbr}
                 className="flex items-center gap-1.5 rounded-lg border border-line-soft bg-abyss-2/60 px-2 py-1.5 opacity-55 transition-opacity hover:opacity-90"
-                title={`${team.location} ${team.name} — ${STATUS_META[team.status].label}`}
+                title={`${team.location} ${team.name} — ${t[STATUS_META[team.status].labelKey]}`}
               >
                 <TeamLogo abbr={team.abbr} size={18} accent={team.accent} />
                 <span className="mono-tabular text-[13px] font-semibold text-fog">

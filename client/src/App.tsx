@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { flushSync } from "react-dom";
@@ -15,6 +16,14 @@ import { BracketTree } from "./components/BracketTree";
 import { WeekGames } from "./components/WeekGames";
 import { teamMap } from "./lib/teams";
 import { AccentProvider } from "./lib/accents";
+import {
+  SettingsProvider,
+  useLocale,
+  useSettings,
+  useStrings,
+} from "./lib/useSettings";
+import { themedSnapshot } from "./lib/themedSnapshot";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { SeasonHero } from "./components/SeasonHero";
 import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
@@ -24,19 +33,80 @@ import { WeekView } from "./components/WeekView";
 // Kept out of the main bundle: most visits never open a game.
 const GameModal = lazy(() => import("./components/GameModal"));
 import { useSnapshot } from "./hooks/useSnapshot";
-import { useRoute } from "./hooks/useRoute";
+import { useRoute, type Route } from "./hooks/useRoute";
 import { DESKTOP_QUERY, useMediaQuery } from "./hooks/useMediaQuery";
 import { formatClock } from "./lib/format";
 import type { ConferenceId } from "./lib/types";
 
 export default function App() {
-  const { snapshot, connection } = useSnapshot();
+  return (
+    <SettingsProvider>
+      <Clinch />
+    </SettingsProvider>
+  );
+}
+
+function Clinch() {
+  const { settings, hydrated, update } = useSettings();
+  const locale = useLocale();
+  const t = useStrings();
+  const { snapshot: raw, connection } = useSnapshot();
+  // Accents are picked for the dark page; on light they are remapped once here
+  // so every `team.accent` read downstream is already correct.
+  const snapshot = useMemo(
+    () => (raw ? themedSnapshot(raw, settings.theme) : raw),
+    [raw, settings.theme],
+  );
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
     useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
   /** The one game whose card is mid-morph, if any. */
   const [morphing, setMorphing] = useState<string | null>(null);
   const wide = useMediaQuery(DESKTOP_QUERY);
+
+  /*
+   * Preferences land one tick after the first paint, because they come from
+   * localStorage. `applied` makes sure the landing route and the conference are
+   * taken once, on that first read — not again every time a setting changes,
+   * which would yank the reader back to their landing view mid-session.
+   */
+  const applied = useRef(false);
+  useEffect(() => {
+    if (!hydrated || applied.current) return;
+    applied.current = true;
+
+    const wanted =
+      settings.conference === "last"
+        ? (settings.lastConference ?? "AFC")
+        : settings.conference;
+    setConference(wanted);
+
+    // Only ever from the bare root. A shared link to /week/3 or /bracket is the
+    // reader asking for that page, and outranks a default.
+    if (window.location.pathname !== "/") return;
+    const target =
+      settings.landing === "last"
+        ? (settings.lastRoute ?? "standings")
+        : settings.landing;
+    if (target !== "standings" && target !== "last") navigate(target as Route);
+  }, [hydrated, settings, navigate]);
+
+  const onConference = useCallback(
+    (next: ConferenceId) => {
+      setConference(next);
+      if (settings.conference === "last") update({ lastConference: next });
+    },
+    [settings.conference, update],
+  );
+
+  const onRoute = useCallback(
+    (next: Route) => {
+      navigate(next);
+      if (settings.landing === "last") update({ lastRoute: next });
+    },
+    [navigate, settings.landing, update],
+  );
 
   const conferences = useMemo(() => {
     if (!snapshot) return [];
@@ -131,12 +201,13 @@ export default function App() {
 
         {/* Holds focus and the accessibility tree outside the modal — the job
           showModal() used to do before the top layer broke the morph. */}
-        <div inert={game !== null ? true : undefined}>
+        <div id="app-shell" inert={game !== null ? true : undefined}>
           <Header
             snapshot={snapshot}
             connection={connection}
             route={route}
-            onRoute={navigate}
+            onRoute={onRoute}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
 
           <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
@@ -146,8 +217,7 @@ export default function App() {
               <div className="flex flex-col gap-6">
                 {snapshot.stale && (
                   <p className="rounded-xl border border-gold/25 bg-gold/8 px-3.5 py-2 font-mono text-[14px] text-gold">
-                    Showing the last good data — the league feed didn&apos;t
-                    answer on the most recent refresh.
+                    {t.staleData}
                   </p>
                 )}
 
@@ -164,7 +234,7 @@ export default function App() {
                     {!wide && (
                       <ConferenceSwitch
                         value={conference}
-                        onChange={setConference}
+                        onChange={onConference}
                       />
                     )}
                     <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
@@ -203,7 +273,7 @@ export default function App() {
                     {!wide && (
                       <ConferenceSwitch
                         value={conference}
-                        onChange={setConference}
+                        onChange={onConference}
                       />
                     )}
                     <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-6">
@@ -219,7 +289,7 @@ export default function App() {
                   <p className="font-mono text-[13px] tracking-[0.1em] text-mist">
                     {snapshot.season.label.toUpperCase()} ·{" "}
                     {snapshot.week.label.toUpperCase()} OF {snapshot.week.total}{" "}
-                    · UPDATED {formatClock(snapshot.generatedAt)}
+                    · UPDATED {formatClock(snapshot.generatedAt, locale)}
                   </p>
                 </footer>
               </div>
@@ -232,6 +302,11 @@ export default function App() {
             <GameModal gameId={game} onClose={onCloseGame} />
           </Suspense>
         )}
+
+        <SettingsDialog
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
       </div>
     </AccentProvider>
   );

@@ -2,6 +2,7 @@ import { memo } from "react";
 import { TeamLogo } from "./TeamLogo";
 import { FormDots } from "./FormDots";
 import { STATUS_META, seedRole } from "../lib/status";
+import { useStrings } from "../lib/useSettings";
 import { formatGames } from "../lib/format";
 import type { TeamEntry } from "../lib/types";
 
@@ -15,6 +16,7 @@ export const SeedRow = memo(function SeedRow({
   team,
   chasing = false,
 }: SeedRowProps) {
+  const t = useStrings();
   const status = STATUS_META[team.status];
   const role = seedRole(team.seed, team.divisionRank);
   const tier = chasing ? status.color : role.color;
@@ -70,7 +72,7 @@ export const SeedRow = memo(function SeedRow({
             style={{ color: tier }}
           >
             {chasing
-              ? `${team.conference} ${team.division} · ${status.label}`
+              ? `${team.conference} ${team.division} · ${t[status.labelKey]}`
               : `${role.label.toUpperCase()}${clinched ? " · CLINCHED" : ""}`}
           </span>
         </div>

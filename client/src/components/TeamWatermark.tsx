@@ -1,5 +1,6 @@
 import { logoUrl } from "../lib/format";
 import { DEFAULT_MARK_WEIGHT, MARK_WEIGHT } from "../lib/markWeight";
+import { useSettings } from "../lib/useSettings";
 
 interface TeamWatermarkProps {
   abbr: string;
@@ -51,7 +52,16 @@ export function TeamWatermark({
   side = "right",
 }: TeamWatermarkProps) {
   const weight = MARK_WEIGHT[abbr.toUpperCase()] ?? DEFAULT_MARK_WEIGHT;
-  const alpha = Math.min(0.55, opacity * weight.alpha);
+  const { settings } = useSettings();
+  /*
+   * The measurements in markWeight.ts are taken against the dark page, where a
+   * faint mark has to be lifted to register. On paper the problem inverts — the
+   * marks are darker than the ground, so brightening them makes them *less*
+   * visible, and the same alpha reads far heavier. So light drops the lift and
+   * scales the whole thing back; the per-mark ratios still hold.
+   */
+  const light = settings.theme === "light";
+  const alpha = Math.min(0.55, opacity * weight.alpha * (light ? 0.62 : 1));
 
   return (
     <img
@@ -62,14 +72,14 @@ export function TeamWatermark({
       height={size}
       loading="lazy"
       decoding="async"
-      className="pointer-events-none absolute top-1/2 -translate-y-1/2 select-none"
+      className="team-watermark pointer-events-none absolute top-1/2 -translate-y-1/2 select-none"
       style={{
         [side]: -bleed,
         width: size,
         height: size,
         opacity: alpha,
         filter:
-          weight.brightness > 1
+          !light && weight.brightness > 1
             ? `brightness(${weight.brightness})`
             : undefined,
       }}

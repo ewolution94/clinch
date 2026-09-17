@@ -6,14 +6,14 @@ export function FieldBackdrop() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-abyss">
       <div
-        className="absolute inset-0 opacity-[0.55]"
+        className="field-lines absolute inset-0 opacity-[0.55]"
         style={{
           backgroundImage:
             "repeating-linear-gradient(90deg, var(--color-line-soft) 0 1px, transparent 1px 96px)",
         }}
       />
       <div
-        className="absolute inset-0 opacity-40"
+        className="field-lines absolute inset-0 opacity-40"
         style={{
           backgroundImage:
             "repeating-linear-gradient(90deg, transparent 0 46px, var(--color-line-soft) 46px 47px, transparent 47px 96px)",
@@ -24,10 +24,15 @@ export function FieldBackdrop() {
         }}
       />
 
-      <div className="animate-sheen absolute -top-48 left-1/2 h-[620px] w-[900px] -translate-x-1/2 rounded-full bg-brand/10 blur-[150px]" />
+      {/* Opacity is a theme variable: the same bloom that reads as floodlight on
+          near-black turns the paper theme muddy. */}
+      <div
+        className="field-bloom animate-sheen absolute -top-48 left-1/2 h-[620px] w-[900px] -translate-x-1/2 rounded-full bg-brand/10 blur-[150px]"
+        style={{ opacity: "var(--backdrop-bloom)" }}
+      />
       <div
         className="animate-sheen absolute -bottom-64 -left-40 h-[520px] w-[520px] rounded-full bg-jade/[0.07] blur-[150px]"
-        style={{ animationDelay: "-4.5s" }}
+        style={{ animationDelay: "-4.5s", opacity: "var(--backdrop-bloom)" }}
       />
 
       <div

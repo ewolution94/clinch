@@ -209,6 +209,40 @@ game that kicks off at 02:20 Monday is printed on Sunday's page; and the listing
 only run about a fortnight ahead, which is why a week further out than that says
 so instead of showing an empty set.
 
+## Settings
+
+A gear in the header opens preferences, kept in `localStorage` — Clinch still has
+no account to sign in to.
+
+| | |
+| --- | --- |
+| **Theme** | Dark, Light, or Creative — the dark palette with the motion turned up. |
+| **Language** | English or German. |
+| **Opens on** | Which view you land on, including "where I left off". A shared link always wins over this. |
+| **Default conference** | Which one the standings show first on a phone. |
+| **Motion** | System, Full, or Reduced. |
+
+Two of these are load-bearing rather than cosmetic:
+
+**Light is a measured theme, not an inverted one.** The tokens are an ordered
+scale, so the ramp reverses — but the team accents and the semantic colours were
+both hand-picked for a near-black page and fail badly on paper. Measured, only
+3 of 32 team accents and 0 of 5 semantic colours cleared 4.5:1 on white; the
+Steelers' gold managed 1.58:1. Both sets are darkened towards the ground until
+they clear, hue intact, so a win is still green and Miami is still teal. The
+check is in the verification list below because it is the thing that silently
+rots. The logo plate does *not* invert — it is calibrated to the artwork, and
+flipping it would make the Giants, Rams and Jets vanish exactly as they used to.
+
+**Reduced motion beats Creative.** Creative is built entirely from CSS
+animations, which means the reduced-motion rules already switch every part of it
+off — no special case anywhere. Pick both and you get the palette without the
+movement, and the dialog says so rather than leaving you to wonder.
+
+German keeps the football vocabulary in English — *Wild Card*, *Bye*,
+*Touchdown*, *Seed*. That is how RTL and ran write it; "Erstrunden-Freilos"
+reads as a translation exercise rather than as the sport.
+
 ## How team marks are drawn
 
 Every logo in the app is the same object: a mark on a near-paper disc, ringed in

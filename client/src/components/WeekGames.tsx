@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import { edgeFadeMask, useOverflowEdges } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
+import { useLocale } from "../lib/useSettings";
 import type { ScoreboardGame, TeamEntry } from "../lib/types";
 
 interface WeekGamesProps {
@@ -60,6 +61,7 @@ export const WeekGames = memo(function WeekGames({
   onOpenGame,
   morphCardId,
 }: WeekGamesProps) {
+  const locale = useLocale();
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);
   const mask = edgeFadeMask(edges);
@@ -132,7 +134,7 @@ export const WeekGames = memo(function WeekGames({
                     )}
                   >
                     {game.state === "pre"
-                      ? formatKickoff(game.kickoff)
+                      ? formatKickoff(game.kickoff, locale)
                       : game.statusDetail || (final ? "Final" : "")}
                   </span>
                 </div>

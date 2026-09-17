@@ -1,4 +1,5 @@
 import { Shimmer } from "./Shimmer";
+import { useStrings } from "../lib/useSettings";
 
 /** Mirrors a division card: banner, then four rows. */
 function DivisionSkeleton({ delay }: { delay: number }) {
@@ -36,12 +37,11 @@ function DivisionSkeleton({ delay }: { delay: number }) {
  * right size, it just fills in.
  */
 export function Skeleton({ connection }: { connection: string }) {
+  const t = useStrings();
   if (connection === "offline") {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="font-display text-[16.5px] text-fog">
-          Can&apos;t reach the server
-        </p>
+        <p className="font-display text-[16.5px] text-fog">{t.cantReach}</p>
         <p className="font-mono text-[14px] tracking-[0.12em] text-mist">
           RETRYING
         </p>
@@ -53,7 +53,7 @@ export function Skeleton({ connection }: { connection: string }) {
     <div
       className="flex flex-col gap-6"
       aria-busy="true"
-      aria-label="Loading the league"
+      aria-label={t.loadingLeague}
     >
       <section className="rounded-2xl border border-line bg-ink/40 p-4 sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">

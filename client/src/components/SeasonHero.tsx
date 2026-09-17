@@ -29,11 +29,7 @@ function TopSeed({
         background: `linear-gradient(95deg, color-mix(in srgb, ${team.accent} 24%, transparent) 0%, transparent 72%)`,
       }}
     >
-      <TeamWatermark
-        abbr={team.abbr}
-        size={112}
-        opacity={0.18}
-      />
+      <TeamWatermark abbr={team.abbr} size={112} opacity={0.18} />
       <TeamLogo abbr={team.abbr} size={48} accent={team.accent} eager />
       <div className="relative flex min-w-0 flex-col leading-none">
         <span
@@ -76,6 +72,17 @@ export const SeasonHero = memo(function SeasonHero({
             afc && nfc
               ? `radial-gradient(ellipse 60% 120% at 0% 50%, color-mix(in srgb, ${afc.accent} 16%, transparent), transparent 70%), radial-gradient(ellipse 60% 120% at 100% 50%, color-mix(in srgb, ${nfc.accent} 16%, transparent), transparent 70%)`
               : undefined,
+        }}
+      />
+
+      {/* Only visible under the creative theme, which is what .hero-sweep gates —
+          a floodlight crossing the banner. Inert everywhere else. */}
+      <span
+        aria-hidden="true"
+        className="hero-sweep animate-sheen pointer-events-none absolute inset-y-0 -left-1/3 w-1/2 skew-x-[-18deg]"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-paper) 8%, transparent), transparent)",
         }}
       />
 

@@ -1,4 +1,5 @@
 import type { GameResult } from "../lib/types";
+import { useStrings } from "../lib/useSettings";
 
 const RESULT_COLOR: Record<GameResult, string> = {
   W: "var(--color-jade)",
@@ -13,15 +14,14 @@ interface FormDotsProps {
 }
 
 export function FormDots({ form, slots = 5 }: FormDotsProps) {
+  const t = useStrings();
   const padding = Math.max(0, slots - form.length);
 
   return (
     <span
       className="flex items-center gap-[3px]"
       title={
-        form.length
-          ? `Last ${form.length}: ${form.join(" ")}`
-          : "No games played"
+        form.length ? `Last ${form.length}: ${form.join(" ")}` : t.noGamesPlayed
       }
     >
       {Array.from({ length: padding }, (_, i) => (
