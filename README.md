@@ -119,10 +119,13 @@ image CI publishes to `ghcr.io/ewolution94/clinch:latest`, and lives in
 at `docker-compose.yml`: the `build: .` in it would make the NAS compile Clinch
 instead of pulling it.
 
-The stack also runs **Watchtower**, which polls the registry every five minutes
-and recreates Clinch when a new image appears — so `git push origin main:release`
-is the entire deploy. It is scoped by label (`WATCHTOWER_LABEL_ENABLE`), so it
-only ever touches containers that opt in, and nothing else on the host.
+The stack also defines **Watchtower**, which polls the registry every five
+minutes and recreates Clinch when a new image appears — so a push to `release`
+becomes the entire deploy. It is scoped by label (`WATCHTOWER_LABEL_ENABLE`), so
+it only ever touches containers that opt in, and nothing else on the host.
+
+Without it, nothing polls: `:latest` is a tag, not a subscription, and a green CI
+run changes nothing on the host until someone re-pulls the image.
 
 ### Environment variables
 

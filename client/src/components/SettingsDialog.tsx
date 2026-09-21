@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { clsx } from "clsx";
 import { useDismissable } from "../lib/useDismissable";
 import { useSettings, useStrings } from "../lib/useSettings";
@@ -83,7 +84,8 @@ function Segmented<T extends string>({
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const { settings, update } = useSettings();
   const t = useStrings();
-  useDismissable(open, onClose);
+  const panel = useRef<HTMLDivElement>(null);
+  useDismissable(open, onClose, panel);
 
   if (!open) return null;
 
@@ -99,15 +101,20 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      {/* A plain scrim, not a blurred one. A full-screen backdrop-filter over
+          the field's blurred, forever-animating blooms makes a phone GPU re-blur
+          the entire screen every frame; at 80% it is visually the same. */}
       <button
         type="button"
         aria-label={t.close}
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-abyss/75 backdrop-blur-sm"
+        tabIndex={-1}
+        className="absolute inset-0 cursor-default bg-abyss/80"
         style={{ touchAction: "none" }}
       />
 
       <div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-label={t.settingsTitle}

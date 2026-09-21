@@ -1,4 +1,4 @@
-Session handover — disposable, delete once absorbed. Updated 2026-09-15 by Claude.
+Session handover — disposable, delete once absorbed. Updated 2026-09-17 by Claude.
 
 **CLINCH** — NFL standings + playoff picture. Tagline "who's in, who's out."
 Tech matches the house pattern: Express+TS backend (`server/`) + Vite/React/TS/
@@ -14,13 +14,53 @@ what the Dockerfile does.
 
 Deployed and in daily use — Eric watches the NFL from Germany and reads this on
 his phone. Four views work: standings, schedule (any week), the tiered playoff
-picture, and a playable bracket. The last several sessions were his feedback on
-a live app rather than new features, so expect small, specific, visual asks.
+picture, and a playable bracket, now with themes, German, and preferences.
 
-Newest feature: **German broadcast badges** on the week view — see below.
+**Repo state at handover:** branch `release` at `ee4a9dd`, working tree clean,
+pushed, CI green, and `ghcr.io/ewolution94/clinch:latest` resolves to that same
+commit. `main` sits one commit behind and **should be left alone** (see the
+branch rule below). Nothing is half-finished in the tree.
 
-**Open threads, none started:**
+The last four sessions, newest first:
 
+1. **Settings** — a cog in the header: theme (dark/light/creative), language
+   (en/de), landing route, default conference, motion. Plus the creative-theme
+   fix below.
+2. **Logo system** — one chip everywhere, watermark weight normalised per mark.
+3. **Server shutdown** — SSE streams no longer hang SIGTERM.
+4. **German broadcast badges** on the week view.
+
+**Open threads:**
+
+- **⚠️ Watchtower is written but almost certainly not applied.**
+  `deploy/portainer-stack.yml` contains the image-only stack with Watchtower in
+  it, and the docs below describe the deployed behaviour — but Eric said he'd do
+  the Portainer side "tomorrow" on 2026-09-16 and it has not been confirmed
+  since. **Ask before trusting any claim that the NAS auto-updates.** If it
+  isn't applied, a green CI run still changes nothing until someone hits
+  Recreate with "re-pull image" in Portainer.
+- **`GameModal` still pays the `inert` cost on every open** (it sets `inert`
+  on the shell via a prop in App.tsx). Isolated, that is a 64–74ms blocking
+  task at 6× CPU, the same thing just removed from settings. It wasn't
+  changed, because of that component's fragile view-transition machinery. The
+  fix is the same shape (focus trap + `aria-modal`), but test the morph in a
+  real browser afterwards.
+- **The "sticky" controls bar does not stick,** and hasn't since before these
+  sessions. The structure is unchanged from `f41b15a`. The sticky div sits
+  inside a `<header>` only 164px tall, and a sticky element can't leave its
+  parent's box. Measured bar top at scroll 0/60/150/400/900: 100/40/−50/−300/
+  −800. So the tabs and the settings cog scroll away with the wordmark. The
+  fix is to make the bar a sibling of the header rather than its child. Not
+  done — it was out of scope for the freeze.
+- **Creative theme needs a human eye.** The motion was verified numerically
+  (transform sampled over time), not visually, because the browser pane paints
+  nothing while hidden. Eric had not confirmed it looks right at handover.
+- **Broadcast coverage past the ~14-day horizon is unverified** — the
+  postseason, the Munich game (15 Nov), Thanksgiving, the Saturday weeks. They
+  can only be checked as they come into range.
+- **RTL+ beyond the one exclusive game.** Its own app API is behind a
+  consent-or-pay wall; Eric asked me to try and I declined to consent on his
+  behalf. `ran.joyn.de` covers the current week only. Ask before going further.
 - **Records "as of" a past week.** Repeatedly out of scope — ESPN exposes only
   *current* seeds, so a historical table could show records but never seeds.
   Eric has been told he can ask for it as its own clearly-labelled view; he
@@ -45,8 +85,8 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   derived" is the spec; read it before touching this file.
 - **UI**: four routes — `/` (standings), `/week/:slug` (schedule), `/playoffs`
   (the tiered picture) and `/bracket` (the tournament tree) — via a small
-  history router, no react-router. Dark only. Mobile shows one conference with
-  a switch below the tabs; from 1280px both render side by side.
+  history router, no react-router. Three themes (see Settings). Mobile shows one
+  conference with a switch below the tabs; from 1280px both render side by side.
 - **Game detail** (`server/src/gameDetail*.ts`, `client/src/components/GameModal.tsx`):
   `/api/game/:id` trims ESPN's ~590 kB summary to ~3 kB. The modal is lazy-loaded
   and owns a `?game=` history entry so back closes it. Opened from the standings
@@ -61,6 +101,14 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   Germany on RTL or RTL+. Annotated onto `WeekView` on the way out of
   `snapshotStore.week()`, never stored in the ESPN week cache. README's
   "Can I watch this?" is the spec.
+- **Settings** (`client/src/lib/settings.ts`, `useSettings.tsx`, `strings.ts`,
+  `accentFor.ts`, `themedSnapshot.ts`, `components/SettingsDialog.tsx`): theme,
+  language, landing route, default conference, motion — one versioned
+  localStorage key, PLANUM's pattern. The light palette, the per-theme accent
+  darkening and the creative keyframes each have a trap documented below; read
+  those before touching any of it. `client/index.html` carries a boot script
+  that applies the theme before first paint, and it **duplicates**
+  `applySettings()` on purpose — keep the two in step.
 - **Bracket** (`client/src/lib/bracket.ts` + `components/Bracket*`): filled only
   by real postseason results or the reader's own picks, with a correct NFL
   reseed between rounds. The connector elbows are SVG in a stretched 100×100
@@ -205,10 +253,32 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   `@media (prefers-reduced-motion: reduce)` is wrapped in
   `:root:not([data-motion="full"])` so a reader can opt *back into* motion on an
   OS that asks for less. Removing that scope silently breaks the Full setting.
-- **The settings dialog does not reuse `GameModal`'s overlay,** on purpose.
-  `lib/useDismissable.ts` duplicates ~20 lines of escape/scroll-lock/inert
-  rather than refactoring the component that four separate view-transition bugs
-  were paid for. Leave them apart.
+- **The settings dialog does not reuse `GameModal`'s overlay,** on purpose —
+  leave them apart; four view-transition bugs were paid for in that component.
+- **⚠️ The settings dialog must not make the app `inert`.** It did, and that
+  was the "freezes when I tap the cog" Eric reported from his phone. Making the
+  whole shell inert restyles all ~1,600 nodes. Measured in headless Chrome on a
+  phone viewport at 4–6× CPU throttle, with a warm browser and a fresh page:
+  the old build ran a 53–82ms blocking task on first open, and the new one
+  none. `inert` by itself, isolated, costs 64–74ms at 6×. An `aria-hidden`
+  control on the same subtree cost 0.2ms, so the cost is style and
+  interactivity work, not the accessibility tree. `useDismissable` now traps
+  Tab inside the dialog and relies on `aria-modal` plus the full-screen scrim
+  button, which gives the same guarantees at no cost.
+- **`useDismissable` reads `onClose` through a ref.** It used to be an effect
+  dependency, and App passed an inline arrow. So every re-render while the
+  dialog was open — every setting tapped — tore the whole lock down and rebuilt
+  it: scroll restored, the gear behind the sheet refocused, the body re-pinned.
+  Measured: 3 taps caused 21 lock mutations; now 0. App's callbacks are
+  `useCallback`s as well, but the ref is what actually guards it.
+- **The settings scrim has no `backdrop-filter`, and ambient motion pauses under
+  dialogs.** A full-screen blur over two `blur(150px)` blooms that animate
+  forever means a phone GPU re-blurs the whole screen every frame. At 80%
+  opacity a plain scrim looks the same. `useDismissable` sets
+  `data-overlay` on the root and index.css pauses the sheen, field lines,
+  blooms, watermark drift and hero sweep underneath. This was not measurable
+  here — headless compositing isn't a phone GPU — so it rests on reasoning,
+  not numbers.
 - **Accents are themed once, in `themedSnapshot()`.** Components read
   `team.accent` in 35 places; rewriting the snapshot is what keeps a theme from
   being a 35-site change. It is a no-op on dark and creative.
@@ -355,8 +425,10 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   lives on; don't "tidy up" the divergence between the two, and don't
   fast-forward `main` onto it. This supersedes the older advice in this section.
 - **To redeploy:** commit on `release` and push it. That branch is the CI
-  trigger; a green run publishes `:latest` and **Watchtower on
-  the NAS picks it up within ~5 minutes** — no Portainer click needed any more.
+  trigger; a green run publishes `:latest`. **If** the Watchtower stack has been
+  applied on the NAS it then updates itself within ~5 minutes — but see the open
+  thread above: that was never confirmed, so assume a manual Portainer pull
+  ("Recreate" with re-pull image) until Eric says otherwise.
   The stack is `deploy/portainer-stack.yml`; it must NOT be the repo's
   `docker-compose.yml`, which has `build: .` and would make Portainer build
   instead of pull.
@@ -375,11 +447,6 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   release Nov 2023); the stack uses the maintained fork
   `nickfedor/watchtower` (github.com/nicholas-fedor/watchtower), same flags and
   the same `com.centurylinklabs.*` labels.
-- **The `release`/`main` divergence is resolved locally.** `main` was
-  fast-forwarded onto `release` on 2026-09-15 and is the checked-out branch
-  again; nothing was pushed. `origin/main` is therefore still behind — the next
-  push should be `git push origin main && git push origin main:release`, which
-  is also the redeploy. Check `git branch --show-current` before committing.
 - **No Docker on the dev machine.** The image is only ever built by CI, so a
   Dockerfile change cannot be smoke-tested locally — push to `release` and watch
   the Actions run.
@@ -393,51 +460,58 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   to `RTL,RTL+`; the parser already sees Nitro (`RTL-N`, which carries the free
   Sunday 19:00 *Sky NFL-Konferenz* whiparound) and Sky (`SKYSTE`). Eric was
   asked and chose RTL + RTL+ only.
-- **View transitions cannot be verified in the Claude Code browser pane.** It
-  reports `document.visibilityState === "hidden"` even when fronted, and
-  `startViewTransition` always skips in a hidden document ("Transition was
-  aborted because of invalid state"). Name handover, focus, inert and layout are
-  all testable there; whether the morph actually *runs* is not. Check that in a
-  real browser.
-- **Settings verified 2026-09-17**: both themes measured with the in-page
-  contrast audit — light went 55 failing → **0 of 608**, dark is 0 (the one
-  flagged "AFC" is the gradient-clipped heading, whose `color` is transparent,
-  so the probe can't read it). German renders German day and month names
-  ("FREITAG, 18. SEPTEMBER") while Wild Card and Bye stay English. Landing route
-  redirects from `/` only — `/week/3` deep-links straight through. Creative runs
-  `field-drift`/`bloom-wander`/`mark-drift`; creative + reduced clamps all 21
-  animations. Corrupt-value guard confirmed.
-- **Logo sweep verified 2026-09-15** on all four routes at 375px and 1280px, live
-  2026 and `CLINCH_SEASON=2025` (filled bracket + Super Bowl card): 169 chips,
-  none missing the plate/ring, none without a team colour, and **zero overlaps**
-  between any watermark and any text in its card — measured in the page, not
-  eyeballed. Also fixed while sweeping: the bracket's corner "open game" button
-  sat on top of the lower team's score, so a played wild card game read "30" as
-  "3" (`reserveCorner` on the bottom `Side`). Re-verified after watermarks went
-  back to real artwork: 169 chips clean, zero glyph overlaps on all four routes.
-  The game dialog is the one intentional exception — its two large marks sit
-  behind the header text by design, and are now *lighter* than they were before
-  the sweep because the weight correction applies there too.
-- **Broadcast feature verified** against live listings on 2026-09-15: week 2 six
-  of sixteen (five RTL + the RTL+ exclusive Bengals–Texans), week 3 three
-  confirmed night games with the Sunday slots correctly `candidate` ("1 of 9"),
-  week 8 entirely `unknown`, a past week untouched, a forced-timeout run
-  degrading to `unknown` rather than `unavailable`, plus `CLINCH_BROADCAST=off`
-  and `CLINCH_SEASON=2025`. Checked at 375px and 1280px.
-  **Not yet verified against real listings:** the postseason and Super Bowl, the
-  international games (Munich 15 Nov, London, Madrid), Thanksgiving and the
-  Saturday weeks. All sit outside the ~14-day horizon, so they can only be
-  checked as they come into range — the titles are the thing to look at, since
-  a different prefix there would trip the canary and show `unknown` rather than
-  anything wrong.
-- **Verified over these sessions**: derivation against the *finished* 2025
-  season (every clinch/elimination label exactly right, including the 1 seed and
-  the 8-9 division winner) and a synthetic week-13 table for the mid-season
-  branches; the week endpoint against a settled, a future, a flex-scheduled and
-  a postseason week; the modal against final, live, scheduled and overtime
-  games. Live 2026 data checked at 390px, 1200px and 1800px, plus the production
-  single-process build. **No automated test suite exists** — everything is
-  verified by hand in the browser, so budget for that.
+
+### What has actually been verified
+
+All by hand — **there is no automated test suite**, so budget for that.
+
+- **Derivation** against the finished 2025 season: every clinch/elimination
+  label correct, including the 1 seed and the 8-9 division winner. Plus a
+  synthetic week-13 table for the mid-season branches.
+- **Contrast, measured in the page** rather than eyeballed (the audit script is
+  worth rebuilding if you touch colour): light went 55 failing → **0 of 608**
+  elements; dark is 0. The one flagged "AFC" is the gradient-clipped heading,
+  whose `color` is transparent, so the probe can't read it — a false positive.
+- **Logos**: 169 chips across all four routes at 375px and 1280px, live 2026 and
+  `CLINCH_SEASON=2025`. None missing plate or ring, none without a team colour,
+  **zero glyph overlaps** with any watermark. The game dialog is the one
+  intentional exception — its marks sit behind the header text by design.
+- **Broadcasts** against live listings: week 2 six of sixteen (five RTL + the
+  RTL+ exclusive), week 3 correctly `candidate`, week 8 `unknown`, a forced
+  timeout degrading to `unknown` rather than `unavailable`.
+- **Settings**: German day/month names render while *Wild Card* and *Bye* stay
+  English; landing redirects from `/` only and `/week/3` deep-links through;
+  creative + reduced clamps all 21 animations; the corrupt-value guard keeps
+  good fields and defaults only bad ones.
+- **Shutdown**: SIGTERM with one, three and twelve signals, and three `tsx
+  watch` reloads with a stream held open — all exit in 0s with no warnings.
+
+**Performance: don't time things in the Claude Code browser pane.** It is
+always `visibilityState: "hidden"`, so timers get throttled harder the longer
+the page sits: the same second open of the settings dialog measured 14ms early
+in a session and 4.5s later on. What worked was the local Chrome
+(`/Applications/Google Chrome.app`) run headless and driven over CDP with
+Node's built-in `WebSocket`: a 390×844 @3x mobile viewport,
+`Emulation.setCPUThrottlingRate` at 4–6, tap → double-rAF to the first real
+frame, and a `longtask` PerformanceObserver. Serve two builds side by side
+(proxying `/api` to the dev server) and **alternate which runs first**. The first
+measurement in a fresh Chrome process carries a ~110ms cold-start task whichever
+build it is, and that confound made the fixed build look worse in one run. The
+scripts were scratch files and are not in the repo.
+
+**Not verified, and needing a human or time:**
+
+- **Whether creative actually looks good in motion.** Sampled numerically only.
+- **View transitions** (the card→dialog morph) cannot be exercised here at all —
+  the pane reports `document.visibilityState === "hidden"` even when fronted and
+  `startViewTransition` always skips. Animation *clocks* do run, so sampling
+  `currentTime` and the computed matrix works; screenshots of anything animated
+  are frozen frames. Check the morph in a real browser.
+- **Broadcasts beyond the ~14-day listings horizon** — postseason, Munich,
+  Thanksgiving, Saturday weeks.
+- **The Dockerfile**, since there is no Docker on the dev machine: push to
+  `release` and watch the Actions run.
+
 - **Eric reviews on a phone first.** Several rounds of feedback were purely
   mobile: type too small, a dialog that couldn't be closed, the page scrolling
   behind a sheet. Check 390px before calling anything done.

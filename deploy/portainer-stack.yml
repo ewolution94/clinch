@@ -34,7 +34,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   # Polls GHCR and recreates Clinch when CI publishes a new :latest, so pushing
-  # `main:release` is the whole deploy. Outbound only — nothing new is exposed
+  # pushing `release` is the whole deploy. Outbound only — nothing new is exposed
   # through the Cloudflare Tunnel.
   #
   # Image note: the original containrrr/watchtower is ARCHIVED upstream and its

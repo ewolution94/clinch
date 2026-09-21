@@ -1,25 +1,76 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], select:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Escape, scroll lock, `inert` on the app shell, and focus returned on close.
+ * Escape, a focus trap, scroll lock, and focus returned on close.
  *
- * Intentionally separate from `GameModal`, which does all of this too. That
- * component also carries a view-transition morph, and the handover records four
- * distinct bugs paid for in getting it right — the top-layer interaction, an
- * opacity on a captured ancestor, a `view-transition-name` leak across cards,
- * the `flushSync` requirement. The settings dialog needs none of that, and
- * refactoring the two together would put the morph at risk to save twenty lines.
+ * **Deliberately no `inert` on the app shell.** That was the first version, and
+ * it was the freeze Eric felt on his phone: making the whole app inert restyles
+ * every one of its ~1,600 nodes, measured at 19–452ms of main-thread work on a
+ * desktop CPU (heaviest on the first open of a page load) — several times that
+ * on a phone. An `aria-hidden` control on the same subtree cost 0.2ms, so it is
+ * the style/interactivity work, not the accessibility tree. The dialog doesn't
+ * need it: the scrim is a full-screen button, so pointers can't reach the page;
+ * Tab is trapped here; and `aria-modal` tells assistive tech the rest. Same
+ * guarantees, none of the cost.
+ *
+ * `GameModal` still uses `inert`, via a prop in App.tsx. It is left alone on
+ * purpose — see the handover's notes on that component's view-transition bugs.
+ *
+ * `onClose` is read through a ref so the effect depends on `open` alone. It
+ * used to be a dependency, and App passes an inline arrow, so every re-render
+ * while the dialog was open — i.e. every setting tapped — tore the whole lock
+ * down and rebuilt it: scroll restored, the gear behind the sheet refocused,
+ * the body pinned again.
  */
-export function useDismissable(open: boolean, onClose: () => void): void {
+export function useDismissable(
+  open: boolean,
+  onClose: () => void,
+  panel: RefObject<HTMLElement | null>,
+): void {
+  const close = useRef(onClose);
+  useLayoutEffect(() => {
+    close.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
 
     const opener = document.activeElement as HTMLElement | null;
-    const shell = document.getElementById("app-shell");
-    shell?.setAttribute("inert", "");
+    const root = document.documentElement;
+    const node = panel.current;
+    const focusables = () =>
+      node ? [...node.querySelectorAll<HTMLElement>(FOCUSABLE)] : [];
+
+    // Ambient motion underneath is invisible behind the scrim but still costs
+    // the phone a composite every frame; index.css pauses it on this flag.
+    root.dataset.overlay = "";
+
+    focusables()[0]?.focus({ preventScroll: true });
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        close.current();
+        return;
+      }
+      if (event.key !== "Tab" || !node) return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (!node.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
 
@@ -34,10 +85,10 @@ export function useDismissable(open: boolean, onClose: () => void): void {
 
     return () => {
       document.removeEventListener("keydown", onKey);
-      shell?.removeAttribute("inert");
+      delete root.dataset.overlay;
       body.style.cssText = previous;
       window.scrollTo({ top: offset, behavior: "instant" as ScrollBehavior });
-      opener?.focus?.();
+      opener?.focus?.({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open, panel]);
 }

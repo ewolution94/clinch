@@ -494,6 +494,20 @@
   animation: hero-sweep 6s ease-in-out infinite;
 }
 
+/*
+ * While a dialog is open, the ambient motion underneath stops. It is invisible
+ * behind the scrim, but the blooms are 150px blurs animating forever, and on a
+ * phone every frame they change is a frame the GPU re-composites the screen.
+ * The dialog's own entrance animation isn't in this list, so it still plays.
+ */
+:root[data-overlay] .animate-sheen,
+:root[data-overlay] .field-lines,
+:root[data-overlay] .field-bloom,
+:root[data-overlay] .team-watermark,
+:root[data-overlay] .hero-sweep {
+  animation-play-state: paused;
+}
+
 /* Inert outside the creative theme. */
 .hero-sweep {
   opacity: 0;

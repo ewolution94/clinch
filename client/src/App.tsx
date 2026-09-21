@@ -58,6 +58,8 @@ function Clinch() {
     [raw, settings.theme],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
     useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
@@ -207,7 +209,7 @@ function Clinch() {
             connection={connection}
             route={route}
             onRoute={onRoute}
-            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenSettings={openSettings}
           />
 
           <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
@@ -305,7 +307,7 @@ function Clinch() {
 
         <SettingsDialog
           open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
+          onClose={closeSettings}
         />
       </div>
     </AccentProvider>
