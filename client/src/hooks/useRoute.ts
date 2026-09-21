@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type Route = "standings" | "playoffs" | "bracket" | "week";
 
@@ -25,6 +25,9 @@ function readGame(): string | null {
   return new URLSearchParams(window.location.search).get("game");
 }
 
+/** Marks a `?game=` history entry this app pushed, as opposed to one it arrived on. */
+const GAME_ENTRY = "clinchGame";
+
 function readWeekSlug(): string | null {
   const match = /^\/week\/([^/?#]+)/.exec(window.location.pathname);
   return match ? decodeURIComponent(match[1]) : null;
@@ -47,8 +50,12 @@ export function useRoute(): Router {
   const [game, setGame] = useState<string | null>(readGame);
   const [weekSlug, setWeekSlug] = useState<string | null>(readWeekSlug);
 
+  /** A `history.back()` from closeGame that hasn't landed yet. */
+  const leaving = useRef(false);
+
   useEffect(() => {
     const onPop = () => {
+      leaving.current = false;
       setRoute(readRoute());
       setGame(readGame());
       setWeekSlug(readWeekSlug());
@@ -68,13 +75,43 @@ export function useRoute(): Router {
   // The modal is a history entry of its own, so the Android back gesture and
   // the browser back button close it instead of leaving the page.
   const openGame = useCallback((id: string) => {
-    window.history.pushState({}, "", `${window.location.pathname}?game=${id}`);
+    window.history.pushState(
+      { [GAME_ENTRY]: true },
+      "",
+      `${window.location.pathname}?game=${id}`,
+    );
     setGame(id);
   }, []);
 
+  /**
+   * Closes *synchronously*, then tidies the URL. It used to close by calling
+   * `history.back()` and waiting for `popstate`, which broke two things:
+   *
+   * - **The closing morph never ran.** `back()` is asynchronous, so when App
+   *   calls this inside the view-transition callback nothing has changed yet.
+   *   The browser captured the dialog as its own "after" state and morphed it
+   *   into itself, and the dialog vanished a moment later. Measured in headless
+   *   Chrome: at capture, the panel was still in the DOM holding the name.
+   * - **Closing a shared `?game=` link left the site.** That entry is the tab's
+   *   own, not one this app pushed, so "back" went to wherever the reader came
+   *   from. Confirmed as a real `back_forward` navigation.
+   *
+   * Now the state changes here, inside the transition, and the URL follows: our
+   * own entry is popped (so the Android back gesture still behaves), and an
+   * arrived-on one is rewritten in place.
+   */
   const closeGame = useCallback(() => {
-    if (readGame()) window.history.back();
-    else setGame(null);
+    setGame(null);
+    if (leaving.current || readGame() === null) return;
+    if (
+      (window.history.state as Record<string, unknown> | null)?.[GAME_ENTRY]
+    ) {
+      // Guarded, so a second close before popstate can't step back twice.
+      leaving.current = true;
+      window.history.back();
+    } else {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   // Replaces rather than pushes: stepping through a dozen weeks shouldn't bury

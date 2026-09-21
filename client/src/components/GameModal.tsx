@@ -7,6 +7,7 @@ import { useGameDetail } from "../hooks/useGameDetail";
 import { useOverflowEdges, edgeFadeMask } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
 import { useLocale, useStrings } from "../lib/useSettings";
+import { FOCUSABLE } from "../lib/useDismissable";
 import type {
   GameDetail,
   GameTeamDetail,
@@ -548,17 +549,48 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
    * capture — so the panel's `view-transition-name` never formed a group and
    * the only thing that animated was the root cross-fade, leaving a snapshot of
    * the page painted over the opening modal. Everything showModal() provided is
-   * reproduced here instead: Escape below, focus move and restore below, and
-   * `inert` on the app shell (see App.tsx) to hold focus and the accessibility
-   * tree outside.
+   * reproduced here instead: Escape, focus moved in and restored, and a Tab
+   * trap, with `aria-modal` covering assistive tech.
+   *
+   * The Tab trap replaces `inert` on the whole app, which this dialog used to
+   * rely on. That restyled every node in the page on each open — a 64–74ms
+   * blocking task at 6× CPU, measured in isolation — and it ran inside the
+   * view-transition callback, so it also delayed the morph's start.
    */
   useEffect(() => {
+    const root = document.documentElement;
+    // The scrim blurs what's behind it. Paused, the page underneath is still,
+    // so the blur is computed once instead of every frame the blooms move.
+    root.dataset.overlay = "";
     panel.current?.focus({ preventScroll: true });
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !panel.current) return;
+      const node = panel.current;
+      const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      if (items.length === 0) {
+        event.preventDefault();
+        node.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      // The panel itself holds focus on open, so it counts as "outside" here.
+      if (active === node || !node.contains(active)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -582,14 +614,15 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      delete root.dataset.overlay;
       document.body.style.overflow = previous.overflow;
       document.body.style.position = previous.position;
       document.body.style.top = previous.top;
       document.body.style.width = previous.width;
       window.scrollTo(0, scrollY);
       // Return to the card by identity rather than to whatever was focused when
-      // this mounted: marking the shell inert blurs the card first, so by then
-      // `document.activeElement` is already the body.
+      // this mounted — by now focus is inside the panel being removed, and the
+      // card may have re-rendered since.
       document
         .querySelector<HTMLElement>(`[data-game-id="${gameId}"]`)
         ?.focus({ preventScroll: true });

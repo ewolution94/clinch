@@ -50,62 +50,73 @@ export function Header({
       : 0;
 
   return (
-    <header>
-      <div className="mx-auto flex max-w-[1800px] items-start justify-between gap-4 px-4 pt-6 pb-5 sm:px-6 lg:px-10">
-        <div className="flex items-center gap-3">
-          <ClinchMark size={38} />
-          <div className="flex flex-col leading-none">
-            <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">
-              CLINCH
-            </span>
-            <span className="mt-1 font-mono text-[11px] tracking-[0.16em] whitespace-nowrap text-mist sm:text-[12.5px] sm:tracking-[0.2em]">
-              {t.tagline}
+    <>
+      <header>
+        <div className="mx-auto flex max-w-[1800px] items-start justify-between gap-4 px-4 pt-6 pb-5 sm:px-6 lg:px-10">
+          <div className="flex items-center gap-3">
+            <ClinchMark size={38} />
+            <div className="flex flex-col leading-none">
+              <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">
+                CLINCH
+              </span>
+              <span className="mt-1 font-mono text-[11px] tracking-[0.16em] whitespace-nowrap text-mist sm:text-[12.5px] sm:tracking-[0.2em]">
+                {t.tagline}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            {live ? (
+              <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-live">
+                <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
+                {t.live}
+              </span>
+            ) : (
+              <span
+                className={clsx(
+                  "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[13px] tracking-[0.15em]",
+                  connection === "live"
+                    ? "border-line bg-ink/60 text-mist"
+                    : "border-line bg-ink/60 text-mist opacity-70",
+                )}
+              >
+                <span
+                  className={clsx(
+                    "h-1.5 w-1.5 rounded-full",
+                    connection === "live"
+                      ? "bg-jade"
+                      : connection === "connecting"
+                        ? "bg-mist"
+                        : "bg-live",
+                  )}
+                />
+                {connection === "live"
+                  ? "SYNCED"
+                  : connection === "connecting"
+                    ? "SYNCING"
+                    : "OFFLINE"}
+              </span>
+            )}
+            <span className="font-mono text-[12.5px] tracking-[0.12em] whitespace-nowrap text-mist">
+              {weekLabel.toUpperCase()}
+              {snapshot ? ` · ${snapshot.season.year}` : ""}
             </span>
           </div>
         </div>
+      </header>
 
-        <div className="flex flex-col items-end gap-2">
-          {live ? (
-            <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-live">
-              <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
-              {t.live}
-            </span>
-          ) : (
-            <span
-              className={clsx(
-                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[13px] tracking-[0.15em]",
-                connection === "live"
-                  ? "border-line bg-ink/60 text-mist"
-                  : "border-line bg-ink/60 text-mist opacity-70",
-              )}
-            >
-              <span
-                className={clsx(
-                  "h-1.5 w-1.5 rounded-full",
-                  connection === "live"
-                    ? "bg-jade"
-                    : connection === "connecting"
-                      ? "bg-mist"
-                      : "bg-live",
-                )}
-              />
-              {connection === "live"
-                ? "SYNCED"
-                : connection === "connecting"
-                  ? "SYNCING"
-                  : "OFFLINE"}
-            </span>
-          )}
-          <span className="font-mono text-[12.5px] tracking-[0.12em] whitespace-nowrap text-mist">
-            {weekLabel.toUpperCase()}
-            {snapshot ? ` · ${snapshot.season.year}` : ""}
-          </span>
-        </div>
-      </div>
+      {/*
+        Only the controls stick — the wordmark scrolls away and gives the
+        standings the full height of a phone screen.
 
-      {/* Only the controls stick — the wordmark scrolls away and gives the
-          standings the full height of a phone screen. */}
-      <div className="sticky top-0 z-30 border-b border-line/70 bg-abyss/85 backdrop-blur-xl">
+        The bar is a *sibling* of <header>, not its child, and that is the whole
+        fix. A sticky element can't leave its parent's box, and <header> is only
+        as tall as the wordmark plus this bar (164px) — so inside it, the bar
+        had nowhere to stick to and scrolled away with the logo, tabs and cog
+        included. Measured before the move: bar top 100 / 40 / −50 / −300 / −800
+        at scroll 0 / 60 / 150 / 400 / 900. Its parent is now the page itself.
+      */}
+      <div className="clinch-bar sticky top-0 z-30 border-b border-line/70 bg-abyss/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1800px] items-center px-4 py-2.5 sm:px-6 lg:px-10">
           <nav
             className="flex rounded-full border border-line bg-ink/70 p-0.5"
@@ -163,6 +174,6 @@ export function Header({
           />
         </div>
       </div>
-    </header>
+    </>
   );
 }

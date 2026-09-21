@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 
-const FOCUSABLE =
+/** Everything Tab can land on inside a dialog. Shared with GameModal's trap. */
+export const FOCUSABLE =
   'button:not([disabled]), [href], select:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
@@ -16,8 +17,8 @@ const FOCUSABLE =
  * Tab is trapped here; and `aria-modal` tells assistive tech the rest. Same
  * guarantees, none of the cost.
  *
- * `GameModal` still uses `inert`, via a prop in App.tsx. It is left alone on
- * purpose — see the handover's notes on that component's view-transition bugs.
+ * `GameModal` dropped `inert` too, for the same reason, and has its own trap —
+ * the two stay separate because of that component's view-transition machinery.
  *
  * `onClose` is read through a ref so the effect depends on `open` alone. It
  * used to be a dependency, and App passes an inline arrow, so every re-render

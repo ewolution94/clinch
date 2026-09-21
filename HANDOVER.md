@@ -39,19 +39,6 @@ The last four sessions, newest first:
   since. **Ask before trusting any claim that the NAS auto-updates.** If it
   isn't applied, a green CI run still changes nothing until someone hits
   Recreate with "re-pull image" in Portainer.
-- **`GameModal` still pays the `inert` cost on every open** (it sets `inert`
-  on the shell via a prop in App.tsx). Isolated, that is a 64–74ms blocking
-  task at 6× CPU, the same thing just removed from settings. It wasn't
-  changed, because of that component's fragile view-transition machinery. The
-  fix is the same shape (focus trap + `aria-modal`), but test the morph in a
-  real browser afterwards.
-- **The "sticky" controls bar does not stick,** and hasn't since before these
-  sessions. The structure is unchanged from `f41b15a`. The sticky div sits
-  inside a `<header>` only 164px tall, and a sticky element can't leave its
-  parent's box. Measured bar top at scroll 0/60/150/400/900: 100/40/−50/−300/
-  −800. So the tabs and the settings cog scroll away with the wordmark. The
-  fix is to make the bar a sibling of the header rather than its child. Not
-  done — it was out of scope for the freeze.
 - **Creative theme needs a human eye.** The motion was verified numerically
   (transform sampled over time), not visually, because the browser pane paints
   nothing while hidden. Eric had not confirmed it looks right at handover.
@@ -313,10 +300,20 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   panel's `view-transition-name` never formed a group and the only thing
   animating was the root cross-fade — leaving a snapshot of the page painted
   *over* the opening modal. It is now a plain fixed overlay, with everything
-  `showModal()` provided reproduced explicitly: `inert` on the app shell, an
-  Escape handler, scroll lock, and focus returned to the card **by
-  `data-game-id`** (going inert blurs the card before the modal's effect runs,
-  so `document.activeElement` is already the body by then).
+  `showModal()` provided reproduced explicitly: a Tab trap, an Escape handler,
+  scroll lock, `aria-modal`, and focus returned to the card **by
+  `data-game-id`**. It used to use `inert` on the whole app instead of the Tab
+  trap; that restyled every node on each open (64–74ms blocking at 6× CPU, and
+  inside the transition callback, so it also delayed the morph). **Don't put
+  `inert` back** — see the settings note below for the measurements.
+- **The sticky controls bar is a sibling of `<header>`, not its child.** Inside a
+  164px `<header>` it had nowhere to stick to and scrolled away with the logo,
+  tabs and cog included (bar top 100 / 40 / −50 / −300 / −800 at scroll
+  0 / 60 / 150 / 400 / 900). Header.tsx now returns a fragment, so the bar's
+  parent is the page. It keeps sticking while a dialog pins the body, because
+  its containing block still spans the viewport — measured at 0 with both
+  dialogs open, so it needs no special case. Don't wrap it back inside `<header>`
+  or any short container.
 - **Nothing above a `view-transition-name`d element may animate opacity.** The
   modal's dim/blur started life *on* the overlay that wraps the panel. At
   capture time that ancestor is at `opacity: 0` (the fade has just begun), so
@@ -325,10 +322,30 @@ taken on the NAS: 3000/3001/3002 (Axioma ×2, landing) and Pulse's 4400.
   a **sibling** scrim, and `.game-overlay` is deliberately effect-free — no
   opacity, filter, backdrop-filter, transform or animation. If you add any of
   those to it, the morph silently disappears again.
-- **The modal's chunk is awaited before the transition starts.** It is still
-  lazy, but `onOpenGame` does `await import(...)` first — otherwise the render
-  inside the transition can produce the Suspense fallback, and the browser
-  captures no panel to morph into.
+- **⚠️ The game dialog must not be rendered through `React.lazy`/`Suspense`.**
+  This used to say "awaiting `import()` first is enough". It wasn't: `lazy`
+  suspends on its *first* render even when the chunk is already downloaded,
+  because it only learns that by awaiting the module once. That first render
+  happens inside the transition callback, so on the **first open of every visit**
+  the browser captured the Suspense fallback, and the card just faded out. The
+  morph only ever ran from the second open onwards. Measured in headless
+  Chrome: first open had only `::view-transition-old(game-…)`, the second had
+  the full group. `loadGameModal()` in App.tsx now holds the component itself
+  and puts it in state (on idle, on tap, or on a `?game=` arrival), so it is a
+  plain value that renders synchronously. The chunk is still split out
+  (13.8 kB).
+- **⚠️ `closeGame` must change state synchronously.** It used to close by
+  calling `history.back()` and waiting for `popstate`. `back()` is async, so
+  inside the transition callback nothing had changed yet: the browser captured
+  the dialog as its own "after" state, morphed it into itself, and the dialog
+  vanished a moment later. **The closing morph had never worked.** It also meant
+  closing a shared `?game=` link — the tab's own first entry — did a real
+  `back_forward` navigation **out of the site**. Now: `setGame(null)` first, then
+  `back()` only for an entry the app pushed (marked `clinchGame` in
+  `history.state`, guarded against a double close), and `replaceState` for an
+  arrived-on one. Verified: open morph, close morph (card holds the name at
+  capture), browser/Android back still closes, and a deep-link close stays in
+  the document.
 - **A `view-transition-name` must exist on exactly ONE card, only while it
   morphs.** This was the actual bug behind "the games section is layered on top
   of the modal", and it took three attempts to find. A name is not a label: it
@@ -496,17 +513,27 @@ Node's built-in `WebSocket`: a 390×844 @3x mobile viewport,
 frame, and a `longtask` PerformanceObserver. Serve two builds side by side
 (proxying `/api` to the dev server) and **alternate which runs first**. The first
 measurement in a fresh Chrome process carries a ~110ms cold-start task whichever
-build it is, and that confound made the fixed build look worse in one run. The
-scripts were scratch files and are not in the repo.
+build it is, and that confound made the fixed build look worse in one run. Two gotchas
+in writing the driver: Chrome may bind the debugging port to IPv6 `::1`, so
+pass `--remote-debugging-address=127.0.0.1`; and attach the WebSocket `open`
+listener (or check `readyState`) *before* any `await`, or the event can fire
+unheard and the script hangs forever on `about:blank`. Kill spawned Chromes by
+PID — a hung driver leaves them behind. The scripts were scratch files and are
+not in the repo.
 
 **Not verified, and needing a human or time:**
 
 - **Whether creative actually looks good in motion.** Sampled numerically only.
-- **View transitions** (the card→dialog morph) cannot be exercised here at all —
-  the pane reports `document.visibilityState === "hidden"` even when fronted and
-  `startViewTransition` always skips. Animation *clocks* do run, so sampling
-  `currentTime` and the computed matrix works; screenshots of anything animated
-  are frozen frames. Check the morph in a real browser.
+- **View transitions can't be exercised in the Claude Code pane** — it is always
+  `hidden`, so `startViewTransition` skips. **Headless Chrome can,** and that is
+  how the two broken morphs above were found: it reports `visible`. Wrap
+  `document.startViewTransition` in the page to capture the transition, await
+  `.ready`, then read `document.getAnimations()` for
+  `::view-transition-new(game-<id>)`. Also read which element holds the name
+  at that moment: the panel on open, the card on close. A group can form
+  panel→panel and look like success, so check the DOM, not just the pseudos.
+  Screenshots there are reliable too (`Page.captureScreenshot`). The pane's are
+  frozen frames after a scroll.
 - **Broadcasts beyond the ~14-day listings horizon** — postseason, Munich,
   Thanksgiving, Saturday weeks.
 - **The Dockerfile**, since there is no Docker on the dev machine: push to

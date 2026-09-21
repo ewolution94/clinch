@@ -1,12 +1,4 @@
-import {
-  Suspense,
-  lazy,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { FieldBackdrop } from "./components/FieldBackdrop";
 import { Header } from "./components/Header";
@@ -31,7 +23,29 @@ import { ConferenceSwitch } from "./components/ConferenceSwitch";
 import { WeekView } from "./components/WeekView";
 
 // Kept out of the main bundle: most visits never open a game.
-const GameModal = lazy(() => import("./components/GameModal"));
+type GameModalComponent = (typeof import("./components/GameModal"))["default"];
+let loadedGameModal: GameModalComponent | null = null;
+
+/**
+ * The game dialog's chunk, loaded by hand rather than through `React.lazy`.
+ *
+ * `lazy` suspends on its *first* render even when the chunk is already
+ * downloaded — it only learns the module is there by awaiting it once. The
+ * dialog's first render happens inside the view-transition callback, so on the
+ * first open of every visit that render produced the Suspense fallback, the
+ * browser captured nothing under `game-<id>`, and the card simply faded out
+ * instead of morphing into the dialog. Measured in headless Chrome: first open
+ * had only `::view-transition-old(game-…)`; the second had the full group.
+ * Awaiting `import()` beforehand (the old mitigation) warms the module, not
+ * `lazy`'s internal state. Holding the component ourselves means it is a plain
+ * value by the time it is rendered, so it renders synchronously.
+ */
+function loadGameModal(): Promise<GameModalComponent> {
+  return import("./components/GameModal").then((module) => {
+    loadedGameModal = module.default;
+    return module.default;
+  });
+}
 import { useSnapshot } from "./hooks/useSnapshot";
 import { useRoute, type Route } from "./hooks/useRoute";
 import { DESKTOP_QUERY, useMediaQuery } from "./hooks/useMediaQuery";
@@ -58,6 +72,9 @@ function Clinch() {
     [raw, settings.theme],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [GameModal, setGameModal] = useState<GameModalComponent | null>(
+    () => loadedGameModal,
+  );
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
@@ -137,10 +154,22 @@ function Clinch() {
       : "Clinch";
   }, [snapshot, route]);
 
-  // The morph needs the modal's chunk already parsed, or the browser captures a
-  // Suspense fallback instead of the dialog. Warm it once the page is idle.
+  // Arriving on a `?game=` link opens the dialog before any tap could load it.
   useEffect(() => {
-    const warm = () => void import("./components/GameModal");
+    if (!game || GameModal) return;
+    let live = true;
+    void loadGameModal().then((Modal) => {
+      if (live) setGameModal(() => Modal);
+    });
+    return () => {
+      live = false;
+    };
+  }, [game, GameModal]);
+
+  // Load the dialog once the page is idle, so the first tap has it to hand.
+  useEffect(() => {
+    const warm = () =>
+      void loadGameModal().then((Modal) => setGameModal(() => Modal));
     const idle = window.requestIdleCallback?.(warm);
     if (idle === undefined) {
       const timer = setTimeout(warm, 1500);
@@ -179,11 +208,16 @@ function Clinch() {
 
   const onOpenGame = useCallback(
     async (id: string) => {
-      // Resolve the modal's chunk *first*. If it is still pending, the render
-      // inside the transition produces the Suspense fallback, the browser
-      // captures no panel, and there is nothing for the card to morph into.
-      await import("./components/GameModal");
-      morph(id, () => openGame(id));
+      // Have the component in hand *before* the transition starts. If the first
+      // render inside it has to wait for anything, the browser captures no panel
+      // and there is nothing for the card to morph into — see loadGameModal().
+      const Modal = await loadGameModal();
+      // Both updates run inside the transition's flushSync, so the panel exists
+      // — named `game-<id>` — in the very render the browser snapshots.
+      morph(id, () => {
+        setGameModal(() => Modal);
+        openGame(id);
+      });
     },
     [morph, openGame],
   );
@@ -201,9 +235,15 @@ function Clinch() {
       <div className="min-h-screen">
         <FieldBackdrop />
 
-        {/* Holds focus and the accessibility tree outside the modal — the job
-          showModal() used to do before the top layer broke the morph. */}
-        <div id="app-shell" inert={game !== null ? true : undefined}>
+        {/*
+          No `inert` here any more. It used to hold focus and the accessibility
+          tree outside the game dialog (the job showModal() did before the top
+          layer broke the morph), but making the whole app inert restyles every
+          node on each open — measured as a 64–74ms blocking task at 6× CPU. The
+          dialogs now trap Tab themselves and rely on `aria-modal`, and their
+          full-screen scrims stop pointers reaching the page.
+        */}
+        <>
           <Header
             snapshot={snapshot}
             connection={connection}
@@ -297,18 +337,11 @@ function Clinch() {
               </div>
             )}
           </main>
-        </div>
+        </>
 
-        {game && (
-          <Suspense fallback={null}>
-            <GameModal gameId={game} onClose={onCloseGame} />
-          </Suspense>
-        )}
+        {game && GameModal && <GameModal gameId={game} onClose={onCloseGame} />}
 
-        <SettingsDialog
-          open={settingsOpen}
-          onClose={closeSettings}
-        />
+        <SettingsDialog open={settingsOpen} onClose={closeSettings} />
       </div>
     </AccentProvider>
   );
