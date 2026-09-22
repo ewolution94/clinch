@@ -102,9 +102,20 @@ app.get("/api/game/:id/calendar.ics", async (req, res) => {
       return;
     }
     res.setHeader("content-type", "text/calendar; charset=utf-8");
-    // Inline, not attachment: Safari shows its "Add to Calendar" sheet for an
-    // inline calendar and just downloads an attachment.
-    res.setHeader("content-disposition", `inline; filename="${event.filename}"`);
+    /*
+     * Safari turns an *inline* calendar into its "Add to Calendar" sheet, and
+     * would only download an attachment — so it gets inline. Every other
+     * browser ignores the sheet and does nothing visible with inline: on
+     * Chrome for iOS the tap looked like it had failed. As an attachment they
+     * show their download UI, which can be opened into a calendar from there.
+     */
+    const ua = req.get("user-agent") ?? "";
+    const safari =
+      /Safari/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|FxiOS|Android/.test(ua);
+    res.setHeader(
+      "content-disposition",
+      `${safari ? "inline" : "attachment"}; filename="${event.filename}"`,
+    );
     res.setHeader("cache-control", "no-store");
     res.send(toIcs(event));
   } catch (error) {

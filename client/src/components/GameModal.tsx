@@ -303,31 +303,28 @@ function venuePlace(
  * Two ways into a calendar, both built by the server so they carry the German
  * broadcast (see server/src/calendar.ts).
  *
- * Google first: it is the calendar Eric uses, and Chrome on an iPhone — his
- * browser — does nothing useful with a .ics, where Safari would have offered
- * "Add to Calendar". The Google link opens Google's own "add event" page in a
- * new tab, ready to save. The file stays for Safari, Apple Calendar and
- * Outlook.
+ * The file leads, because it is the one that can reach a calendar on an
+ * iPhone: Safari adds it straight away, and other browsers save it to be
+ * opened from downloads. The Google link is second — it fills in Google's own
+ * new-event page, which is the quickest route on a desktop or on Android, but
+ * on an iPhone with the Google Calendar app installed iOS hands the link to
+ * the app, and the app drops everything in it. That is Google's behaviour, not
+ * something this page can route around; a redirect and a scripted navigation
+ * were both tried.
  */
 function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
   const t = useStrings();
-  // A .ics tap can look like nothing happened: Chrome on iOS quietly files it
-  // under downloads. We can't see whether it landed, so say where to look.
+  // A .ics tap can look like nothing happened — the browser files it away
+  // silently. We can't see whether it landed, so say where to look.
   const [fileTapped, setFileTapped] = useState(false);
-  // Installed to the home screen there is no browser around the page to show
-  // a calendar sheet, so the file opens in the browser's own in-app view.
-  const standalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as { standalone?: boolean }).standalone === true;
   const pill =
     "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-[12px] tracking-[0.08em] transition-colors";
   return (
     <div className="mt-0.5 flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <a
-          href={`/api/game/${gameId}/google-calendar?lang=${lang}`}
-          target="_blank"
-          rel="noopener"
+          href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
+          onClick={() => setFileTapped(true)}
           className={clsx(
             pill,
             "border-fog/30 bg-ink-2 text-paper hover:border-fog/60",
@@ -346,19 +343,18 @@ function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
             <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
             <path d="M3.5 9.5h17M8 3v4M16 3v4M12 12.5v5M9.5 15h5" />
           </svg>
-          {t.addToGoogleCalendar}
+          {t.addToCalendar}
         </a>
         <a
-          href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
-          target={standalone ? "_blank" : undefined}
-          rel={standalone ? "noopener" : undefined}
-          onClick={() => setFileTapped(true)}
+          href={`/api/game/${gameId}/google-calendar?lang=${lang}`}
+          target="_blank"
+          rel="noopener"
           className={clsx(
             pill,
             "border-line text-mist hover:border-fog/40 hover:text-fog",
           )}
         >
-          {t.addToCalendar}
+          {t.addToGoogleCalendar}
         </a>
       </div>
       <p
@@ -681,19 +677,21 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
         onClose();
         return;
       }
-      if (event.key !== "Tab" || !panel.current) return;
-      const node = panel.current;
+      if (event.key !== "Tab" || !overlay.current) return;
+      // The overlay, not the panel: the close button floats outside the panel
+      // and still has to be part of the cycle.
+      const node = overlay.current;
       const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)];
       if (items.length === 0) {
         event.preventDefault();
-        node.focus();
+        panel.current?.focus();
         return;
       }
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
       // The panel itself holds focus on open, so it counts as "outside" here.
-      if (active === node || !node.contains(active)) {
+      if (active === panel.current || !active || !node.contains(active)) {
         event.preventDefault();
         (event.shiftKey ? last : first).focus();
       } else if (event.shiftKey && active === first) {
@@ -754,21 +752,32 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       {/* The dim and blur are not in here: App draws them as `.game-scrim`,
           which outlives this component so it can fade out while the panel
           morphs back into its card. See index.css. */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={t.close}
+        className="game-dialog__close"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="22"
+          height="22"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="M6 6 18 18M18 6 6 18" />
+        </svg>
+      </button>
+
       <div
         ref={panel}
         tabIndex={-1}
         className="game-dialog__panel"
         style={{ viewTransitionName: `game-${gameId}` }}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t.close}
-          className="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-abyss/70 font-mono text-[15.5px] text-mist backdrop-blur transition-colors hover:border-fog/40 hover:text-paper"
-        >
-          ✕
-        </button>
-
         <div className="game-dialog__scroll">
           {detail ? (
             <>

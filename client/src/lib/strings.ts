@@ -103,10 +103,10 @@ export const STRINGS = {
     byQuarter: "BY QUARTER",
     notKickedOff:
       "Quarter scores, scoring plays and team numbers appear here once the game kicks off.",
-    addToGoogleCalendar: "Add to Google Calendar",
-    addToCalendar: "Calendar file (.ics)",
+    addToGoogleCalendar: "Google Calendar",
+    addToCalendar: "Add to calendar",
     icsHint:
-      "If nothing opened, the file is in your browser's downloads — Google Calendar above is the surer route on a phone.",
+      "Safari adds it straight away. Other browsers save the file — open it from your downloads to add it.",
 
     /* statuses */
     statusClinchedBye: "Clinched bye",
@@ -245,10 +245,10 @@ export const STRINGS = {
     byQuarter: "NACH VIERTELN",
     notKickedOff:
       "Viertel-Ergebnisse, Scoring-Plays und Team-Werte erscheinen hier, sobald das Spiel angepfiffen ist.",
-    addToGoogleCalendar: "In Google Kalender eintragen",
-    addToCalendar: "Kalenderdatei (.ics)",
+    addToGoogleCalendar: "Google Kalender",
+    addToCalendar: "Zum Kalender hinzufügen",
     icsHint:
-      "Falls nichts passiert ist: Die Datei liegt in den Downloads des Browsers — auf dem Handy klappt Google Kalender oben zuverlässiger.",
+      "Safari trägt es direkt ein. Andere Browser speichern die Datei — zum Eintragen in den Downloads öffnen.",
 
     /* statuses */
     statusClinchedBye: "Bye sicher",

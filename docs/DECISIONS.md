@@ -288,37 +288,39 @@ short. For what the app does and how it's built, see `README.md`.
   Super Bowl in New Orleans. `country !== "USA"` is the rule; the client maps
   the country to a flag and gives the city its German name ("München",
   "Mexiko-Stadt"). "Saint-Denis" is shown as Paris, which is how the NFL sells it.
-- **Calendar: Google's add-event link first, the .ics second, both from the
-  server.** Chrome on iOS — Eric's browser — does nothing useful with a
-  `text/calendar` response; only Safari turns it into "Add to Calendar". The
-  endpoint itself was verified working in production (right headers, valid
-  file); it was the browser. So the dialog leads with
-  `/api/game/:id/google-calendar`, carrying title, time, channel, venue and a
-  link back. The .ics stays for Safari, Apple Calendar and Outlook, and says
-  where the file went when it's tapped — on a phone it otherwise looks like
-  nothing happened at all. Both come from one `gameEvent()` in
-  `server/src/calendar.ts`, because only the server's week data knows the
-  channel.
-- **⚠️ The Google link goes through a page that forwards itself, not a 302.**
-  It was a redirect, and on Eric's iPhone it opened the Google Calendar app
-  with *nothing in it*: iOS hands a link the user taps on a domain an
-  installed app claims to that app, and the Calendar app ignores
-  `action=TEMPLATE`. A redirect is still that same tapped navigation. A
-  navigation made by script is not, so `googleCalendarPage()` serves a tiny
-  page that does `location.replace()` — which keeps the reader in the browser,
-  where Google's prefilled event page works, and syncs to the app afterwards
-  like any other event. The page also shows the link, for when script doesn't
-  run. **Not yet confirmed on a device**: if the app still swallows it, the
-  fallback is Eric adding his Google account to the iOS Calendar app and
-  making it the default, which makes the .ics land in Google too.
-- **Closing the game dialog listens to pointer events, with 32px of slop.** A
-  tap on the backdrop that drifted about 12px used to leave it open — the
-  browser had decided it was a drag and sent no click, which is the one tap in
-  twenty Eric reported. `GameModal` now tracks pointerdown→pointerup on the
-  overlay itself and closes when both are on it and the travel is under
-  `TAP_SLOP`. Reproduced and re-checked with synthetic taps at 0/6/12/28/85px
-  of travel: all but the last close, and a tap on the panel never does. The
-  slop is deliberately generous: nothing on the backdrop responds to a swipe.
+- **Calendar: the file leads, Google's add-event link is second, both from the
+  server.** Both come from one `gameEvent()` in `server/src/calendar.ts`,
+  because only the server's week data knows the channel. The file is first
+  because it is the only one that can reach a calendar on an iPhone (see the
+  entry below). It is sent `inline` **only to Safari**, which turns that into
+  its "Add to Calendar" sheet; every other browser ignores an inline calendar
+  and does nothing visible — on Chrome for iOS the tap looked like it had
+  failed — so they get `attachment` and show their own download UI. The dialog
+  also says where the file went once it's tapped, because the page cannot tell
+  whether it landed.
+- **⚠️ A link cannot put an event into the Google Calendar app on an iPhone.**
+  Settled on the device, twice. iOS hands a link to `calendar.google.com` to
+  the installed Google Calendar app, and the app ignores `action=TEMPLATE`
+  entirely — it opens, empty. A 302 through our own domain behaves the same,
+  and so does a page that forwards itself by script (`googleCalendarPage()`,
+  kept because it is right everywhere else): iOS still counts it as the same
+  tapped navigation. Don't spend more time on it — the app is the blocker, not
+  the link. Hence the file first on a phone, Google second for desktop and
+  Android. To get games *into* Google Calendar from the iPhone, the route is
+  his Google account added to the iOS Calendar app as the default calendar;
+  then the file lands in Google.
+- **The way out of the game dialog is a button, not the backdrop.** A 52px
+  round close button floats above the panel (`.game-dialog__close`), centred
+  on a phone. Tapping the backdrop is a convenience on top of it, and Escape
+  still works. It got there the long way: the backdrop tap missed about one
+  time in twenty, because a tap that drifts a few pixels is a drag to the
+  browser, which then sends no click. Pointer events with 32px of slop fixed
+  that in synthetic tests (0/6/12/28px of travel close, 85px doesn't), but Eric
+  reported it *worse* on the phone — so the dialog stopped depending on it.
+  The button sits outside the panel, where it can't be scrolled out of reach
+  (the risk the old corner ✕ inside the panel carried), and outside the view
+  transition, so it is simply there while the panel morphs open. The Tab trap
+  spans the overlay rather than the panel, so the button is in the cycle.
 - **⚠️ The game dialog must not be rendered through `React.lazy`/`Suspense`.**
   This used to say "awaiting `import()` first is enough". It wasn't: `lazy`
   suspends on its *first* render even when the chunk is already downloaded,

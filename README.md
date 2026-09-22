@@ -42,9 +42,9 @@ teams are in the field, which are chasing it, and which are already out.
 - **Your team, starred** — pick a favourite in settings and it's marked in every
   view, its card edged in its colour, and its game leads the schedule and the
   week strip.
-- **Into your calendar** — any upcoming game's dialog adds it to Google
-  Calendar in one tap, or offers an `.ics` for Apple Calendar and Outlook,
-  with the kickoff, the channel when it's known, and a link back.
+- **Into your calendar** — any upcoming game's dialog offers the game as a
+  calendar file, or prefilled in Google Calendar, with the kickoff, the channel
+  when it's known, and a link back.
 - **Games abroad flagged** — Munich, London, Madrid, Mexico City and the rest
   carry a flag and the city, in German where it has a German name.
 - **Installs to a home screen** — a web manifest and icons, so it opens
