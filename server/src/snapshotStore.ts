@@ -2,6 +2,7 @@ import { fetchScoreboard, fetchStandings } from "./espn.js";
 import { buildConferences } from "./derive.js";
 import { broadcastStore } from "./broadcastStore.js";
 import { config } from "./config.js";
+import { describeError } from "./describeError.js";
 import type {
   PostseasonGame,
   PostseasonRound,
@@ -243,7 +244,7 @@ export class SnapshotStore {
 
       this.schedule(anyLive ? config.liveRefreshMs : config.refreshMs);
     } catch (error) {
-      console.error("[clinch] refresh failed:", error instanceof Error ? error.message : error);
+      console.error("[clinch] refresh failed:", describeError(error));
       if (this.snapshot) this.publish({ ...this.snapshot, stale: true });
       this.schedule(Math.min(config.refreshMs, 60_000));
     } finally {

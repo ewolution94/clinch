@@ -109,7 +109,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         aria-label={t.close}
         onClick={onClose}
         tabIndex={-1}
-        className="absolute inset-0 cursor-default bg-abyss/80"
+        className="animate-scrim-in absolute inset-0 cursor-default bg-abyss/80"
         style={{ touchAction: "none" }}
       />
 
@@ -118,7 +118,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         role="dialog"
         aria-modal="true"
         aria-label={t.settingsTitle}
-        className="animate-rise relative flex max-h-[88dvh] w-full max-w-[520px] flex-col overflow-hidden rounded-t-2xl border border-line bg-ink shadow-2xl sm:rounded-2xl"
+        className="animate-sheet-in sm:animate-panel-in relative flex max-h-[88dvh] w-full max-w-[520px] flex-col overflow-hidden rounded-t-2xl border border-line bg-ink shadow-2xl sm:rounded-2xl"
       >
         <header className="flex items-start justify-between gap-4 border-b border-line px-5 pt-5 pb-4">
           <div className="min-w-0">

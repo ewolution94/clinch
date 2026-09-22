@@ -48,6 +48,10 @@
 
   --animate-live-dot: live-dot 2s ease-in-out infinite;
   --animate-rise: rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* The game dialog's entrance, reused by the settings sheet. */
+  --animate-scrim-in: backdrop-in 0.2s ease both;
+  --animate-sheet-in: sheet-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-panel-in: panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-week-forward: week-in-forward 0.3s cubic-bezier(0.16, 1, 0.3, 1)
     both;
   --animate-week-back: week-in-back 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;

@@ -1,8 +1,13 @@
 import { memo, useState } from "react";
 import { TeamLogo } from "./TeamLogo";
 import { FormDots } from "./FormDots";
-import { STATUS_META } from "../lib/status";
-import { formatDiff, formatKickoff, formatPct } from "../lib/format";
+import { RESULT_COLOR, STATUS_META } from "../lib/status";
+import {
+  formatDiff,
+  formatGames,
+  formatKickoff,
+  formatPct,
+} from "../lib/format";
 import { useLocale, useStrings } from "../lib/useSettings";
 import type { TeamEntry } from "../lib/types";
 
@@ -13,12 +18,7 @@ interface TeamRowProps {
 }
 
 function ResultPill({ result }: { result: "W" | "L" | "T" }) {
-  const color =
-    result === "W"
-      ? "var(--color-jade)"
-      : result === "L"
-        ? "var(--color-live)"
-        : "var(--color-mist)";
+  const color = RESULT_COLOR[result];
   return (
     <span
       className="mono-tabular flex h-4 w-4 items-center justify-center rounded text-[12px] font-bold"
@@ -121,18 +121,16 @@ export const TeamRow = memo(function TeamRow({
           {team.record}
         </span>
 
+        {/* The current run — the differential is in the drawer. */}
         <span
-          className="mono-tabular relative w-9 shrink-0 text-right text-[14px]"
+          className="mono-tabular relative w-9 shrink-0 text-right text-[14px] font-semibold"
           style={{
-            color:
-              team.pointDiff > 0
-                ? "var(--color-jade)"
-                : team.pointDiff < 0
-                  ? "var(--color-live)"
-                  : undefined,
+            color: team.streakKind
+              ? RESULT_COLOR[team.streakKind]
+              : "var(--color-mist)",
           }}
         >
-          {formatDiff(team.pointDiff)}
+          {team.streakKind ? team.streak : "—"}
         </span>
 
         <span className="relative hidden shrink-0 @xs/card:block">
@@ -145,17 +143,17 @@ export const TeamRow = memo(function TeamRow({
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 pt-1 pb-4 sm:grid-cols-4 sm:px-5">
             <Detail label="Conference" value={team.conferenceRecord} />
             <Detail label="Division" value={team.divisionRecord} />
-            <Detail label="Home" value={team.homeRecord} />
-            <Detail label="Away" value={team.roadRecord} />
-            <Detail label="{t.pointsFor}" value={String(team.pointsFor)} />
-            <Detail label="Against" value={String(team.pointsAgainst)} />
-            <Detail label="Streak" value={team.streak || "—"} />
-            <Detail label="{t.winPct}" value={formatPct(team.winPct)} />
+            <Detail label={t.home} value={team.homeRecord} />
+            <Detail label={t.away} value={team.roadRecord} />
+            <Detail label={t.pointsFor} value={String(team.pointsFor)} />
+            <Detail label={t.pointsAgainst} value={String(team.pointsAgainst)} />
+            <Detail label={t.pointDiff} value={formatDiff(team.pointDiff)} />
+            <Detail label={t.winPct} value={formatPct(team.winPct)} />
             <Detail label="Conf. seed" value={`#${team.seed}`} />
 
             <div className="col-span-2 sm:col-span-4">
               <p className="font-mono text-[12px] tracking-[0.16em] text-mist">
-                LAST {team.recent.length || 0}
+                {t.lastN.replace("{n}", String(team.recent.length))}
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {team.recent.length === 0 && (
@@ -197,7 +195,7 @@ export const TeamRow = memo(function TeamRow({
                   </span>
                   <span className="mono-tabular text-[14px] text-mist">
                     {team.nextGame.state === "in"
-                      ? "in progress"
+                      ? t.inProgress
                       : formatKickoff(team.nextGame.kickoff, locale)}
                   </span>
                 </div>
@@ -212,10 +210,10 @@ export const TeamRow = memo(function TeamRow({
               {team.status === "bubble" ||
               team.status === "hunt" ||
               team.status === "longshot"
-                ? ` · ${team.gamesBack} ${team.gamesBack === 1 ? "game" : "games"} back of the 7 seed`
+                ? ` · ${(team.gamesBack === 1 ? t.gameBack : t.gamesBack).replace("{n}", formatGames(team.gamesBack))}`
                 : ""}
               {team.gamesRemaining > 0
-                ? ` · ${team.gamesRemaining} to play`
+                ? ` · ${t.toPlay.replace("{n}", String(team.gamesRemaining))}`
                 : ""}
             </p>
           </div>

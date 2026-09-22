@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
+import { describeError } from "./describeError.js";
 import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
 
@@ -49,7 +50,7 @@ app.get("/api/week/:seasonType/:week", async (req, res) => {
     res.setHeader("cache-control", "no-store");
     res.json(await store.week(seasonType, week));
   } catch (error) {
-    console.error("[clinch] week failed:", error instanceof Error ? error.message : error);
+    console.error("[clinch] week failed:", describeError(error));
     res.status(502).json({ error: "upstream unavailable" });
   }
 });
@@ -66,7 +67,7 @@ app.get("/api/game/:id", async (req, res) => {
     res.setHeader("cache-control", "no-store");
     res.json(await games.get(id));
   } catch (error) {
-    console.error("[clinch] game detail failed:", error instanceof Error ? error.message : error);
+    console.error("[clinch] game detail failed:", describeError(error));
     res.status(502).json({ error: "upstream unavailable" });
   }
 });

@@ -1,6 +1,8 @@
+import { Fragment, useCallback, useState } from "react";
 import { clsx } from "clsx";
 import { useStrings } from "../lib/useSettings";
 import { ClinchMark } from "./ClinchMark";
+import { SettingsDialog } from "./SettingsDialog";
 import type { Route } from "../hooks/useRoute";
 import type { ConnectionState, Snapshot } from "../lib/types";
 
@@ -9,7 +11,6 @@ interface HeaderProps {
   connection: ConnectionState;
   route: Route;
   onRoute: (route: Route) => void;
-  onOpenSettings: () => void;
 }
 
 // Where the season is now, then where it's heading. Labels come from the string
@@ -21,9 +22,12 @@ export function Header({
   connection,
   route,
   onRoute,
-  onOpenSettings,
 }: HeaderProps) {
   const t = useStrings();
+  // Held here rather than in App: opening the sheet then re-renders the header
+  // and the sheet, not every card on the page behind it.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const tabs = [
     {
       id: "standings" as const,
@@ -59,8 +63,18 @@ export function Header({
               <span className="font-display text-xl font-bold tracking-[-0.02em] text-paper">
                 CLINCH
               </span>
-              <span className="mt-1 font-mono text-[11px] tracking-[0.16em] whitespace-nowrap text-mist sm:text-[12.5px] sm:tracking-[0.2em]">
-                {t.tagline}
+              {/* German runs 30 characters to English's 18 and pushed the sync
+                  pill off a phone screen. Each half is unbreakable, so when the
+                  line has to give, it wraps at the comma and nowhere else. */}
+              <span className="mt-0.5 font-mono text-[11px] leading-[1.3] tracking-[0.16em] text-mist sm:text-[12.5px] sm:tracking-[0.2em]">
+                {t.tagline.split(", ").map((part, i, parts) => (
+                  <Fragment key={part}>
+                    {i > 0 && " "}
+                    <span className="whitespace-nowrap">
+                      {i < parts.length - 1 ? `${part},` : part}
+                    </span>
+                  </Fragment>
+                ))}
               </span>
             </div>
           </div>
@@ -143,7 +157,7 @@ export function Header({
 
           <button
             type="button"
-            onClick={onOpenSettings}
+            onClick={() => setSettingsOpen(true)}
             aria-label={t.settings}
             title={t.settings}
             className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-ink/70 text-mist transition-colors hover:border-fog/40 hover:text-paper"
@@ -174,6 +188,10 @@ export function Header({
           />
         </div>
       </div>
+
+      {/* After the bar, not inside it: the bar's backdrop-filter would make it
+          the containing block for this `fixed` overlay. */}
+      <SettingsDialog open={settingsOpen} onClose={closeSettings} />
     </>
   );
 }

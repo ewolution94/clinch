@@ -15,7 +15,6 @@ import {
   useStrings,
 } from "./lib/useSettings";
 import { themedSnapshot } from "./lib/themedSnapshot";
-import { SettingsDialog } from "./components/SettingsDialog";
 import { SeasonHero } from "./components/SeasonHero";
 import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
@@ -71,12 +70,9 @@ function Clinch() {
     () => (raw ? themedSnapshot(raw, settings.theme) : raw),
     [raw, settings.theme],
   );
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [GameModal, setGameModal] = useState<GameModalComponent | null>(
     () => loadedGameModal,
   );
-  const openSettings = useCallback(() => setSettingsOpen(true), []);
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
     useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
@@ -249,7 +245,6 @@ function Clinch() {
             connection={connection}
             route={route}
             onRoute={onRoute}
-            onOpenSettings={openSettings}
           />
 
           <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
@@ -340,8 +335,6 @@ function Clinch() {
         </>
 
         {game && GameModal && <GameModal gameId={game} onClose={onCloseGame} />}
-
-        <SettingsDialog open={settingsOpen} onClose={closeSettings} />
       </div>
     </AccentProvider>
   );
