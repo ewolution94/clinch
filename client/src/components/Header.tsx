@@ -4,7 +4,7 @@ import { useStrings } from "../lib/useSettings";
 import { ClinchMark } from "./ClinchMark";
 import { SettingsDialog } from "./SettingsDialog";
 import type { Route } from "../hooks/useRoute";
-import type { ConnectionState, Snapshot } from "../lib/types";
+import type { ConferenceView, ConnectionState, Snapshot } from "../lib/types";
 
 interface HeaderProps {
   snapshot: Snapshot | null;
@@ -16,6 +16,7 @@ interface HeaderProps {
 // Where the season is now, then where it's heading. Labels come from the string
 // table so the order lives here and the wording lives there.
 const TAB_IDS: Route[] = ["standings", "week", "playoffs", "bracket"];
+const NO_CONFERENCES: ConferenceView[] = [];
 
 export function Header({
   snapshot,
@@ -191,7 +192,11 @@ export function Header({
 
       {/* After the bar, not inside it: the bar's backdrop-filter would make it
           the containing block for this `fixed` overlay. */}
-      <SettingsDialog open={settingsOpen} onClose={closeSettings} />
+      <SettingsDialog
+        open={settingsOpen}
+        onClose={closeSettings}
+        conferences={snapshot?.conferences ?? NO_CONFERENCES}
+      />
     </>
   );
 }

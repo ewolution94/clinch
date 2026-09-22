@@ -3,10 +3,11 @@ import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import { Shimmer } from "./Shimmer";
 import { BroadcastBadge, BroadcastBand } from "./Broadcast";
+import { AbroadBadge, FavouriteStar } from "./Marks";
 import { useWeek, prefetchWeek } from "../hooks/useWeek";
 import { currentWeek, findBySlug, relativeLabel, weekSlug } from "../lib/weeks";
 import { teamMap } from "../lib/teams";
-import { useLocale, useStrings } from "../lib/useSettings";
+import { useLocale, useSettings, useStrings } from "../lib/useSettings";
 import type {
   CalendarWeek,
   ScoreboardGame,
@@ -48,14 +49,22 @@ function kickoffLabel(game: ScoreboardGame, locale: string): string {
   });
 }
 
+/** On a channel the reader has, or in a slot it might yet take. */
+function onTv(game: ScoreboardGame): boolean {
+  const status = game.broadcast?.status;
+  return status === "confirmed" || status === "candidate";
+}
+
 function GameRow({
   game,
   teams,
+  favourite,
   onOpenGame,
   morphCardId,
 }: {
   game: ScoreboardGame;
   teams: Map<string, TeamEntry>;
+  favourite: string | null;
   onOpenGame: (id: string) => void;
   morphCardId: string | null;
 }) {
@@ -84,13 +93,16 @@ function GameRow({
       </span>
       <TeamLogo abbr={abbr} size={30} accent={team?.accent} />
       <span className="flex min-w-0 flex-1 flex-col leading-tight">
-        <span
-          className={clsx(
-            "truncate font-display text-[15.5px] font-bold",
-            final && !won ? "text-mist" : "text-paper",
-          )}
-        >
-          {team ? `${team.location} ${team.name}` : abbr}
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span
+            className={clsx(
+              "truncate font-display text-[15.5px] font-bold",
+              final && !won ? "text-mist" : "text-paper",
+            )}
+          >
+            {team ? `${team.location} ${team.name}` : abbr}
+          </span>
+          {abbr === favourite && <FavouriteStar accent={team?.accent} />}
         </span>
         <span className="mono-tabular text-[12px] text-mist">
           {team?.record ? `${abbr} · ${team.record}` : abbr}
@@ -109,17 +121,26 @@ function GameRow({
     </span>
   );
 
+  // A live game keeps its red edge; the team tint is for every other state.
+  const mineAccent =
+    !live && (game.home === favourite || game.away === favourite)
+      ? teams.get(favourite!)?.accent
+      : undefined;
+
   return (
     <button
       type="button"
       onClick={() => onOpenGame(game.id)}
       data-game-id={game.id}
       aria-label={`${game.away} at ${game.home} — game detail`}
-      style={
-        game.id === morphCardId
-          ? { viewTransitionName: `game-${game.id}` }
-          : undefined
-      }
+      style={{
+        ...(game.id === morphCardId && {
+          viewTransitionName: `game-${game.id}`,
+        }),
+        ...(mineAccent && {
+          borderColor: `color-mix(in srgb, ${mineAccent} 55%, transparent)`,
+        }),
+      }}
       className={clsx(
         "flex w-full flex-col gap-2 rounded-xl border bg-ink/55 p-3 text-left transition-colors hover:border-fog/35 hover:bg-ink-2/70",
         live ? "border-live/40" : "border-line",
@@ -144,6 +165,7 @@ function GameRow({
             ? kickoffLabel(game, locale)
             : game.statusDetail || "Final"}
         </span>
+        <AbroadBadge abroad={game.abroad} />
         <BroadcastBadge broadcast={game.broadcast} />
       </div>
     </button>
@@ -248,9 +270,35 @@ export function WeekView({
 
   const teams = useMemo(() => teamMap(snapshot), [snapshot]);
 
+  const { settings, update } = useSettings();
+  const { favourite } = settings;
+  const broadcasts = view?.broadcasts;
+  // Only a week whose listings are out has anything to filter by; elsewhere the
+  // remembered choice sits idle rather than emptying the page.
+  const filterable =
+    !!broadcasts && broadcasts.published && broadcasts.upcoming > 0;
+  const tvOnly = settings.tvOnly && filterable;
+
+  // The reader's game leads the week, whatever the filter says about the rest.
+  const pinned = useMemo(
+    () =>
+      favourite
+        ? (view?.games.find(
+            (g) => g.home === favourite || g.away === favourite,
+          ) ?? null)
+        : null,
+    [view, favourite],
+  );
+  const favouriteOnBye =
+    !!favourite && !!view?.byeTeams.includes(favourite);
+
   const days = useMemo(() => {
     const groups = new Map<string, ScoreboardGame[]>();
     for (const game of view?.games ?? []) {
+      // Pinned above instead. One card per game, never two: a second would
+      // share its view-transition-name, and the morph silently skips.
+      if (game.id === pinned?.id) continue;
+      if (tvOnly && !onTv(game)) continue;
       const key = dayKey(game.kickoff);
       groups.set(key, [...(groups.get(key) ?? []), game]);
     }
@@ -261,7 +309,7 @@ export function WeekView({
       if (Number.isNaN(tb)) return -1;
       return ta - tb;
     });
-  }, [view]);
+  }, [view, pinned, tvOnly]);
 
   if (!selected) return null;
   const relative = now ? relativeLabel(calendar, selected, now) : null;
@@ -307,7 +355,14 @@ export function WeekView({
           {t.scheduleOnly}
         </p>
 
-        <BroadcastBand broadcasts={view?.broadcasts} />
+        <BroadcastBand
+          broadcasts={broadcasts}
+          filter={
+            filterable
+              ? { on: tvOnly, set: (on) => update({ tvOnly: on }) }
+              : undefined
+          }
+        />
       </header>
 
       {loading && !view ? (
@@ -325,6 +380,38 @@ export function WeekView({
               : "animate-week-back",
           )}
         >
+          {favourite && (pinned || favouriteOnBye) && (
+            <section className="flex flex-col gap-2">
+              <h3 className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
+                {t.yourTeam}
+                {pinned &&
+                  ` · ${dayLabel(pinned.kickoff, locale, t.dateTbd)}`}
+              </h3>
+              {pinned ? (
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <GameRow
+                    game={pinned}
+                    teams={teams}
+                    favourite={favourite}
+                    onOpenGame={onOpenGame}
+                    morphCardId={morphCardId}
+                  />
+                </div>
+              ) : (
+                <ByeNote abbr={favourite} team={teams.get(favourite)} />
+              )}
+            </section>
+          )}
+
+          {tvOnly && days.length === 0 && broadcasts && (
+            <p className="rounded-xl border border-line bg-ink/40 px-4 py-6 text-center font-display text-[13px] text-mist">
+              {t.noneOnTv.replace(
+                "{where}",
+                broadcasts.outlets.join(` ${t.or} `),
+              )}
+            </p>
+          )}
+
           {days.map(([key, games]) => (
             <section key={key} className="flex flex-col gap-2">
               <h3 className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
@@ -336,6 +423,7 @@ export function WeekView({
                     key={game.id}
                     game={game}
                     teams={teams}
+                    favourite={favourite}
                     onOpenGame={onOpenGame}
                     morphCardId={morphCardId}
                   />
@@ -350,7 +438,7 @@ export function WeekView({
             </p>
           )}
 
-          {view && view.byeTeams.length > 0 && (
+          {view && view.byeTeams.length > 0 && !tvOnly && (
             <section className="flex flex-col gap-2">
               <h3 className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
                 {t.onBye}
@@ -376,6 +464,30 @@ export function WeekView({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** The reader's team has the week off — worth a line, not an empty section. */
+function ByeNote({ abbr, team }: { abbr: string; team: TeamEntry | undefined }) {
+  const t = useStrings();
+  return (
+    <div
+      className="flex items-center gap-2.5 rounded-xl border bg-ink/40 px-3 py-2.5"
+      style={{
+        borderColor: team
+          ? `color-mix(in srgb, ${team.accent} 55%, transparent)`
+          : undefined,
+      }}
+    >
+      <TeamLogo abbr={abbr} size={26} accent={team?.accent} />
+      <span className="min-w-0 truncate font-display text-[15.5px] font-bold text-paper">
+        {team ? `${team.location} ${team.name}` : abbr}
+      </span>
+      <FavouriteStar accent={team?.accent} />
+      <span className="ml-auto shrink-0 font-mono text-[12px] tracking-[0.08em] text-mist">
+        {t.onByeThisWeek}
+      </span>
     </div>
   );
 }

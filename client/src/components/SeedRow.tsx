@@ -1,8 +1,9 @@
 import { memo } from "react";
 import { TeamLogo } from "./TeamLogo";
 import { FormDots } from "./FormDots";
+import { FavouriteStar } from "./Marks";
 import { STATUS_META, seedRole } from "../lib/status";
-import { useStrings } from "../lib/useSettings";
+import { useFavourite, useStrings } from "../lib/useSettings";
 import { formatGames } from "../lib/format";
 import type { TeamEntry } from "../lib/types";
 
@@ -17,6 +18,7 @@ export const SeedRow = memo(function SeedRow({
   chasing = false,
 }: SeedRowProps) {
   const t = useStrings();
+  const favourite = useFavourite() === team.abbr;
   const status = STATUS_META[team.status];
   const role = seedRole(team.seed, team.divisionRank);
   const tier = chasing ? status.color : role.color;
@@ -37,6 +39,9 @@ export const SeedRow = memo(function SeedRow({
       className="animate-rise relative flex items-stretch overflow-hidden rounded-xl border border-line bg-ink/60"
       style={{
         background: `linear-gradient(90deg, color-mix(in srgb, ${team.accent} 22%, var(--color-ink)) 0%, color-mix(in srgb, ${team.accent} 7%, var(--color-ink)) 42%, var(--color-ink) 78%)`,
+        ...(favourite && {
+          borderColor: `color-mix(in srgb, ${team.accent} 55%, transparent)`,
+        }),
       }}
     >
       <div
@@ -64,8 +69,11 @@ export const SeedRow = memo(function SeedRow({
           <span className="truncate font-display text-[13px] tracking-[0.1em] text-mist uppercase">
             {team.location}
           </span>
-          <span className="truncate font-display text-[16.5px] leading-tight font-semibold text-paper">
-            {team.name}
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-display text-[16.5px] leading-tight font-semibold text-paper">
+              {team.name}
+            </span>
+            {favourite && <FavouriteStar accent={team.accent} size={13} />}
           </span>
           <span
             className="mt-0.5 truncate font-mono text-[12.5px] tracking-[0.06em]"

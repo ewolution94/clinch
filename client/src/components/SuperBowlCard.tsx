@@ -1,10 +1,11 @@
 import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
+import { FavouriteStar } from "./Marks";
 import { TeamWatermark } from "./TeamWatermark";
 import type { BracketMatch } from "../lib/bracket";
 import { superBowlNumeral } from "../lib/format";
 import type { TeamEntry } from "../lib/types";
-import { useStrings } from "../lib/useSettings";
+import { useFavourite, useStrings } from "../lib/useSettings";
 
 interface SuperBowlCardProps {
   match: BracketMatch | null;
@@ -32,6 +33,7 @@ function Contender({
   compact: boolean;
   onPick: () => void;
 }) {
+  const favourite = useFavourite();
   if (!team) {
     return (
       <div className="flex h-[60px] items-center justify-center rounded-xl border border-dashed border-line/70">
@@ -73,8 +75,13 @@ function Contender({
         <span className="font-mono text-[11px] tracking-[0.18em] text-mist">
           {label}
         </span>
-        <span className="w-full truncate font-display text-[16.5px] font-semibold text-paper">
-          {team.name}
+        <span className="flex w-full min-w-0 items-center gap-1.5">
+          <span className="truncate font-display text-[16.5px] font-semibold text-paper">
+            {team.name}
+          </span>
+          {team.abbr === favourite && (
+            <FavouriteStar accent={team.accent} size={13} />
+          )}
         </span>
         <span className="mono-tabular text-[13px] text-fog opacity-80">
           {score !== null ? `${score} pts` : team.record}

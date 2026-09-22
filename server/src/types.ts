@@ -108,6 +108,14 @@ export interface ScoreboardGame {
   awayScore: number | null;
   /** Absent for played games and whenever the lookup is switched off. */
   broadcast?: GameBroadcast;
+  /** Only for games outside the US — Munich, London, Madrid and the like. */
+  abroad?: GameAbroad;
+}
+
+/** As ESPN writes them: "Munich" / "Germany", "London" / "England". */
+export interface GameAbroad {
+  city: string;
+  country: string;
 }
 
 /* ------------------------------------------------------- german broadcasts */
@@ -253,7 +261,10 @@ export interface GameDetail {
   period: number | null;
   clock: string | null;
   kickoff: string;
-  venue: { name: string; city: string; state: string } | null;
+  /** Which scoreboard week the game sits in — lets a calendar entry find its channel. */
+  seasonType: number;
+  week: number;
+  venue: { name: string; city: string; state: string; country: string } | null;
   attendance: number | null;
   odds: string | null;
   /** Anything past this period is overtime. */

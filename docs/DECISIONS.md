@@ -229,6 +229,36 @@ short. For what the app does and how it's built, see `README.md`.
   a **sibling** scrim, and `.game-overlay` is deliberately effect-free — no
   opacity, filter, backdrop-filter, transform or animation. If you add any of
   those to it, the morph silently disappears again.
+- **Opening a game shows the dim and blur on the first frame.** The scrim used
+  to fade in (0.2s) *inside* the view transition's own 0.22s root cross-fade,
+  while the panel's ease-out morph is nearly done by ~0.1s. So the dialog stood
+  open over a still-sharp page and the blur arrived a beat later, which Eric
+  called out. The scrim now has no animation, and `morph()` in App.tsx tags
+  the root `data-morph="open"|"close"` for the transition's lifetime. On open,
+  index.css drops the root cross-fade: the old page is hidden and the dimmed
+  one shown at once, so only the card→panel group animates. Closing keeps the
+  cross-fade, so the blur eases out as the panel shrinks back. Filmed in
+  headless Chrome at 10% animation speed: before, the scrim opacity went
+  0.04 → 0.37 → 0.67 while the panel had nearly finished growing; after, it's
+  1 from the first frame, with the named group still forming both ways.
+- **The favourite's game is pinned, never duplicated.** The week view lifts it
+  out of its day group into "Your team" rather than showing it twice. A second
+  card would carry the same `data-game-id` and, mid-morph, the same
+  `view-transition-name`, and two elements sharing a name silently skips the
+  transition. The pinned card also survives the "On TV" filter, because your own
+  team's kickoff is worth seeing even when you can't watch it.
+- **The favourite star is drawn in the team's colour, not gold.** Gold already
+  means "division leader" on the playoff picture, and a favourite isn't a status.
+- **Games abroad are keyed on ESPN's venue country, not `neutralSite`.** The
+  2026 schedule has nine, and all nine are `neutralSite: true` — but so is a
+  Super Bowl in New Orleans. `country !== "USA"` is the rule; the client maps
+  the country to a flag and gives the city its German name ("München",
+  "Mexiko-Stadt"). "Saint-Denis" is shown as Paris, which is how the NFL sells it.
+- **The calendar file is served, not built in the page.** iOS Safari shows its
+  "Add to Calendar" sheet only for a real `text/calendar` response sent
+  `inline`; a Blob download lands in Files. Installed to the home screen there
+  is no Safari around the page, so the link opens with `target="_blank"` there
+  only. Neither iOS path has been tried on a device yet.
 - **⚠️ The game dialog must not be rendered through `React.lazy`/`Suspense`.**
   This used to say "awaiting `import()` first is enough". It wasn't: `lazy`
   suspends on its *first* render even when the chunk is already downloaded,

@@ -258,7 +258,10 @@
     background: color-mix(in srgb, var(--color-abyss) 72%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    animation: backdrop-in 0.2s ease both;
+    /* No fade-in: the dim and blur are there on the dialog's first frame. A
+       0.2s fade here, inside the view transition's own 0.22s root cross-fade,
+       left the panel fully open over a still-sharp page — the blur arrived a
+       beat after the dialog. */
   }
 
   .game-dialog__panel:focus {
@@ -557,6 +560,17 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 0.22s;
+}
+
+/* Opening a game swaps the page for its dimmed, blurred self at once, so only
+   the card-to-panel morph animates. The cross-fade stays for closing, where the
+   blur easing out as the panel shrinks back reads as the dialog leaving. */
+:root[data-morph="open"]::view-transition-old(root) {
+  animation: none;
+  opacity: 0;
+}
+:root[data-morph="open"]::view-transition-new(root) {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

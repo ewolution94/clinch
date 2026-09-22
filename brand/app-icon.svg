@@ -1,0 +1,27 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Home-screen icon: brand/mark.svg, full bleed. The platform rounds the corners itself, so there is no rounded rect or border here. PNGs in client/public/icons are rendered from this. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0c111c"/>
+      <stop offset="1" stop-color="#05070c"/>
+    </linearGradient>
+    <linearGradient id="arm" x1="0" y1="14" x2="0" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff9a52"/>
+      <stop offset="1" stop-color="#f8520a"/>
+    </linearGradient>
+    <radialGradient id="core" cx="32" cy="32" r="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffc53d" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffc53d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="64" height="64" fill="url(#bg)"/>
+  <circle cx="32" cy="32" r="18" fill="url(#core)"/>
+
+  <!-- two bracket arms closing on one point -->
+  <g stroke="url(#arm)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M13 13 L29 32 L13 51"/>
+    <path d="M51 13 L35 32 L51 51"/>
+  </g>
+  <circle cx="32" cy="32" r="4.6" fill="#ffc53d"/>
+</svg>

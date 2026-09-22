@@ -37,7 +37,17 @@ teams are in the field, which are chasing it, and which are already out.
   division games called out. Arrows, ← / →, or a swipe.
 - **Whether you can actually watch it** — every upcoming game on the schedule
   says whether it's on **RTL** or **RTL+**, the German outlets this is built
-  for. See [Can I watch this?](#can-i-watch-this).
+  for, and one switch narrows the week to just those. See
+  [Can I watch this?](#can-i-watch-this).
+- **Your team, starred** — pick a favourite in settings and it's marked in every
+  view, its card edged in its colour, and its game leads the schedule and the
+  week strip.
+- **Into your calendar** — any upcoming game's dialog offers an `.ics` with the
+  kickoff, the channel when it's known, and a link back.
+- **Games abroad flagged** — Munich, London, Madrid, Mexico City and the rest
+  carry a flag and the city, in German where it has a German name.
+- **Installs to a home screen** — a web manifest and icons, so it opens
+  full-screen like an app.
 - **Live during games** — scores and states stream over SSE; the page never
   needs a refresh.
 - **Built for a phone first** — the tables drop columns as the space narrows
@@ -153,6 +163,11 @@ ESPN's public NFL endpoints — `standings?level=3` for the division tables,
 the bracket in), and `summary?event=` behind `/api/game/:id` for a single game's
 detail. No key, no account, no scraping.
 
+`/api/game/:id/calendar.ics?lang=de|en` turns that same detail, plus the week's
+broadcast, into a one-event calendar file. It is served rather than built in the
+browser because an iPhone only offers "Add to Calendar" for a real
+`text/calendar` response.
+
 That last one is ~590 kB per game. The server trims it to ~3 kB by dropping the
 21 team stats the UI doesn't show, the per-player boxscores, drives, win
 probability, news and video — so a modal costs a browser about as much as a
@@ -221,6 +236,7 @@ no account to sign in to.
 | --- | --- |
 | **Theme** | Dark, Light, or Creative — the dark palette with the motion turned up. |
 | **Language** | English or German. |
+| **Favourite team** | Starred wherever it appears; its game leads the schedule. |
 | **Opens on** | Which view you land on, including "where I left off". A shared link always wins over this. |
 | **Default conference** | Which one the standings show first on a phone. |
 | **Motion** | System, Full, or Reduced. |

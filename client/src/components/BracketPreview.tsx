@@ -1,14 +1,16 @@
 import { memo } from "react";
 import { TeamLogo } from "./TeamLogo";
+import { FavouriteStar } from "./Marks";
 import { seedRole } from "../lib/status";
 import type { ConferenceView, TeamEntry } from "../lib/types";
-import { useStrings } from "../lib/useSettings";
+import { useFavourite, useStrings } from "../lib/useSettings";
 
 interface BracketPreviewProps {
   conference: ConferenceView;
 }
 
 function Side({ team, seed }: { team: TeamEntry | undefined; seed: number }) {
+  const favourite = useFavourite();
   if (!team) return null;
   return (
     <div className="flex items-center gap-2">
@@ -20,8 +22,13 @@ function Side({ team, seed }: { team: TeamEntry | undefined; seed: number }) {
       </span>
       <TeamLogo abbr={team.abbr} size={22} accent={team.accent} />
       <div className="flex min-w-0 flex-col leading-none">
-        <span className="mono-tabular truncate text-[14px] font-bold text-paper">
-          {team.abbr}
+        <span className="flex items-center gap-1">
+          <span className="mono-tabular truncate text-[14px] font-bold text-paper">
+            {team.abbr}
+          </span>
+          {team.abbr === favourite && (
+            <FavouriteStar accent={team.accent} size={11} />
+          )}
         </span>
         <span className="mono-tabular mt-0.5 text-[12px] text-mist">
           {team.record}
@@ -40,6 +47,7 @@ export const BracketPreview = memo(function BracketPreview({
   conference,
 }: BracketPreviewProps) {
   const t = useStrings();
+  const favourite = useFavourite();
   const bySeed = new Map(conference.seeds.map((team) => [team.seed, team]));
   const bye = conference.byeTeam ? bySeed.get(1) : undefined;
 
@@ -71,8 +79,13 @@ export const BracketPreview = memo(function BracketPreview({
             <div className="mt-2 flex items-center gap-2">
               <TeamLogo abbr={bye.abbr} size={26} accent={bye.accent} />
               <div className="flex min-w-0 flex-col leading-none">
-                <span className="mono-tabular truncate text-[14.5px] font-bold text-paper">
-                  {bye.abbr}
+                <span className="flex items-center gap-1">
+                  <span className="mono-tabular truncate text-[14.5px] font-bold text-paper">
+                    {bye.abbr}
+                  </span>
+                  {bye.abbr === favourite && (
+                    <FavouriteStar accent={bye.accent} size={11} />
+                  )}
                 </span>
                 <span className="mono-tabular mt-0.5 text-[12px] text-mist">
                   {bye.record}

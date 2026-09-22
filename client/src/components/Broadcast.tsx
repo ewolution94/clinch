@@ -75,16 +75,19 @@ export function BroadcastBadge({
  */
 export function BroadcastBand({
   broadcasts,
+  filter,
   className,
 }: {
   broadcasts: WeekBroadcasts | undefined;
+  /** "Only games on TV". Absent where there is nothing to filter by. */
+  filter?: { on: boolean; set: (on: boolean) => void };
   className?: string;
 }) {
   const t = useStrings();
   if (!broadcasts || broadcasts.upcoming === 0) return null;
 
   const { published, confirmed, candidates, upcoming, outlets } = broadcasts;
-  const where = outlets.join(" or ");
+  const where = outlets.join(` ${t.or} `);
 
   const body = !published ? (
     <span className="text-mist">{t.listingsNotOut}</span>
@@ -93,7 +96,9 @@ export function BroadcastBand({
       <span className="mono-tabular font-semibold text-jade">{confirmed}</span>
       <span className="text-fog">
         {" "}
-        of {upcoming} {upcoming === 1 ? "game" : "games"} on {where}
+        {(upcoming === 1 ? t.ofGameOn : t.ofGamesOn)
+          .replace("{total}", String(upcoming))
+          .replace("{where}", where)}
       </span>
     </>
   );
@@ -108,9 +113,36 @@ export function BroadcastBand({
       <p className="font-display text-[13px] leading-tight">{body}</p>
       {published && candidates > 0 && (
         <p className="font-display text-[12px] leading-tight text-mist">
-          {candidates} more could be — RTL names its Sunday picks about a week
-          ahead
+          {t.moreCouldBe.replace("{n}", String(candidates))}
         </p>
+      )}
+      {filter && (
+        <div
+          role="radiogroup"
+          aria-label={t.filterTv}
+          className="mt-1.5 flex gap-1 rounded-full border border-line bg-abyss-2/70 p-0.5"
+        >
+          {[
+            { on: false, label: t.filterAll },
+            { on: true, label: t.filterTv },
+          ].map((option) => (
+            <button
+              key={option.label}
+              type="button"
+              role="radio"
+              aria-checked={filter.on === option.on}
+              onClick={() => filter.set(option.on)}
+              className={clsx(
+                "rounded-full px-3 py-1 font-mono text-[11.5px] tracking-[0.08em] whitespace-nowrap transition-colors",
+                filter.on === option.on
+                  ? "bg-paper text-abyss"
+                  : "text-mist hover:text-fog",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

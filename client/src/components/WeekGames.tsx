@@ -1,9 +1,10 @@
-import { memo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
+import { AbroadBadge, FavouriteStar } from "./Marks";
 import { edgeFadeMask, useOverflowEdges } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
-import { useLocale } from "../lib/useSettings";
+import { useFavourite, useLocale } from "../lib/useSettings";
 import type { ScoreboardGame, TeamEntry } from "../lib/types";
 
 interface WeekGamesProps {
@@ -25,11 +26,13 @@ function Side({
   accent,
   score,
   dim,
+  favourite,
 }: {
   abbr: string;
   accent: string | undefined;
   score: number | null;
   dim: boolean;
+  favourite: boolean;
 }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -42,6 +45,7 @@ function Side({
       >
         {abbr}
       </span>
+      {favourite && <FavouriteStar accent={accent} size={11} />}
       <span
         className={clsx(
           "mono-tabular ml-auto text-[14.5px]",
@@ -62,6 +66,16 @@ export const WeekGames = memo(function WeekGames({
   morphCardId,
 }: WeekGamesProps) {
   const locale = useLocale();
+  const favourite = useFavourite();
+  // The reader's own game leads the strip; the rest keep kickoff order.
+  const ordered = useMemo(() => {
+    const index = games.findIndex(
+      (g) => g.home === favourite || g.away === favourite,
+    );
+    return index <= 0
+      ? games
+      : [games[index], ...games.slice(0, index), ...games.slice(index + 1)];
+  }, [games, favourite]);
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);
   const mask = edgeFadeMask(edges);
@@ -88,12 +102,18 @@ export const WeekGames = memo(function WeekGames({
         style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
       >
         <div className="flex gap-2 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]">
-          {games.map((game) => {
+          {ordered.map((game) => {
             const final = game.state === "post";
             const homeWon =
               final && (game.homeScore ?? 0) > (game.awayScore ?? 0);
             const awayWon =
               final && (game.awayScore ?? 0) > (game.homeScore ?? 0);
+            const mine = game.home === favourite || game.away === favourite;
+            // A live game keeps its red edge; the team tint is for every other state.
+            const mineAccent =
+              mine && game.state !== "in"
+                ? teams.get(favourite!)?.accent
+                : undefined;
             return (
               <button
                 key={game.id}
@@ -101,11 +121,14 @@ export const WeekGames = memo(function WeekGames({
                 onClick={() => onOpenGame(game.id)}
                 data-game-id={game.id}
                 aria-label={`${game.away} at ${game.home} — game detail`}
-                style={
-                  game.id === morphCardId
-                    ? { viewTransitionName: `game-${game.id}` }
-                    : undefined
-                }
+                style={{
+                  ...(game.id === morphCardId && {
+                    viewTransitionName: `game-${game.id}`,
+                  }),
+                  ...(mineAccent && {
+                    borderColor: `color-mix(in srgb, ${mineAccent} 55%, transparent)`,
+                  }),
+                }}
                 className={clsx(
                   "flex w-[148px] shrink-0 flex-col gap-1.5 rounded-xl border bg-ink/55 p-2.5 text-left transition-colors hover:border-fog/35 hover:bg-ink-2/70 sm:w-auto",
                   game.state === "in" ? "border-live/40" : "border-line",
@@ -116,12 +139,14 @@ export const WeekGames = memo(function WeekGames({
                   accent={teams.get(game.away)?.accent}
                   score={game.awayScore}
                   dim={final && !awayWon}
+                  favourite={game.away === favourite}
                 />
                 <Side
                   abbr={game.home}
                   accent={teams.get(game.home)?.accent}
                   score={game.homeScore}
                   dim={final && !homeWon}
+                  favourite={game.home === favourite}
                 />
                 <div className="flex items-center gap-1.5 border-t border-line-soft pt-1.5">
                   {game.state === "in" && (
@@ -136,6 +161,9 @@ export const WeekGames = memo(function WeekGames({
                     {game.state === "pre"
                       ? formatKickoff(game.kickoff, locale)
                       : game.statusDetail || (final ? "Final" : "")}
+                  </span>
+                  <span className="ml-auto">
+                    <AbroadBadge abroad={game.abroad} compact />
                   </span>
                 </div>
               </button>

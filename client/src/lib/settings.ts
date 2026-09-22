@@ -25,6 +25,10 @@ export interface Settings {
   landing: Landing;
   conference: ConferencePref;
   motion: Motion;
+  /** A team abbreviation, or null for none. Marked everywhere it appears. */
+  favourite: string | null;
+  /** The week view's "only games on TV" filter, remembered between visits. */
+  tvOnly: boolean;
   /** Written when `landing` or `conference` is "last"; never shown directly. */
   lastRoute: Landing | null;
   lastConference: "AFC" | "NFC" | null;
@@ -36,6 +40,8 @@ export const DEFAULT_SETTINGS: Settings = {
   landing: "standings",
   conference: "AFC",
   motion: "system",
+  favourite: null,
+  tvOnly: false,
   lastRoute: null,
   lastConference: null,
 };
@@ -69,6 +75,12 @@ function normalize(raw: unknown): Settings {
     landing: one(LANDINGS, obj.landing, DEFAULT_SETTINGS.landing),
     conference: one(CONFERENCES, obj.conference, DEFAULT_SETTINGS.conference),
     motion: one(MOTIONS, obj.motion, DEFAULT_SETTINGS.motion),
+    // Shape only: an abbreviation that names no team simply never matches.
+    favourite:
+      typeof obj.favourite === "string" && /^[A-Z]{2,3}$/.test(obj.favourite)
+        ? obj.favourite
+        : null,
+    tvOnly: obj.tvOnly === true,
     lastRoute:
       obj.lastRoute === undefined
         ? null

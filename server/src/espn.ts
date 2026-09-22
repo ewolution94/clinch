@@ -85,7 +85,11 @@ interface RawEvent {
   date: string;
   week?: { number?: number };
   status?: { type?: { state?: string; shortDetail?: string; detail?: string } };
-  competitions: { competitors: RawCompetitor[]; status?: { type?: { state?: string; shortDetail?: string } } }[];
+  competitions: {
+    competitors: RawCompetitor[];
+    status?: { type?: { state?: string; shortDetail?: string } };
+    venue?: { address?: { city?: string; country?: string } };
+  }[];
 }
 interface RawCalendarEntry {
   value?: string;
@@ -150,6 +154,16 @@ function normaliseState(state: string | undefined): "pre" | "in" | "post" {
   return "pre";
 }
 
+/**
+ * Games outside the US carry their city. Keyed on the country ESPN reports,
+ * not on `neutralSite` — that is also true of a Super Bowl in New Orleans.
+ */
+function abroad(address: { city?: string; country?: string } | undefined): Pick<ScoreboardGame, "abroad"> {
+  const country = address?.country?.trim();
+  if (!country || country === "USA" || !address?.city) return {};
+  return { abroad: { city: address.city, country } };
+}
+
 export async function fetchScoreboard(
   opts: { season?: number; seasonType?: number; week?: number },
   timeoutMs: number
@@ -184,6 +198,7 @@ export async function fetchScoreboard(
       away: teamMeta(away.team.abbreviation)!.abbr,
       homeScore: parseScore(home.score),
       awayScore: parseScore(away.score),
+      ...abroad(comp.venue?.address),
     });
   }
 

@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { clsx } from "clsx";
 import { useDismissable } from "../lib/useDismissable";
 import { useSettings, useStrings } from "../lib/useSettings";
+import type { ConferenceView } from "../lib/types";
 import type {
   ConferencePref,
   Landing,
@@ -14,6 +15,8 @@ import type {
 interface SettingsDialogProps {
   open: boolean;
   onClose: () => void;
+  /** For the favourite-team picker; empty until the first snapshot lands. */
+  conferences: ConferenceView[];
 }
 
 function Row({
@@ -81,7 +84,11 @@ function Segmented<T extends string>({
   );
 }
 
-export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
+export function SettingsDialog({
+  open,
+  onClose,
+  conferences,
+}: SettingsDialogProps) {
   const { settings, update } = useSettings();
   const t = useStrings();
   const panel = useRef<HTMLDivElement>(null);
@@ -169,6 +176,35 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 { id: "de", label: "Deutsch" },
               ]}
             />
+          </Row>
+
+          <Row label={t.favouriteTeam} hint={t.favouriteHint}>
+            <select
+              aria-label={t.favouriteTeam}
+              value={settings.favourite ?? ""}
+              onChange={(e) => set("favourite", e.target.value || null)}
+              className="w-full rounded-lg border border-line bg-abyss-2/70 px-3 py-2 font-mono text-[12.5px] text-paper sm:w-auto"
+            >
+              <option value="">{t.favouriteNone}</option>
+              {conferences.flatMap((conference) =>
+                conference.divisions.map((division) => (
+                  <optgroup
+                    key={division.id}
+                    label={`${conference.id} ${division.name}`}
+                  >
+                    {/* Alphabetical, not by rank: the standings order moves
+                        every week, a list you pick from shouldn't. */}
+                    {[...division.teams]
+                      .sort((a, b) => a.location.localeCompare(b.location))
+                      .map((team) => (
+                        <option key={team.abbr} value={team.abbr}>
+                          {team.location} {team.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                )),
+              )}
+            </select>
           </Row>
 
           <Row label={t.opensOn} hint={t.opensOnHint}>

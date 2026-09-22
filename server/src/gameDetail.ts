@@ -32,6 +32,8 @@ interface RawCompetitor {
 
 interface RawSummary {
   header?: {
+    week?: number;
+    season?: { year?: number; type?: number };
     competitions?: {
       id?: string;
       date?: string;
@@ -68,7 +70,7 @@ interface RawSummary {
   }[];
   gameInfo?: {
     attendance?: number;
-    venue?: { fullName?: string; address?: { city?: string; state?: string } };
+    venue?: { fullName?: string; address?: { city?: string; state?: string; country?: string } };
   };
   pickcenter?: { details?: string }[];
   format?: { regulation?: { periods?: number } };
@@ -179,8 +181,15 @@ export async function fetchGameDetail(id: string, timeoutMs: number): Promise<Ga
     period: state === "in" ? (status?.period ?? null) : null,
     clock: state === "in" ? (status?.displayClock ?? null) : null,
     kickoff: competition.date ?? "",
+    seasonType: raw.header?.season?.type ?? 2,
+    week: raw.header?.week ?? 0,
     venue: venue?.fullName
-      ? { name: venue.fullName, city: venue.address?.city ?? "", state: venue.address?.state ?? "" }
+      ? {
+          name: venue.fullName,
+          city: venue.address?.city ?? "",
+          state: venue.address?.state ?? "",
+          country: venue.address?.country ?? "",
+        }
       : null,
     attendance: raw.gameInfo?.attendance ?? null,
     odds: raw.pickcenter?.[0]?.details ?? null,

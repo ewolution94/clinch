@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { describeError } from "./describeError.js";
+import { gameCalendar } from "./calendar.js";
 import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
 
@@ -68,6 +69,38 @@ app.get("/api/game/:id", async (req, res) => {
     res.json(await games.get(id));
   } catch (error) {
     console.error("[clinch] game detail failed:", describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
+app.get("/api/game/:id/calendar.ics", async (req, res) => {
+  const { id } = req.params;
+  if (!/^\d{6,12}$/.test(id)) {
+    res.status(400).json({ error: "bad game id" });
+    return;
+  }
+  const lang = req.query.lang === "de" ? "de" : "en";
+
+  try {
+    const detail = await games.get(id);
+    // The channel lives on the week's scoreboard, not in the game summary. If
+    // that lookup fails the entry is still worth having, just without it.
+    const week =
+      (detail.seasonType === 2 || detail.seasonType === 3) && detail.week >= 1 && detail.week <= 25
+        ? await store.week(detail.seasonType, detail.week).catch(() => null)
+        : null;
+    const game = week?.games.find((g) => g.id === id);
+    const origin = `${req.get("x-forwarded-proto") ?? req.protocol}://${req.get("host")}`;
+    const { filename, body } = gameCalendar({ detail, game, lang, origin });
+
+    res.setHeader("content-type", "text/calendar; charset=utf-8");
+    // Inline, not attachment: iOS Safari shows its "Add to Calendar" sheet for
+    // an inline calendar and just downloads an attachment.
+    res.setHeader("content-disposition", `inline; filename="${filename}"`);
+    res.setHeader("cache-control", "no-store");
+    res.send(body);
+  } catch (error) {
+    console.error("[clinch] calendar failed:", describeError(error));
     res.status(502).json({ error: "upstream unavailable" });
   }
 });

@@ -58,7 +58,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
 
       <BracketPreview conference={conference} />
 
-      <SectionLabel hint="SEEDS 1–7">{t.inTheField}</SectionLabel>
+      <SectionLabel>{t.inTheField}</SectionLabel>
       <div className="flex flex-col gap-1.5">
         {field.map((team) => (
           <SeedRow key={team.abbr} team={team} />
@@ -76,9 +76,7 @@ export const PlayoffColumn = memo(function PlayoffColumn({
 
       {chasing.length > 0 && (
         <>
-          <SectionLabel hint="GAMES BEHIND THE 7 SEED">
-            {t.stillAlive}
-          </SectionLabel>
+          <SectionLabel>{t.stillAlive}</SectionLabel>
           <div className="flex flex-col gap-1.5">
             {chasing.map((team) => (
               <SeedRow key={team.abbr} team={team} chasing />

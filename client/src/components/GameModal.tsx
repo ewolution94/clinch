@@ -6,7 +6,9 @@ import { Shimmer } from "./Shimmer";
 import { useGameDetail } from "../hooks/useGameDetail";
 import { useOverflowEdges, edgeFadeMask } from "../hooks/useOverflowEdges";
 import { formatKickoff } from "../lib/format";
-import { useLocale, useStrings } from "../lib/useSettings";
+import { useLocale, useSettings, useStrings } from "../lib/useSettings";
+import { abroadLabel } from "../lib/abroad";
+import type { Lang } from "../lib/settings";
 import { FOCUSABLE } from "../lib/useDismissable";
 import type {
   GameDetail,
@@ -261,8 +263,62 @@ function Header({ detail }: { detail: GameDetail }) {
 
 /* ----------------------------------------------------------------- modal */
 
+/**
+ * " · Atlanta, GA" at home; " · München, Deutschland" abroad, where ESPN has no
+ * state to give — it used to print "Munich, " with nothing after the comma.
+ */
+function venuePlace(venue: NonNullable<GameDetail["venue"]>, lang: Lang): string {
+  if (!venue.city) return "";
+  if (venue.country && venue.country !== "USA") {
+    const { city, country } = abroadLabel(
+      { city: venue.city, country: venue.country },
+      lang,
+    );
+    return ` · ${city}, ${country}`;
+  }
+  return venue.state ? ` · ${venue.city}, ${venue.state}` : ` · ${venue.city}`;
+}
+
+/**
+ * A plain link to a server-built .ics. On an iPhone, Safari answers a real
+ * `text/calendar` response with its own "Add to Calendar" sheet; a file made
+ * in the page would only have gone to Downloads.
+ */
+function CalendarLink({ gameId, lang }: { gameId: string; lang: Lang }) {
+  const t = useStrings();
+  // Installed to the home screen there is no Safari around the page to show
+  // that sheet, so the link opens in Safari's own in-app view instead.
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as { standalone?: boolean }).standalone === true;
+  return (
+    <a
+      href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
+      target={standalone ? "_blank" : undefined}
+      rel={standalone ? "noopener" : undefined}
+      className="mt-0.5 inline-flex items-center gap-2 self-start rounded-full border border-line bg-ink-2 px-3.5 py-1.5 font-mono text-[12px] tracking-[0.08em] text-fog transition-colors hover:border-fog/40 hover:text-paper"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      >
+        <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+        <path d="M3.5 9.5h17M8 3v4M16 3v4M12 12.5v5M9.5 15h5" />
+      </svg>
+      {t.addToCalendar}
+    </a>
+  );
+}
+
 function Body({ detail }: { detail: GameDetail }) {
   const locale = useLocale();
+  const { lang } = useSettings().settings;
   const [away, home] = detail.teams;
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);
@@ -275,6 +331,7 @@ function Body({ detail }: { detail: GameDetail }) {
           <p className="font-display text-[15.5px] text-fog">
             {formatKickoff(detail.kickoff, locale)}
           </p>
+          <CalendarLink gameId={detail.id} lang={lang} />
         </Section>
         {detail.odds && (
           <Section label="LINE">
@@ -285,8 +342,7 @@ function Body({ detail }: { detail: GameDetail }) {
           <Section label="VENUE">
             <p className="font-display text-[15.5px] text-fog">
               {detail.venue.name}
-              {detail.venue.city &&
-                ` · ${detail.venue.city}, ${detail.venue.state}`}
+              {venuePlace(detail.venue, lang)}
             </p>
           </Section>
         )}
@@ -412,8 +468,7 @@ function Body({ detail }: { detail: GameDetail }) {
       {(detail.venue || detail.attendance) && (
         <p className="font-mono text-[12px] tracking-[0.1em] text-mist">
           {detail.venue?.name}
-          {detail.venue?.city &&
-            ` · ${detail.venue.city}, ${detail.venue.state}`}
+          {detail.venue && venuePlace(detail.venue, lang)}
           {detail.attendance
             ? ` · ${detail.attendance.toLocaleString(locale)} in attendance`
             : ""}

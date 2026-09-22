@@ -71,6 +71,11 @@ export const STRINGS = {
     weeksAhead: "weeks ahead",
     weeksBack: "weeks back",
     thisWeek: "THIS WEEK",
+    yourTeam: "YOUR TEAM",
+    onByeThisWeek: "On bye this week",
+    filterAll: "All games",
+    filterTv: "On TV",
+    noneOnTv: "Nothing on {where} this week yet.",
 
     /* playoff picture */
     inTheField: "IN THE FIELD",
@@ -100,6 +105,7 @@ export const STRINGS = {
     byQuarter: "BY QUARTER",
     notKickedOff:
       "Quarter scores, scoring plays and team numbers appear here once the game kicks off.",
+    addToCalendar: "Add to calendar",
 
     /* statuses */
     statusClinchedBye: "Clinched bye",
@@ -113,7 +119,9 @@ export const STRINGS = {
 
     /* broadcasts */
     listingsNotOut: "German listings for this week aren't published yet",
+    ofGameOn: "of {total} game on {where}",
     ofGamesOn: "of {total} games on {where}",
+    or: "or",
     moreCouldBe:
       "{n} more could be — RTL names its Sunday picks about a week ahead",
 
@@ -126,6 +134,9 @@ export const STRINGS = {
     themeCreative: "Creative",
     themeHint: "Creative is the dark palette with the motion turned up.",
     language: "Language",
+    favouriteTeam: "Favourite team",
+    favouriteHint: "Starred wherever it appears, and its game leads the schedule.",
+    favouriteNone: "None",
     opensOn: "Opens on",
     opensOnHint: "Which view Clinch shows when you arrive.",
     landingLast: "Where I left off",
@@ -200,6 +211,11 @@ export const STRINGS = {
     weeksAhead: "Wochen voraus",
     weeksBack: "Wochen zurück",
     thisWeek: "DIESE WOCHE",
+    yourTeam: "DEIN TEAM",
+    onByeThisWeek: "Diese Woche spielfrei",
+    filterAll: "Alle Spiele",
+    filterTv: "Im TV",
+    noneOnTv: "Diese Woche noch nichts auf {where}.",
 
     /* playoff picture */
     inTheField: "IM FELD",
@@ -229,6 +245,7 @@ export const STRINGS = {
     byQuarter: "NACH VIERTELN",
     notKickedOff:
       "Viertel-Ergebnisse, Scoring-Plays und Team-Werte erscheinen hier, sobald das Spiel angepfiffen ist.",
+    addToCalendar: "Zum Kalender hinzufügen",
 
     /* statuses */
     statusClinchedBye: "Bye sicher",
@@ -242,7 +259,9 @@ export const STRINGS = {
 
     /* broadcasts */
     listingsNotOut: "Das TV-Programm für diese Woche steht noch nicht fest",
+    ofGameOn: "von {total} Spiel auf {where}",
     ofGamesOn: "von {total} Spielen auf {where}",
+    or: "oder",
     moreCouldBe:
       "{n} weitere könnten dazukommen — RTL legt seine Sonntagsspiele etwa eine Woche vorher fest",
 
@@ -256,6 +275,9 @@ export const STRINGS = {
     themeCreative: "Kreativ",
     themeHint: "Kreativ ist das dunkle Design mit mehr Bewegung.",
     language: "Sprache",
+    favouriteTeam: "Lieblingsteam",
+    favouriteHint: "Überall mit Stern markiert, sein Spiel steht im Spielplan oben.",
+    favouriteNone: "Keins",
     opensOn: "Startansicht",
     opensOnHint: "Welche Ansicht Clinch beim Öffnen zeigt.",
     landingLast: "Wo ich aufgehört habe",

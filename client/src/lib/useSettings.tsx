@@ -74,6 +74,11 @@ export function useLocale(): string {
   return useSettings().settings.lang === "de" ? "de-DE" : "en-GB";
 }
 
+/** The reader's team, if they've picked one. */
+export function useFavourite(): string | null {
+  return useSettings().settings.favourite;
+}
+
 /** Interface copy in the reader's language. */
 export function useStrings() {
   return stringsFor(useSettings().settings.lang);

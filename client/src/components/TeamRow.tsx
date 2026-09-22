@@ -1,6 +1,8 @@
 import { memo, useState } from "react";
+import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
 import { FormDots } from "./FormDots";
+import { FavouriteStar } from "./Marks";
 import { RESULT_COLOR, STATUS_META } from "../lib/status";
 import {
   formatDiff,
@@ -8,7 +10,7 @@ import {
   formatKickoff,
   formatPct,
 } from "../lib/format";
-import { useLocale, useStrings } from "../lib/useSettings";
+import { useFavourite, useLocale, useStrings } from "../lib/useSettings";
 import type { TeamEntry } from "../lib/types";
 
 interface TeamRowProps {
@@ -38,6 +40,7 @@ export const TeamRow = memo(function TeamRow({
 }: TeamRowProps) {
   const locale = useLocale();
   const t = useStrings();
+  const favourite = useFavourite() === team.abbr;
   const [open, setOpen] = useState(false);
   const status = STATUS_META[team.status];
 
@@ -66,10 +69,14 @@ export const TeamRow = memo(function TeamRow({
             opacity: status.inField ? 0.95 : 0.3,
           }}
         />
-        {/* …and a wash of it that only appears under the cursor. */}
+        {/* …and a wash of it that only appears under the cursor — or stays, at
+            a lighter hand, on the reader's own team. */}
         <span
           aria-hidden="true"
-          className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          className={clsx(
+            "absolute inset-0 transition-opacity duration-200 group-hover:opacity-100",
+            favourite ? "opacity-60" : "opacity-0",
+          )}
           style={{
             background: `linear-gradient(90deg, color-mix(in srgb, ${team.accent} 16%, transparent) 0%, transparent 55%)`,
           }}
@@ -100,6 +107,11 @@ export const TeamRow = memo(function TeamRow({
           <span className="mono-tabular shrink-0 text-[15.5px] font-bold tracking-tight text-paper">
             {team.abbr}
           </span>
+          {favourite && (
+            <span className="self-center">
+              <FavouriteStar accent={team.accent} />
+            </span>
+          )}
           {/* On a phone the logo and abbreviation already name the team, and
               every data column is worth more than a half-truncated nickname. */}
           <span className="hidden truncate font-display text-[15.5px] text-fog @sm/card:inline">

@@ -192,15 +192,29 @@ function Clinch() {
    * the reported bug. So the name is granted to the single card being morphed,
    * immediately before the snapshot, and surrendered when the transition ends.
    */
-  const morph = useCallback((id: string, update: () => void) => {
-    if (!document.startViewTransition) {
-      update();
-      return;
-    }
-    flushSync(() => setMorphing(id));
-    const transition = document.startViewTransition(() => flushSync(update));
-    void transition.finished.finally(() => setMorphing(null));
-  }, []);
+  const morphRun = useRef(0);
+  const morph = useCallback(
+    (id: string, direction: "open" | "close", update: () => void) => {
+      if (!document.startViewTransition) {
+        update();
+        return;
+      }
+      // Tells index.css which way this morph runs: opening shows the dimmed,
+      // blurred page from the first frame instead of cross-fading into it.
+      const root = document.documentElement;
+      const run = ++morphRun.current;
+      root.dataset.morph = direction;
+      flushSync(() => setMorphing(id));
+      const transition = document.startViewTransition(() => flushSync(update));
+      void transition.finished.finally(() => {
+        // A quick open-then-close starts a second transition before this one
+        // ends; its flag must survive this one finishing.
+        if (morphRun.current === run) delete root.dataset.morph;
+        setMorphing(null);
+      });
+    },
+    [],
+  );
 
   const onOpenGame = useCallback(
     async (id: string) => {
@@ -210,7 +224,7 @@ function Clinch() {
       const Modal = await loadGameModal();
       // Both updates run inside the transition's flushSync, so the panel exists
       // — named `game-<id>` — in the very render the browser snapshots.
-      morph(id, () => {
+      morph(id, "open", () => {
         setGameModal(() => Modal);
         openGame(id);
       });
@@ -219,7 +233,7 @@ function Clinch() {
   );
 
   const onCloseGame = useCallback(() => {
-    if (game) morph(game, closeGame);
+    if (game) morph(game, "close", closeGame);
     else closeGame();
   }, [morph, game, closeGame]);
 

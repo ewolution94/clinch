@@ -1,8 +1,9 @@
 import { clsx } from "clsx";
 import { TeamLogo } from "./TeamLogo";
+import { FavouriteStar } from "./Marks";
 import type { BracketMatch } from "../lib/bracket";
 import type { TeamEntry } from "../lib/types";
-import { useStrings } from "../lib/useSettings";
+import { useFavourite, useStrings } from "../lib/useSettings";
 
 interface BracketMatchCardProps {
   match: BracketMatch;
@@ -42,6 +43,7 @@ function Side({
 }: SideProps) {
   const large = size === "lg";
   const height = large ? "h-12" : "h-9";
+  const favourite = useFavourite();
 
   // An unfilled slot says where its team will come from, quietly.
   if (!team) {
@@ -120,6 +122,11 @@ function Side({
         >
           {team.abbr}
         </span>
+        {team.abbr === favourite && (
+          <span className="self-center">
+            <FavouriteStar accent={team.accent} />
+          </span>
+        )}
         {/* Desktop bracket columns are ~140px; a phone's are full width. Only
             the wide ones have room for a name next to the abbreviation. */}
         <span className="hidden truncate font-display text-[15.5px] opacity-85 @[260px]/match:inline">
@@ -225,7 +232,9 @@ export function ByeCard({
   team: TeamEntry | null;
   mirrored?: boolean;
 }) {
+  const favouriteAbbr = useFavourite();
   if (!team) return null;
+  const favourite = team.abbr === favouriteAbbr;
 
   return (
     <div
@@ -251,6 +260,11 @@ export function ByeCard({
           <span className="mono-tabular shrink-0 text-[14.5px] font-bold text-paper">
             {team.abbr}
           </span>
+          {favourite && (
+            <span className="self-center">
+              <FavouriteStar accent={team.accent} />
+            </span>
+          )}
           <span className="hidden truncate font-display text-[15.5px] text-fog @[260px]/match:inline">
             {team.name}
           </span>
