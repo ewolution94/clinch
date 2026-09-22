@@ -11,6 +11,19 @@ import { abroadLabel } from "../lib/abroad";
 import type { Lang } from "../lib/settings";
 import { lockScroll } from "../lib/scrollLock";
 
+/**
+ * How far a finger may travel and still count as a tap on the backdrop.
+ *
+ * The browser's own threshold is stricter than a thumb: a tap that drifted
+ * ~12px was treated as a drag, so no click was ever sent and the dialog stayed
+ * open — the one tap in twenty that "didn't work". Reproduced with synthetic
+ * taps at 0/6/12/28px of travel. Hence pointer events and this slop rather
+ * than a click handler. It is generous on purpose: nothing on the backdrop
+ * responds to a swipe, so the only cost of being wrong is closing a dialog the
+ * reader was already pointing away from.
+ */
+const TAP_SLOP = 32;
+
 /** Everything Tab can land on inside the dialog. */
 const FOCUSABLE =
   'button:not([disabled]), [href], select:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -271,7 +284,10 @@ function Header({ detail }: { detail: GameDetail }) {
  * " · Atlanta, GA" at home; " · München, Deutschland" abroad, where ESPN has no
  * state to give — it used to print "Munich, " with nothing after the comma.
  */
-function venuePlace(venue: NonNullable<GameDetail["venue"]>, lang: Lang): string {
+function venuePlace(
+  venue: NonNullable<GameDetail["venue"]>,
+  lang: Lang,
+): string {
   if (!venue.city) return "";
   if (venue.country && venue.country !== "USA") {
     const { city, country } = abroadLabel(
@@ -295,6 +311,9 @@ function venuePlace(venue: NonNullable<GameDetail["venue"]>, lang: Lang): string
  */
 function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
   const t = useStrings();
+  // A .ics tap can look like nothing happened: Chrome on iOS quietly files it
+  // under downloads. We can't see whether it landed, so say where to look.
+  const [fileTapped, setFileTapped] = useState(false);
   // Installed to the home screen there is no browser around the page to show
   // a calendar sheet, so the file opens in the browser's own in-app view.
   const standalone =
@@ -303,42 +322,51 @@ function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
   const pill =
     "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-[12px] tracking-[0.08em] transition-colors";
   return (
-    <div className="mt-0.5 flex flex-wrap items-center gap-2">
-      <a
-        href={`/api/game/${gameId}/google-calendar?lang=${lang}`}
-        target="_blank"
-        rel="noopener"
-        className={clsx(
-          pill,
-          "border-fog/30 bg-ink-2 text-paper hover:border-fog/60",
-        )}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
+    <div className="mt-0.5 flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={`/api/game/${gameId}/google-calendar?lang=${lang}`}
+          target="_blank"
+          rel="noopener"
+          className={clsx(
+            pill,
+            "border-fog/30 bg-ink-2 text-paper hover:border-fog/60",
+          )}
         >
-          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
-          <path d="M3.5 9.5h17M8 3v4M16 3v4M12 12.5v5M9.5 15h5" />
-        </svg>
-        {t.addToGoogleCalendar}
-      </a>
-      <a
-        href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
-        target={standalone ? "_blank" : undefined}
-        rel={standalone ? "noopener" : undefined}
-        className={clsx(
-          pill,
-          "border-line text-mist hover:border-fog/40 hover:text-fog",
-        )}
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+          >
+            <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+            <path d="M3.5 9.5h17M8 3v4M16 3v4M12 12.5v5M9.5 15h5" />
+          </svg>
+          {t.addToGoogleCalendar}
+        </a>
+        <a
+          href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
+          target={standalone ? "_blank" : undefined}
+          rel={standalone ? "noopener" : undefined}
+          onClick={() => setFileTapped(true)}
+          className={clsx(
+            pill,
+            "border-line text-mist hover:border-fog/40 hover:text-fog",
+          )}
+        >
+          {t.addToCalendar}
+        </a>
+      </div>
+      <p
+        aria-live="polite"
+        className="font-display text-[12.5px] leading-snug text-mist"
       >
-        {t.addToCalendar}
-      </a>
+        {fileTapped ? t.icsHint : ""}
+      </p>
     </div>
   );
 }
@@ -620,6 +648,8 @@ function GameSkeleton() {
 export default function GameModal({ gameId, onClose }: GameModalProps) {
   const t = useStrings();
   const overlay = useRef<HTMLDivElement>(null);
+  /** Where a tap on the backdrop began, if it began there. */
+  const tapStart = useRef<{ x: number; y: number } | null>(null);
   const panel = useRef<HTMLDivElement>(null);
   const { detail, loading, error } = useGameDetail(gameId);
 
@@ -701,10 +731,25 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       role="dialog"
       aria-modal="true"
       aria-label={t.gameDetail}
-      onMouseDown={(event) => {
+      onPointerDown={(event) => {
         // Anywhere outside the panel is the overlay itself.
-        if (event.target === overlay.current) onClose();
+        tapStart.current =
+          event.target === overlay.current
+            ? { x: event.clientX, y: event.clientY }
+            : null;
       }}
+      onPointerUp={(event) => {
+        const start = tapStart.current;
+        tapStart.current = null;
+        if (!start || event.target !== overlay.current) return;
+        if (
+          Math.hypot(event.clientX - start.x, event.clientY - start.y) >
+          TAP_SLOP
+        )
+          return;
+        onClose();
+      }}
+      onPointerCancel={() => (tapStart.current = null)}
     >
       {/* The dim and blur are not in here: App draws them as `.game-scrim`,
           which outlives this component so it can fade out while the panel

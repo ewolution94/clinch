@@ -293,12 +293,32 @@ short. For what the app does and how it's built, see `README.md`.
   `text/calendar` response; only Safari turns it into "Add to Calendar". The
   endpoint itself was verified working in production (right headers, valid
   file); it was the browser. So the dialog leads with
-  `/api/game/:id/google-calendar`, which 302s to Google Calendar's documented
-  `render?action=TEMPLATE` page with title, time, channel, venue and a link
-  back filled in, opened in a new tab. The .ics stays for Safari, Apple
-  Calendar and Outlook. Both come from one `gameEvent()` in
+  `/api/game/:id/google-calendar`, carrying title, time, channel, venue and a
+  link back. The .ics stays for Safari, Apple Calendar and Outlook, and says
+  where the file went when it's tapped — on a phone it otherwise looks like
+  nothing happened at all. Both come from one `gameEvent()` in
   `server/src/calendar.ts`, because only the server's week data knows the
   channel.
+- **⚠️ The Google link goes through a page that forwards itself, not a 302.**
+  It was a redirect, and on Eric's iPhone it opened the Google Calendar app
+  with *nothing in it*: iOS hands a link the user taps on a domain an
+  installed app claims to that app, and the Calendar app ignores
+  `action=TEMPLATE`. A redirect is still that same tapped navigation. A
+  navigation made by script is not, so `googleCalendarPage()` serves a tiny
+  page that does `location.replace()` — which keeps the reader in the browser,
+  where Google's prefilled event page works, and syncs to the app afterwards
+  like any other event. The page also shows the link, for when script doesn't
+  run. **Not yet confirmed on a device**: if the app still swallows it, the
+  fallback is Eric adding his Google account to the iOS Calendar app and
+  making it the default, which makes the .ics land in Google too.
+- **Closing the game dialog listens to pointer events, with 32px of slop.** A
+  tap on the backdrop that drifted about 12px used to leave it open — the
+  browser had decided it was a drag and sent no click, which is the one tap in
+  twenty Eric reported. `GameModal` now tracks pointerdown→pointerup on the
+  overlay itself and closes when both are on it and the travel is under
+  `TAP_SLOP`. Reproduced and re-checked with synthetic taps at 0/6/12/28/85px
+  of travel: all but the last close, and a tap on the panel never does. The
+  slop is deliberately generous: nothing on the backdrop responds to a swipe.
 - **⚠️ The game dialog must not be rendered through `React.lazy`/`Suspense`.**
   This used to say "awaiting `import()` first is enough". It wasn't: `lazy`
   suspends on its *first* render even when the chunk is already downloaded,

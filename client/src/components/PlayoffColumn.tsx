@@ -1,6 +1,5 @@
 import { memo } from "react";
 import { SeedRow } from "./SeedRow";
-import { BracketPreview } from "./BracketPreview";
 import { TeamLogo } from "./TeamLogo";
 import { STATUS_META } from "../lib/status";
 import { useStrings } from "../lib/useSettings";
@@ -55,8 +54,6 @@ export const PlayoffColumn = memo(function PlayoffColumn({
           {conference.name.toUpperCase()}
         </span>
       </header>
-
-      <BracketPreview conference={conference} />
 
       <SectionLabel>{t.inTheField}</SectionLabel>
       <div className="flex flex-col gap-1.5">

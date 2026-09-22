@@ -83,13 +83,10 @@ export const STRINGS = {
     cutLine: "CUT LINE",
     stillAlive: "STILL ALIVE",
     eliminated: "ELIMINATED",
-    seeds17: "SEEDS 1–7",
     teams: "TEAMS",
 
     /* bracket */
-    ifSeasonEnded: "IF THE SEASON ENDED TODAY",
     wildCardRound: "WILD CARD ROUND",
-    firstRoundBye: "FIRST-ROUND BYE",
     clearMyPicks: "CLEAR MY PICKS",
     pick: "PICK",
     pickHint: "Your prediction, not a result",
@@ -108,6 +105,8 @@ export const STRINGS = {
       "Quarter scores, scoring plays and team numbers appear here once the game kicks off.",
     addToGoogleCalendar: "Add to Google Calendar",
     addToCalendar: "Calendar file (.ics)",
+    icsHint:
+      "If nothing opened, the file is in your browser's downloads — Google Calendar above is the surer route on a phone.",
 
     /* statuses */
     statusClinchedBye: "Clinched bye",
@@ -226,13 +225,10 @@ export const STRINGS = {
     cutLine: "CUT LINE",
     stillAlive: "NOCH IM RENNEN",
     eliminated: "AUSGESCHIEDEN",
-    seeds17: "SEEDS 1–7",
     teams: "TEAMS",
 
     /* bracket */
-    ifSeasonEnded: "WENN DIE SAISON HEUTE ENDEN WÜRDE",
     wildCardRound: "WILD CARD ROUND",
-    firstRoundBye: "FIRST-ROUND BYE",
     clearMyPicks: "MEINE TIPPS LÖSCHEN",
     pick: "TIPP",
     pickHint: "Dein Tipp, kein Ergebnis",
@@ -251,6 +247,8 @@ export const STRINGS = {
       "Viertel-Ergebnisse, Scoring-Plays und Team-Werte erscheinen hier, sobald das Spiel angepfiffen ist.",
     addToGoogleCalendar: "In Google Kalender eintragen",
     addToCalendar: "Kalenderdatei (.ics)",
+    icsHint:
+      "Falls nichts passiert ist: Die Datei liegt in den Downloads des Browsers — auf dem Handy klappt Google Kalender oben zuverlässiger.",
 
     /* statuses */
     statusClinchedBye: "Bye sicher",

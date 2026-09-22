@@ -323,16 +323,6 @@ function Clinch() {
                   />
                 ) : (
                   <>
-                    {snapshot.season.type === 2 &&
-                      snapshot.week.number <= 4 && (
-                        <p className="rounded-xl border border-line bg-ink/50 px-3.5 py-2.5 font-display text-[14.5px] leading-relaxed text-mist">
-                          It&apos;s {snapshot.week.label.toLowerCase()} of{" "}
-                          {snapshot.week.total} — nearly every team is still
-                          within a game of the cut, so the seeding below moves a
-                          lot each Sunday. It starts holding its shape around
-                          week 8.
-                        </p>
-                      )}
                     {!wide && (
                       <ConferenceSwitch
                         value={conference}
@@ -345,6 +335,17 @@ function Clinch() {
                       ))}
                     </div>
                     <Legend />
+                    {/* Below the table: the seeds are what the page is for. */}
+                    {snapshot.season.type === 2 &&
+                      snapshot.week.number <= 4 && (
+                        <p className="rounded-xl border border-line bg-ink/50 px-3.5 py-2.5 font-display text-[14.5px] leading-relaxed text-mist">
+                          It&apos;s {snapshot.week.label.toLowerCase()} of{" "}
+                          {snapshot.week.total} — nearly every team is still
+                          within a game of the cut, so the seeding below moves a
+                          lot each Sunday. It starts holding its shape around
+                          week 8.
+                        </p>
+                      )}
                   </>
                 )}
 

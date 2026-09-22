@@ -175,3 +175,48 @@ export function toGoogleCalendarUrl(event: GameEvent): string {
   });
   return `https://calendar.google.com/calendar/render?${params}`;
 }
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/**
+ * The page that hands the reader to Google Calendar.
+ *
+ * It exists for one iOS rule: a link the *user taps* to a domain an installed
+ * app claims is handed to that app, and the Google Calendar app ignores the
+ * prefilled event — it just opens, which is what Eric saw. A navigation made
+ * by script is not a universal link, so going the last step from here keeps
+ * the reader in the browser, where the event page actually works. Anyone
+ * without the app, or on a desktop, simply passes through.
+ *
+ * The link is visible as well, for the case where the script doesn't run.
+ */
+export function googleCalendarPage(event: GameEvent, lang: "en" | "de"): string {
+  const url = toGoogleCalendarUrl(event);
+  const copy =
+    lang === "de"
+      ? { title: "Google Kalender wird geöffnet …", link: "Weiter zu Google Kalender" }
+      : { title: "Opening Google Calendar…", link: "Continue to Google Calendar" };
+  return `<!doctype html>
+<html lang="${lang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${escapeHtml(copy.title)}</title>
+<style>
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; gap: 1rem;
+         background: #05070c; color: #b2bdd2; font: 16px/1.5 ui-sans-serif, system-ui, sans-serif;
+         text-align: center; padding: 2rem; }
+  a { color: #ff6a1a; }
+</style>
+</head>
+<body>
+  <p>${escapeHtml(copy.title)}</p>
+  <p><a id="go" href="${escapeHtml(url)}">${escapeHtml(copy.link)}</a></p>
+  <script>location.replace(document.getElementById("go").href);</script>
+</body>
+</html>
+`;
+}

@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { describeError } from "./describeError.js";
-import { gameEvent, toGoogleCalendarUrl, toIcs, type GameEvent } from "./calendar.js";
+import { gameEvent, googleCalendarPage, toIcs, type GameEvent } from "./calendar.js";
 import type { Request } from "express";
 import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
@@ -120,8 +120,10 @@ app.get("/api/game/:id/google-calendar", async (req, res) => {
       res.status(400).json({ error: "bad game id" });
       return;
     }
+    // A page that forwards itself rather than a redirect — see calendar.ts.
+    res.setHeader("content-type", "text/html; charset=utf-8");
     res.setHeader("cache-control", "no-store");
-    res.redirect(302, toGoogleCalendarUrl(event));
+    res.send(googleCalendarPage(event, req.query.lang === "de" ? "de" : "en"));
   } catch (error) {
     console.error("[clinch] google calendar failed:", describeError(error));
     res.status(502).json({ error: "upstream unavailable" });
