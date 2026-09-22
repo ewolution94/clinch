@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type Route = "standings" | "playoffs" | "bracket" | "week";
+export type Route = "standings" | "playoffs" | "bracket" | "week" | "settings";
 
 const PATHS: Record<Route, string> = {
   standings: "/",
   playoffs: "/playoffs",
   bracket: "/bracket",
   week: "/week",
+  settings: "/settings",
 };
 
 function readRoute(): Route {
@@ -14,6 +15,7 @@ function readRoute(): Route {
   if (path.startsWith("/playoffs")) return "playoffs";
   if (path.startsWith("/bracket")) return "bracket";
   if (path.startsWith("/week")) return "week";
+  if (path.startsWith("/settings")) return "settings";
   return "standings";
 }
 

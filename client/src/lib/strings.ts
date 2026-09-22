@@ -29,6 +29,7 @@ export const STRINGS = {
     routePlayoffsLong: "Playoff picture",
     routeBracket: "Bracket",
     routeBracketLong: "Bracket",
+    routeSettings: "Settings",
 
     /* loading + errors */
     loadingLeague: "Loading the league",
@@ -105,7 +106,8 @@ export const STRINGS = {
     byQuarter: "BY QUARTER",
     notKickedOff:
       "Quarter scores, scoring plays and team numbers appear here once the game kicks off.",
-    addToCalendar: "Add to calendar",
+    addToGoogleCalendar: "Add to Google Calendar",
+    addToCalendar: "Calendar file (.ics)",
 
     /* statuses */
     statusClinchedBye: "Clinched bye",
@@ -169,6 +171,8 @@ export const STRINGS = {
     routePlayoffsLong: "Playoff-Bild",
     routeBracket: "Bracket",
     routeBracketLong: "Bracket",
+    // The phone tab label; the full "Einstellungen" doesn't fit five across.
+    routeSettings: "Optionen",
 
     /* loading + errors */
     loadingLeague: "Liga wird geladen",
@@ -245,7 +249,8 @@ export const STRINGS = {
     byQuarter: "NACH VIERTELN",
     notKickedOff:
       "Viertel-Ergebnisse, Scoring-Plays und Team-Werte erscheinen hier, sobald das Spiel angepfiffen ist.",
-    addToCalendar: "Zum Kalender hinzufügen",
+    addToGoogleCalendar: "In Google Kalender eintragen",
+    addToCalendar: "Kalenderdatei (.ics)",
 
     /* statuses */
     statusClinchedBye: "Bye sicher",

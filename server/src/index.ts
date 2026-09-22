@@ -4,7 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
 import { describeError } from "./describeError.js";
-import { gameCalendar } from "./calendar.js";
+import { gameEvent, toGoogleCalendarUrl, toIcs, type GameEvent } from "./calendar.js";
+import type { Request } from "express";
 import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
 
@@ -73,34 +74,56 @@ app.get("/api/game/:id", async (req, res) => {
   }
 });
 
-app.get("/api/game/:id/calendar.ics", async (req, res) => {
+/**
+ * One game as a calendar entry, for both calendar routes. Null for an id that
+ * isn't a game id — it lands in an upstream URL, so it is checked, not trusted.
+ */
+async function loadGameEvent(req: Request<{ id: string }>): Promise<GameEvent | null> {
   const { id } = req.params;
-  if (!/^\d{6,12}$/.test(id)) {
-    res.status(400).json({ error: "bad game id" });
-    return;
-  }
+  if (!/^\d{6,12}$/.test(id)) return null;
   const lang = req.query.lang === "de" ? "de" : "en";
+  const detail = await games.get(id);
+  // The channel lives on the week's scoreboard, not in the game summary. If
+  // that lookup fails the entry is still worth having, just without it.
+  const week =
+    (detail.seasonType === 2 || detail.seasonType === 3) && detail.week >= 1 && detail.week <= 25
+      ? await store.week(detail.seasonType, detail.week).catch(() => null)
+      : null;
+  const game = week?.games.find((g) => g.id === id);
+  const origin = `${req.get("x-forwarded-proto") ?? req.protocol}://${req.get("host")}`;
+  return gameEvent({ detail, game, lang, origin });
+}
 
+app.get("/api/game/:id/calendar.ics", async (req, res) => {
   try {
-    const detail = await games.get(id);
-    // The channel lives on the week's scoreboard, not in the game summary. If
-    // that lookup fails the entry is still worth having, just without it.
-    const week =
-      (detail.seasonType === 2 || detail.seasonType === 3) && detail.week >= 1 && detail.week <= 25
-        ? await store.week(detail.seasonType, detail.week).catch(() => null)
-        : null;
-    const game = week?.games.find((g) => g.id === id);
-    const origin = `${req.get("x-forwarded-proto") ?? req.protocol}://${req.get("host")}`;
-    const { filename, body } = gameCalendar({ detail, game, lang, origin });
-
+    const event = await loadGameEvent(req);
+    if (!event) {
+      res.status(400).json({ error: "bad game id" });
+      return;
+    }
     res.setHeader("content-type", "text/calendar; charset=utf-8");
-    // Inline, not attachment: iOS Safari shows its "Add to Calendar" sheet for
-    // an inline calendar and just downloads an attachment.
-    res.setHeader("content-disposition", `inline; filename="${filename}"`);
+    // Inline, not attachment: Safari shows its "Add to Calendar" sheet for an
+    // inline calendar and just downloads an attachment.
+    res.setHeader("content-disposition", `inline; filename="${event.filename}"`);
     res.setHeader("cache-control", "no-store");
-    res.send(body);
+    res.send(toIcs(event));
   } catch (error) {
     console.error("[clinch] calendar failed:", describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
+app.get("/api/game/:id/google-calendar", async (req, res) => {
+  try {
+    const event = await loadGameEvent(req);
+    if (!event) {
+      res.status(400).json({ error: "bad game id" });
+      return;
+    }
+    res.setHeader("cache-control", "no-store");
+    res.redirect(302, toGoogleCalendarUrl(event));
+  } catch (error) {
+    console.error("[clinch] google calendar failed:", describeError(error));
     res.status(502).json({ error: "upstream unavailable" });
   }
 });

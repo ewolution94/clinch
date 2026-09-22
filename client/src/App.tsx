@@ -20,6 +20,7 @@ import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
 import { ConferenceSwitch } from "./components/ConferenceSwitch";
 import { WeekView } from "./components/WeekView";
+import { SettingsView } from "./components/SettingsView";
 
 // Kept out of the main bundle: most visits never open a game.
 type GameModalComponent = (typeof import("./components/GameModal"))["default"];
@@ -49,7 +50,9 @@ import { useSnapshot } from "./hooks/useSnapshot";
 import { useRoute, type Route } from "./hooks/useRoute";
 import { DESKTOP_QUERY, useMediaQuery } from "./hooks/useMediaQuery";
 import { formatClock } from "./lib/format";
-import type { ConferenceId } from "./lib/types";
+import type { ConferenceId, ConferenceView } from "./lib/types";
+
+const NO_CONFERENCES: ConferenceView[] = [];
 
 export default function App() {
   return (
@@ -118,7 +121,9 @@ function Clinch() {
   const onRoute = useCallback(
     (next: Route) => {
       navigate(next);
-      if (settings.landing === "last") update({ lastRoute: next });
+      // "Where I left off" means a view of the season, never the settings page.
+      if (settings.landing === "last" && next !== "settings")
+        update({ lastRoute: next });
     },
     [navigate, settings.landing, update],
   );
@@ -144,7 +149,9 @@ function Clinch() {
           ? "Bracket"
           : route === "week"
             ? "Schedule"
-            : "Standings";
+            : route === "settings"
+              ? "Settings"
+              : "Standings";
     document.title = snapshot
       ? `${view} · ${snapshot.week.label} — Clinch`
       : "Clinch";
@@ -262,7 +269,12 @@ function Clinch() {
           />
 
           <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
-            {!snapshot ? (
+            {/* Settings doesn't wait for the league: it works offline too. */}
+            {route === "settings" ? (
+              <SettingsView
+                conferences={snapshot?.conferences ?? NO_CONFERENCES}
+              />
+            ) : !snapshot ? (
               <Skeleton connection={connection} />
             ) : (
               <div className="flex flex-col gap-6">

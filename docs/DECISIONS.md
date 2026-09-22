@@ -147,24 +147,33 @@ short. For what the app does and how it's built, see `README.md`.
   `@media (prefers-reduced-motion: reduce)` is wrapped in
   `:root:not([data-motion="full"])` so a reader can opt *back into* motion on an
   OS that asks for less. Removing that scope silently breaks the Full setting.
-- **The settings dialog does not reuse `GameModal`'s overlay,** on purpose —
-  leave them apart; four view-transition bugs were paid for in that component.
-- **⚠️ The settings dialog must not make the app `inert`.** It did, and that
-  was the "freezes when I tap the cog" Eric reported from his phone. Making the
-  whole shell inert restyles all ~1,600 nodes. Measured in headless Chrome on a
-  phone viewport at 4–6× CPU throttle, with a warm browser and a fresh page:
-  the old build ran a 53–82ms blocking task on first open, and the new one
-  none. `inert` by itself, isolated, costs 64–74ms at 6×. An `aria-hidden`
-  control on the same subtree cost 0.2ms, so the cost is style and
-  interactivity work, not the accessibility tree. `useDismissable` now traps
-  Tab inside the dialog and relies on `aria-modal` plus the full-screen scrim
-  button, which gives the same guarantees at no cost.
-- **`useDismissable` reads `onClose` through a ref.** It used to be an effect
-  dependency, and App passed an inline arrow. So every re-render while the
-  dialog was open — every setting tapped — tore the whole lock down and rebuilt
-  it: scroll restored, the gear behind the sheet refocused, the body re-pinned.
-  Measured: 3 taps caused 21 lock mutations; now 0. App's callbacks are
-  `useCallback`s as well, but the ref is what actually guards it.
+- **⚠️ Settings is a page (`/settings`), not a sheet — and why.** It was a
+  bottom sheet opened from a cog. On Eric's iPhone (Chrome, i.e. WebKit) it
+  "froze when I tap the cog", and kept doing so through four rounds of fixes,
+  each of which removed something real and measurable:
+  1. `inert` on the whole app restyled ~1,600 nodes per open (64–74ms at 6×
+     CPU) — replaced by a Tab trap and `aria-modal`.
+  2. `onClose` as an effect dependency tore the lock down and rebuilt it on
+     every render while open (21 lock mutations for 3 taps) — read through a
+     ref instead.
+  3. A full-screen `backdrop-filter` scrim, and ambient motion that never
+     stopped (the idle page cost 420–460ms/s of compositing) — plain scrim,
+     motion creative-only.
+  4. Pinning the body to lock scrolling re-laid out and repainted the whole
+     page on open and close — replaced by `overflow: hidden` on the body.
+  After the fourth it felt clean at first, then froze again "after some time"
+  on tapping the toggle. Unexplained, and not reproducible anywhere measurable
+  here (headless Chrome is Blink; the phone is WebKit). So on 2026-09-22, at
+  Eric's request, it became an ordinary route: no overlay, no scroll lock, no
+  focus handling. **For whoever builds a sheet again:** get a recording from
+  the phone first (the iOS Simulator runs the real WebKit — see Process
+  notes). Leads not yet ruled out: something that only builds up over time
+  (the SSE stream or a reconnect after the phone sleeps, both of which
+  re-render the whole app); WebKit-specific cost in toggling a theme (every CSS
+  variable changes, so everything repaints, blurs included); and "the toggle"
+  may have meant a setting inside the sheet rather than the cog. The last
+  version of the sheet is in git history before this change
+  (`client/src/components/SettingsDialog.tsx`, `lib/useDismissable.ts`).
 - **⚠️ The page must be completely still when nothing is happening.** Outside
   Creative there is no infinite animation anywhere, and that is measured, not
   taste. The sheen — a 9s opacity drift on the two floodlight blooms and every
@@ -176,13 +185,11 @@ short. For what the app does and how it's built, see `README.md`.
   pinned it: stopping only the 150px bloom *filter* changed almost nothing;
   removing every backdrop-filter halved it; stopping the sheen removed all of
   it. On a 120Hz phone that was a GPU that never rested, and every dialog
-  animation had to fight it for frames — the real reason settings "still lags"
-  after the earlier fixes. If you add ambient motion, gate it on Creative, and
-  never animate anything that sits behind a backdrop-filter.
-- **The settings scrim has no `backdrop-filter`; ambient motion pauses under
-  dialogs.** At 80% a plain scrim looks the same as a blurred one.
-  `useDismissable` and GameModal set `data-overlay` on the root, and index.css
-  pauses whatever motion is left underneath — only Creative has any now.
+  animation had to fight it for frames. If you add ambient motion, gate it on
+  Creative, and never animate anything that sits behind a backdrop-filter.
+- **Ambient motion pauses under the game dialog.** GameModal sets
+  `data-overlay` on the root, and index.css pauses whatever motion is left
+  underneath — only Creative has any now.
 - **Accents are themed once, in `themedSnapshot()`.** Components read
   `team.accent` in 35 places; rewriting the snapshot is what keeps a theme from
   being a 35-site change. It is a no-op on dark and creative.
@@ -281,11 +288,17 @@ short. For what the app does and how it's built, see `README.md`.
   Super Bowl in New Orleans. `country !== "USA"` is the rule; the client maps
   the country to a flag and gives the city its German name ("München",
   "Mexiko-Stadt"). "Saint-Denis" is shown as Paris, which is how the NFL sells it.
-- **The calendar file is served, not built in the page.** iOS Safari shows its
-  "Add to Calendar" sheet only for a real `text/calendar` response sent
-  `inline`; a Blob download lands in Files. Installed to the home screen there
-  is no Safari around the page, so the link opens with `target="_blank"` there
-  only. Neither iOS path has been tried on a device yet.
+- **Calendar: Google's add-event link first, the .ics second, both from the
+  server.** Chrome on iOS — Eric's browser — does nothing useful with a
+  `text/calendar` response; only Safari turns it into "Add to Calendar". The
+  endpoint itself was verified working in production (right headers, valid
+  file); it was the browser. So the dialog leads with
+  `/api/game/:id/google-calendar`, which 302s to Google Calendar's documented
+  `render?action=TEMPLATE` page with title, time, channel, venue and a link
+  back filled in, opened in a new tab. The .ics stays for Safari, Apple
+  Calendar and Outlook. Both come from one `gameEvent()` in
+  `server/src/calendar.ts`, because only the server's week data knows the
+  channel.
 - **⚠️ The game dialog must not be rendered through `React.lazy`/`Suspense`.**
   This used to say "awaiting `import()` first is enough". It wasn't: `lazy`
   suspends on its *first* render even when the chunk is already downloaded,

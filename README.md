@@ -42,8 +42,9 @@ teams are in the field, which are chasing it, and which are already out.
 - **Your team, starred** — pick a favourite in settings and it's marked in every
   view, its card edged in its colour, and its game leads the schedule and the
   week strip.
-- **Into your calendar** — any upcoming game's dialog offers an `.ics` with the
-  kickoff, the channel when it's known, and a link back.
+- **Into your calendar** — any upcoming game's dialog adds it to Google
+  Calendar in one tap, or offers an `.ics` for Apple Calendar and Outlook,
+  with the kickoff, the channel when it's known, and a link back.
 - **Games abroad flagged** — Munich, London, Madrid, Mexico City and the rest
   carry a flag and the city, in German where it has a German name.
 - **Installs to a home screen** — a web manifest and icons, so it opens
@@ -64,6 +65,7 @@ teams are in the field, which are chasing it, and which are already out.
 | `/playoffs` | **Playoff picture.** Seeds 1–7, the cut line, everyone still chasing it ranked by games back, and the eliminated. |
 | `/bracket` | **Bracket.** The tournament tree, seeded on today's standings and playable. |
 | `/week/:slug` | **Schedule.** Any week of the season — `/week/5`, `/week/wild-card` — grouped by day in your own timezone, with byes, division games flagged, and every game opening the same detail modal. |
+| `/settings` | **Settings.** Theme, language, favourite team, which view to open on, default conference and motion. |
 
 ### What the week browser does and doesn't do
 
@@ -164,9 +166,10 @@ the bracket in), and `summary?event=` behind `/api/game/:id` for a single game's
 detail. No key, no account, no scraping.
 
 `/api/game/:id/calendar.ics?lang=de|en` turns that same detail, plus the week's
-broadcast, into a one-event calendar file. It is served rather than built in the
-browser because an iPhone only offers "Add to Calendar" for a real
-`text/calendar` response.
+broadcast, into a one-event calendar file, and `/api/game/:id/google-calendar`
+redirects to Google Calendar's add-event page with the same fields filled in.
+Google comes first in the UI because Chrome on iOS doesn't hand a calendar file
+to the Calendar app the way Safari does.
 
 That last one is ~590 kB per game. The server trims it to ~3 kB by dropping the
 21 team stats the UI doesn't show, the per-player boxscores, drives, win
@@ -229,7 +232,7 @@ so instead of showing an empty set.
 
 ## Settings
 
-A gear in the header opens preferences, kept in `localStorage` — Clinch still has
+The **Settings** tab (`/settings`) holds preferences, kept in `localStorage` — Clinch still has
 no account to sign in to.
 
 | | |

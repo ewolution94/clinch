@@ -9,8 +9,11 @@ import { formatKickoff } from "../lib/format";
 import { useLocale, useSettings, useStrings } from "../lib/useSettings";
 import { abroadLabel } from "../lib/abroad";
 import type { Lang } from "../lib/settings";
-import { FOCUSABLE } from "../lib/useDismissable";
 import { lockScroll } from "../lib/scrollLock";
+
+/** Everything Tab can land on inside the dialog. */
+const FOCUSABLE =
+  'button:not([disabled]), [href], select:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 import type {
   GameDetail,
   GameTeamDetail,
@@ -281,39 +284,62 @@ function venuePlace(venue: NonNullable<GameDetail["venue"]>, lang: Lang): string
 }
 
 /**
- * A plain link to a server-built .ics. On an iPhone, Safari answers a real
- * `text/calendar` response with its own "Add to Calendar" sheet; a file made
- * in the page would only have gone to Downloads.
+ * Two ways into a calendar, both built by the server so they carry the German
+ * broadcast (see server/src/calendar.ts).
+ *
+ * Google first: it is the calendar Eric uses, and Chrome on an iPhone — his
+ * browser — does nothing useful with a .ics, where Safari would have offered
+ * "Add to Calendar". The Google link opens Google's own "add event" page in a
+ * new tab, ready to save. The file stays for Safari, Apple Calendar and
+ * Outlook.
  */
-function CalendarLink({ gameId, lang }: { gameId: string; lang: Lang }) {
+function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
   const t = useStrings();
-  // Installed to the home screen there is no Safari around the page to show
-  // that sheet, so the link opens in Safari's own in-app view instead.
+  // Installed to the home screen there is no browser around the page to show
+  // a calendar sheet, so the file opens in the browser's own in-app view.
   const standalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as { standalone?: boolean }).standalone === true;
+  const pill =
+    "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-[12px] tracking-[0.08em] transition-colors";
   return (
-    <a
-      href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
-      target={standalone ? "_blank" : undefined}
-      rel={standalone ? "noopener" : undefined}
-      className="mt-0.5 inline-flex items-center gap-2 self-start rounded-full border border-line bg-ink-2 px-3.5 py-1.5 font-mono text-[12px] tracking-[0.08em] text-fog transition-colors hover:border-fog/40 hover:text-paper"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
+    <div className="mt-0.5 flex flex-wrap items-center gap-2">
+      <a
+        href={`/api/game/${gameId}/google-calendar?lang=${lang}`}
+        target="_blank"
+        rel="noopener"
+        className={clsx(
+          pill,
+          "border-fog/30 bg-ink-2 text-paper hover:border-fog/60",
+        )}
       >
-        <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
-        <path d="M3.5 9.5h17M8 3v4M16 3v4M12 12.5v5M9.5 15h5" />
-      </svg>
-      {t.addToCalendar}
-    </a>
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        >
+          <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+          <path d="M3.5 9.5h17M8 3v4M16 3v4M12 12.5v5M9.5 15h5" />
+        </svg>
+        {t.addToGoogleCalendar}
+      </a>
+      <a
+        href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
+        target={standalone ? "_blank" : undefined}
+        rel={standalone ? "noopener" : undefined}
+        className={clsx(
+          pill,
+          "border-line text-mist hover:border-fog/40 hover:text-fog",
+        )}
+      >
+        {t.addToCalendar}
+      </a>
+    </div>
   );
 }
 
@@ -332,7 +358,7 @@ function Body({ detail }: { detail: GameDetail }) {
           <p className="font-display text-[15.5px] text-fog">
             {formatKickoff(detail.kickoff, locale)}
           </p>
-          <CalendarLink gameId={detail.id} lang={lang} />
+          <CalendarLinks gameId={detail.id} lang={lang} />
         </Section>
         {detail.odds && (
           <Section label="LINE">

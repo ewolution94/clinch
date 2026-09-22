@@ -1,10 +1,9 @@
-import { Fragment, useCallback, useState } from "react";
+import { Fragment } from "react";
 import { clsx } from "clsx";
 import { useStrings } from "../lib/useSettings";
 import { ClinchMark } from "./ClinchMark";
-import { SettingsDialog } from "./SettingsDialog";
 import type { Route } from "../hooks/useRoute";
-import type { ConferenceView, ConnectionState, Snapshot } from "../lib/types";
+import type { ConnectionState, Snapshot } from "../lib/types";
 
 interface HeaderProps {
   snapshot: Snapshot | null;
@@ -15,8 +14,7 @@ interface HeaderProps {
 
 // Where the season is now, then where it's heading. Labels come from the string
 // table so the order lives here and the wording lives there.
-const TAB_IDS: Route[] = ["standings", "week", "playoffs", "bracket"];
-const NO_CONFERENCES: ConferenceView[] = [];
+const TAB_IDS: Route[] = ["standings", "week", "playoffs", "bracket", "settings"];
 
 export function Header({
   snapshot,
@@ -25,10 +23,6 @@ export function Header({
   onRoute,
 }: HeaderProps) {
   const t = useStrings();
-  // Held here rather than in App: opening the sheet then re-renders the header
-  // and the sheet, not every card on the page behind it.
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const closeSettings = useCallback(() => setSettingsOpen(false), []);
   const tabs = [
     {
       id: "standings" as const,
@@ -46,6 +40,7 @@ export function Header({
       label: t.routeBracketLong,
       short: t.routeBracket,
     },
+    { id: "settings" as const, label: t.settings, short: t.routeSettings },
   ].sort((a, b) => TAB_IDS.indexOf(a.id) - TAB_IDS.indexOf(b.id));
   const live = snapshot?.live ?? false;
   const weekLabel = snapshot ? snapshot.week.label : "Loading";
@@ -133,8 +128,11 @@ export function Header({
       */}
       <div className="clinch-bar sticky top-0 z-30 border-b border-line/70 bg-abyss/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1800px] items-center px-4 py-2.5 sm:px-6 lg:px-10">
+          {/* Full width on a phone, each tab an equal share: five labels fit a
+              360px screen only with the cog gone and the side padding tight.
+              From sm up the tabs size to their text again. */}
           <nav
-            className="flex rounded-full border border-line bg-ink/70 p-0.5"
+            className="flex w-full rounded-full border border-line bg-ink/70 p-0.5 sm:w-auto"
             aria-label={t.views}
           >
             {tabs.map((tab) => (
@@ -144,7 +142,7 @@ export function Header({
                 onClick={() => onRoute(tab.id)}
                 aria-current={route === tab.id ? "page" : undefined}
                 className={clsx(
-                  "rounded-full px-3 py-1.5 font-display text-[15.5px] font-medium transition-colors sm:px-5",
+                  "flex-1 rounded-full px-1.5 py-1.5 font-display text-[15.5px] font-medium whitespace-nowrap transition-colors sm:flex-none sm:px-5",
                   route === tab.id
                     ? "bg-paper text-abyss"
                     : "text-mist hover:text-fog",
@@ -156,30 +154,6 @@ export function Header({
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            aria-label={t.settings}
-            title={t.settings}
-            className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-ink/70 text-mist transition-colors hover:border-fog/40 hover:text-paper"
-          >
-            {/* Inline rather than an icon package — the app ships none, and the
-                page makes no third-party requests. */}
-            <svg
-              viewBox="0 0 24 24"
-              width="17"
-              height="17"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="3.1" />
-              <path d="M19.4 14.4a1.6 1.6 0 0 0 .32 1.77l.06.06a1.94 1.94 0 1 1-2.75 2.75l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47v.17a1.94 1.94 0 0 1-3.88 0v-.09a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a1.94 1.94 0 1 1-2.75-2.75l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97h-.17a1.94 1.94 0 0 1 0-3.88h.09a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a1.94 1.94 0 1 1 2.75-2.75l.06.06a1.6 1.6 0 0 0 1.77.32h.08a1.6 1.6 0 0 0 .97-1.47v-.17a1.94 1.94 0 0 1 3.88 0v.09a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a1.94 1.94 0 1 1 2.75 2.75l-.06.06a1.6 1.6 0 0 0-.32 1.77v.08a1.6 1.6 0 0 0 1.47.97h.17a1.94 1.94 0 0 1 0 3.88h-.09a1.6 1.6 0 0 0-1.47.97Z" />
-            </svg>
-          </button>
         </div>
 
         <div className="h-px w-full bg-line/60">
@@ -189,14 +163,6 @@ export function Header({
           />
         </div>
       </div>
-
-      {/* After the bar, not inside it: the bar's backdrop-filter would make it
-          the containing block for this `fixed` overlay. */}
-      <SettingsDialog
-        open={settingsOpen}
-        onClose={closeSettings}
-        conferences={snapshot?.conferences ?? NO_CONFERENCES}
-      />
     </>
   );
 }
