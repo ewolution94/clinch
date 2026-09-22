@@ -16,17 +16,12 @@ import { lockScroll } from "../lib/scrollLock";
  *
  * The browser's own threshold is stricter than a thumb: a tap that drifted
  * ~12px was treated as a drag, so no click was ever sent and the dialog stayed
- * open — the one tap in twenty that "didn't work". Reproduced with synthetic
- * taps at 0/6/12/28px of travel. Hence pointer events and this slop rather
- * than a click handler. It is generous on purpose: nothing on the backdrop
- * responds to a swipe, so the only cost of being wrong is closing a dialog the
- * reader was already pointing away from.
+ * open. The close button above the panel is the way out; this only keeps the
+ * backdrop working as a shortcut. Generous on purpose — nothing on the
+ * backdrop responds to a swipe.
  */
 const TAP_SLOP = 32;
 
-/** Everything Tab can land on inside the dialog. */
-const FOCUSABLE =
-  'button:not([disabled]), [href], select:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 import type {
   GameDetail,
   GameTeamDetail,
@@ -643,103 +638,59 @@ function GameSkeleton() {
 
 export default function GameModal({ gameId, onClose }: GameModalProps) {
   const t = useStrings();
-  const overlay = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
   /** Where a tap on the backdrop began, if it began there. */
   const tapStart = useRef<{ x: number; y: number } | null>(null);
-  const panel = useRef<HTMLDivElement>(null);
   const { detail, loading, error } = useGameDetail(gameId);
 
   /**
-   * Deliberately *not* `<dialog>`/`showModal()`.
+   * A real `<dialog>`, opened with `showModal()`.
    *
-   * That puts the element in the top layer, which view transitions do not
-   * capture — so the panel's `view-transition-name` never formed a group and
-   * the only thing that animated was the root cross-fade, leaving a snapshot of
-   * the page painted over the opening modal. Everything showModal() provided is
-   * reproduced here instead: Escape, focus moved in and restored, and a Tab
-   * trap, with `aria-modal` covering assistive tech.
-   *
-   * The Tab trap replaces `inert` on the whole app, which this dialog used to
-   * rely on. That restyled every node in the page on each open — a 64–74ms
-   * blocking task at 6× CPU, measured in isolation — and it ran inside the
-   * view-transition callback, so it also delayed the morph's start.
+   * It was a hand-built overlay for one reason: the top layer is invisible to
+   * view transitions, and the dialog used to morph out of the card you tapped.
+   * That morph is gone — it broke differently in every engine and cost more
+   * than it gave (docs/DECISIONS.md) — and with it every reason to reimplement
+   * what the platform already does: the focus trap, Escape, painting above
+   * every stacking context, `aria-modal`, and focus handed back to the card on
+   * close.
    */
   useEffect(() => {
+    const el = dialog.current;
+    if (!el) return;
     const root = document.documentElement;
-    // The scrim blurs what's behind it. Paused, the page underneath is still,
-    // so the blur is computed once instead of every frame the blooms move.
+    // Paused, the page underneath is still, so the veil's blur is computed
+    // once instead of on every frame the blooms move.
     root.dataset.overlay = "";
-    panel.current?.focus({ preventScroll: true });
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab" || !overlay.current) return;
-      // The overlay, not the panel: the close button floats outside the panel
-      // and still has to be part of the cycle.
-      const node = overlay.current;
-      const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (items.length === 0) {
-        event.preventDefault();
-        panel.current?.focus();
-        return;
-      }
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-      // The panel itself holds focus on open, so it counts as "outside" here.
-      if (active === panel.current || !active || !node.contains(active)) {
-        event.preventDefault();
-        (event.shiftKey ? last : first).focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-
-    // This runs inside the view transition's update, so it must not move the
-    // page: pinning the body here repainted everything the morph was about to
-    // reveal. See lib/scrollLock.ts.
+    if (!el.open) el.showModal();
+    // `showModal()` blocks interaction, not scrolling: iOS would still pan the
+    // page behind the dialog.
     const unlock = lockScroll();
 
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       delete root.dataset.overlay;
       unlock();
-      // Return to the card by identity rather than to whatever was focused when
-      // this mounted — by now focus is inside the panel being removed, and the
-      // card may have re-rendered since.
-      document
-        .querySelector<HTMLElement>(`[data-game-id="${gameId}"]`)
-        ?.focus({ preventScroll: true });
+      if (el.open) el.close();
     };
-  }, [onClose, gameId]);
+  }, []);
 
   return (
-    <div
-      ref={overlay}
-      className="game-overlay"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialog}
+      className="game-dialog"
       aria-label={t.gameDetail}
+      // Escape and any native close land here, so the URL follows the dialog.
+      onClose={onClose}
       onPointerDown={(event) => {
-        // Anywhere outside the panel is the overlay itself.
+        // Anywhere outside the panel is the dialog element itself.
         tapStart.current =
-          event.target === overlay.current
+          event.target === dialog.current
             ? { x: event.clientX, y: event.clientY }
             : null;
       }}
       onPointerUp={(event) => {
         const start = tapStart.current;
         tapStart.current = null;
-        if (!start || event.target !== overlay.current) return;
+        if (!start || event.target !== dialog.current) return;
         if (
           Math.hypot(event.clientX - start.x, event.clientY - start.y) >
           TAP_SLOP
@@ -749,9 +700,10 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       }}
       onPointerCancel={() => (tapStart.current = null)}
     >
-      {/* The dim and blur are not in here: App draws them as `.game-scrim`,
-          which outlives this component so it can fade out while the panel
-          morphs back into its card. See index.css. */}
+      {/* The dim and blur. A plain element rather than `::backdrop`, so the
+          blur is one thing in one place across engines. */}
+      <div className="game-dialog__veil" aria-hidden="true" />
+
       <button
         type="button"
         onClick={onClose}
@@ -772,12 +724,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
         </svg>
       </button>
 
-      <div
-        ref={panel}
-        tabIndex={-1}
-        className="game-dialog__panel"
-        style={{ viewTransitionName: `game-${gameId}` }}
-      >
+      <div className="game-dialog__panel">
         <div className="game-dialog__scroll">
           {detail ? (
             <>
@@ -795,6 +742,6 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
           )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

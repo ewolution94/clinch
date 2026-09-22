@@ -218,18 +218,23 @@ short. For what the app does and how it's built, see `README.md`.
   `.absolute`.** `TeamLogo` sets `relative` on itself, so a positioning class
   passed in from outside silently loses and the watermark stays in flow. Don't
   merge the two components back together.
-- **The modal must NOT be a top-layer `<dialog>`.** It shipped as
-  `<dialog>`+`showModal()` for the free focus trap, and the morph looked broken:
-  Chromium does not capture top-layer elements in a view transition, so the
-  panel's `view-transition-name` never formed a group and the only thing
-  animating was the root cross-fade — leaving a snapshot of the page painted
-  *over* the opening modal. It is now a plain fixed overlay, with everything
-  `showModal()` provided reproduced explicitly: a Tab trap, an Escape handler,
-  scroll lock, `aria-modal`, and focus returned to the card **by
-  `data-game-id`**. It used to use `inert` on the whole app instead of the Tab
-  trap; that restyled every node on each open (64–74ms blocking at 6× CPU, and
-  inside the transition callback, so it also delayed the morph). **Don't put
-  `inert` back** — see the settings note below for the measurements.
+- **⚠️ The game dialog is a native `<dialog>`, and the card→dialog morph is
+  gone. Don't bring view transitions back.** Removed on 2026-09-22 at Eric's
+  request, after it had been rebuilt four times and still broke: the dialog
+  sometimes refused to close, the blur flickered on WebKit (snapshots are
+  painted with compositing layers flattened, and backdrop-filter only exists as
+  a compositing layer there), and each fix traded one engine's bug for
+  another's. Everything it needed is gone with it — `morphCardId` threaded
+  through four components, `view-transition-name` handed to exactly one card at
+  a time, `flushSync` around the update, `data-morph` on the root, `html.vt`,
+  and a scrim that had to outlive the dialog to fade out. `GameModal` now calls
+  `showModal()` and gets the focus trap, Escape, the top layer, `aria-modal`
+  and focus restored to the card for free; the dim and blur are one element
+  inside it (`.game-dialog__veil`). The old reason for hand-building the
+  overlay — that view transitions can't see the top layer — no longer applies.
+  Verified: opens from the strip, closes by button, backdrop tap (including a
+  drifting one), Escape and the back button; the URL, the scroll lock and focus
+  come back clean each way, and a tap on the panel never closes it.
 - **The sticky controls bar is a sibling of `<header>`, not its child.** Inside a
   164px `<header>` it had nowhere to stick to and scrolled away with the logo,
   tabs and cog included (bar top 100 / 40 / −50 / −300 / −800 at scroll
@@ -238,48 +243,11 @@ short. For what the app does and how it's built, see `README.md`.
   measured at 0 with both dialogs open, scrolled — **as long as the lock is on
   the body, not on `<html>`** (see the scroll-lock entry). Don't wrap it back
   inside `<header>` or any short container.
-- **Nothing above a `view-transition-name`d element may animate opacity.** The
-  modal's dim/blur started life *on* the overlay that wraps the panel. At
-  capture time that ancestor is at `opacity: 0` (the fade has just begun), so
-  the panel's snapshot is captured transparent: the morph runs and is invisible,
-  and all you see is the fade with the old page snapshot over it. The dim is now
-  `.game-scrim`, drawn by App outside the overlay entirely, and `.game-overlay`
-  is deliberately effect-free — no opacity, filter, backdrop-filter, transform
-  or animation. If you add any of those to it, the morph silently disappears
-  again. (`touch-action` is fine: it paints nothing.)
-- **⚠️ The game morph never snapshots the page.** `morph()` in App.tsx tags
-  the root `data-morph` for the transition's lifetime, and index.css gives the
-  root `view-transition-name: none` while it is set. The page and the scrim
-  stay live underneath; only the card→panel group animates. This is the fix
-  for Eric's "it blurs, unblurs, then blurs again" on an iPhone (Chrome on iOS
-  is WebKit). WebKit paints view-transition snapshots with compositing layers
-  flattened, and backdrop-filter exists only as a compositing layer there, so
-  the captured page kept the dim and lost the blur until the live page came
-  back at the end. Chrome kept the blur in its snapshots, which is why no
-  headless run ever showed it. Don't give the root its name back, and don't
-  put a backdrop-filter into anything that gets captured.
-- **The game scrim lives in App and never animates in.** `.game-scrim` is always
-  mounted, switched by `data-open`: on the first frame of opening it is fully
-  there; on close it fades over 0.22s while the panel morphs home, holding
-  the blur until the fade ends (delayed `visibility`/`backdrop-filter`
-  transitions). It used to be inside the dialog, fading in over 0.2s inside
-  the transition's own root cross-fade, so the panel stood open over a
-  still-sharp page. Filmed by pausing and seeking the transition over CDP
-  (Process notes): scrim 1.0 and blur(6px) at 0/16/50/120/320ms of the open;
-  0.94 → 0.64 → 0.16 → hidden on close, blur held to the end.
-- **Write `backdrop-filter` unprefixed only.** The build's CSS minifier
-  (Lightning CSS, via Tailwind v4) treats `backdrop-filter` and
-  `-webkit-backdrop-filter` as one property and keeps only the last one
-  written. Every hand-written pair here had the prefix last, so the output was
-  `-webkit-` only — which Chrome ignores. The game dialog's blur never existed
-  in desktop or Android Chrome until 2026-09-22; iPhones, reading the prefix,
-  always had it. Written unprefixed, the build emits both. Tailwind's own
-  `backdrop-blur-*` utilities were never affected.
 - **The favourite's game is pinned, never duplicated.** The week view lifts it
   out of its day group into "Your team" rather than showing it twice. A second
-  card would carry the same `data-game-id` and, mid-morph, the same
-  `view-transition-name`, and two elements sharing a name silently skips the
-  transition. The pinned card also survives the "On TV" filter, because your own
+  card would carry the same `data-game-id`, which is how the dialog finds its
+  way back — and it was worse under the old morph, where two elements sharing a
+  `view-transition-name` silently skipped it. The pinned card also survives the "On TV" filter, because your own
   team's kickoff is worth seeing even when you can't watch it.
 - **The favourite star is drawn in the team's colour, not gold.** Gold already
   means "division leader" on the playoff picture, and a favourite isn't a status.
@@ -317,54 +285,23 @@ short. For what the app does and how it's built, see `README.md`.
   browser, which then sends no click. Pointer events with 32px of slop fixed
   that in synthetic tests (0/6/12/28px of travel close, 85px doesn't), but Eric
   reported it *worse* on the phone — so the dialog stopped depending on it.
-  The button sits outside the panel, where it can't be scrolled out of reach
-  (the risk the old corner ✕ inside the panel carried), and outside the view
-  transition, so it is simply there while the panel morphs open. The Tab trap
-  spans the overlay rather than the panel, so the button is in the cycle.
-- **⚠️ The game dialog must not be rendered through `React.lazy`/`Suspense`.**
-  This used to say "awaiting `import()` first is enough". It wasn't: `lazy`
-  suspends on its *first* render even when the chunk is already downloaded,
-  because it only learns that by awaiting the module once. That first render
-  happens inside the transition callback, so on the **first open of every visit**
-  the browser captured the Suspense fallback, and the card just faded out. The
-  morph only ever ran from the second open onwards. Measured in headless
-  Chrome: first open had only `::view-transition-old(game-…)`, the second had
-  the full group. `loadGameModal()` in App.tsx now holds the component itself
-  and puts it in state (on idle, on tap, or on a `?game=` arrival), so it is a
-  plain value that renders synchronously. The chunk is still split out
-  (13.8 kB).
+  The button sits outside the panel, where it can't be scrolled out of reach —
+  the risk the old corner ✕ inside the panel carried. It is inside the
+  `<dialog>`, so the native focus trap covers it.
+- **The game dialog is loaded as a value, not through `React.lazy`.**
+  `loadGameModal()` in App.tsx holds the component itself and puts it in state
+  (on idle, on tap, or on a `?game=` arrival), so it renders synchronously; the
+  chunk is still split out (13.8 kB). This was load-bearing while the dialog
+  morphed — `lazy` suspends on its *first* render even with the chunk already
+  downloaded, so the browser captured the Suspense fallback and the morph never
+  ran on a first open. The morph is gone, but a dialog that opens on real
+  content instead of a flash of skeleton is worth keeping.
 - **⚠️ `closeGame` must change state synchronously.** It used to close by
-  calling `history.back()` and waiting for `popstate`. `back()` is async, so
-  inside the transition callback nothing had changed yet: the browser captured
-  the dialog as its own "after" state, morphed it into itself, and the dialog
-  vanished a moment later. **The closing morph had never worked.** It also meant
-  closing a shared `?game=` link — the tab's own first entry — did a real
-  `back_forward` navigation **out of the site**. Now: `setGame(null)` first, then
-  `back()` only for an entry the app pushed (marked `clinchGame` in
-  `history.state`, guarded against a double close), and `replaceState` for an
-  arrived-on one. Verified: open morph, close morph (card holds the name at
-  capture), browser/Android back still closes, and a deep-link close stays in
-  the document.
-- **A `view-transition-name` must exist on exactly ONE card, only while it
-  morphs.** This was the actual bug behind "the games section is layered on top
-  of the modal", and it took three attempts to find. A name is not a label: it
-  *lifts the element out of the page* into the transition layer, which paints
-  above everything. Every card carried one permanently, so opening a modal built
-  seventeen groups — sixteen floating cards plus root — and the cards after the
-  clicked one in DOM order painted over the morphing panel. `App` now grants the
-  name to a single card via `morphCardId` immediately before the snapshot and
-  clears it on `transition.finished`. At rest, `getComputedStyle` should report
-  `view-transition-name` on **nothing** but the implicit `root`; if you ever see
-  a card with one while idle, this regressed.
-- **The view-transition morph needs `flushSync`, and a unique name.**
-  `startViewTransition` snapshots the DOM the moment its callback returns, and
-  React would still be holding the state update — without `flushSync` the
-  browser captures the old DOM twice and nothing animates. Separately, a
-  `view-transition-name` must be unique at capture time, so the card *drops* its
-  name as the dialog takes it (`openGameId` is threaded down for exactly this).
-  Two elements sharing a name silently skips the transition, with no error.
-  `main.tsx` sets `html.vt` so the CSS fallback entrance stands down where the
-  morph runs; the lazy chunk is warmed on idle so the first open can morph too.
+  calling `history.back()` and waiting for `popstate`. That meant closing a
+  shared `?game=` link left the site entirely: the entry is the tab's own, not
+  one this app pushed, so "back" went wherever the reader came from — confirmed
+  as a real `back_forward` navigation. State changes first now, and the URL
+  follows: our own entry is popped, an arrived-on one is rewritten in place.
 - **Unplayed quarters must be gated on `status.period`.** ESPN reports a quarter
   that hasn't happened as `'0'`, not as absent, so a game in the 1st quarter
   would otherwise render as three scoreless ones. Overtime adds linescore
@@ -559,16 +496,16 @@ not in the repo.
 **Not verified, and needing a human or time:**
 
 - **Whether creative actually looks good in motion.** Sampled numerically only.
-- **View transitions can't be exercised in the Claude Code pane** — it is always
-  `hidden`, so `startViewTransition` skips. **Headless Chrome can,** and that is
-  how the two broken morphs above were found: it reports `visible`. Wrap
-  `document.startViewTransition` in the page to capture the transition, await
-  `.ready`, then read `document.getAnimations()` for
-  `::view-transition-new(game-<id>)`. Also read which element holds the name
-  at that moment: the panel on open, the card on close. A group can form
-  panel→panel and look like success, so check the DOM, not just the pseudos.
-  Screenshots there are reliable too (`Page.captureScreenshot`). The pane's are
-  frozen frames after a scroll.
+- **Animation and dialog behaviour can't be exercised in the Claude Code pane**
+  — it is always `hidden`, so animations freeze and its screenshots are frozen
+  frames. Headless Chrome reports `visible` and its `Page.captureScreenshot` is
+  reliable; drive input with `Input.dispatchTouchEvent` and check state with
+  `Runtime.evaluate`. Two traps met while testing the dialog: the profile
+  persists `localStorage` between runs, so "where I left off" silently
+  redirects a later run to another route — set the settings key first; and a
+  `Input.dispatchTouchEvent` can hang after certain sequences, so give every
+  protocol call a timeout and print results as they come rather than at the
+  end.
 - **Broadcasts beyond the ~14-day listings horizon** — postseason, Munich,
   Thanksgiving, Saturday weeks.
 - **The Dockerfile**, since there is no Docker on the dev machine: push to

@@ -10,8 +10,6 @@ interface BracketMatchCardProps {
   onPick: (matchId: string, abbr: string) => void;
   /** Only offered once a real game exists behind the matchup. */
   onOpenGame?: (id: string) => void;
-  /** The single card allowed to carry a `view-transition-name` right now. */
-  morphCardId?: string | null;
   /** Mirrors the layout for the NFC half so both sides read inward. */
   mirrored?: boolean;
   size?: "sm" | "lg";
@@ -150,7 +148,6 @@ export function BracketMatchCard({
   match,
   onPick,
   onOpenGame,
-  morphCardId,
   mirrored = false,
   size = "sm",
 }: BracketMatchCardProps) {
@@ -163,11 +160,6 @@ export function BracketMatchCard({
 
   return (
     <div
-      style={
-        match.gameId && match.gameId === morphCardId
-          ? { viewTransitionName: `game-${match.gameId}` }
-          : undefined
-      }
       className={clsx(
         "@container/match relative overflow-hidden rounded-lg border bg-ink/70 backdrop-blur-sm transition-colors",
         match.decidedBy === "pick"

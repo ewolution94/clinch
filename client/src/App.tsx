@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { FieldBackdrop } from "./components/FieldBackdrop";
 import { Header } from "./components/Header";
 import { ConferenceStandings } from "./components/ConferenceStandings";
@@ -79,8 +78,6 @@ function Clinch() {
   const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
     useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
-  /** The one game whose card is mid-morph, if any. */
-  const [morphing, setMorphing] = useState<string | null>(null);
   const wide = useMediaQuery(DESKTOP_QUERY);
 
   /*
@@ -181,71 +178,16 @@ function Clinch() {
     return () => window.cancelIdleCallback?.(idle);
   }, []);
 
-  /**
-   * A shared-element morph from the clicked card into the dialog.
-   *
-   * `flushSync` is load-bearing: `startViewTransition` snapshots the DOM as soon
-   * as its callback returns, and React would otherwise still be holding the
-   * update. Without it the browser captures the *old* DOM twice and nothing
-   * animates.
-   */
-  /**
-   * Runs `update` inside a view transition, with exactly one card wearing the
-   * shared name for the duration.
-   *
-   * A `view-transition-name` is not a label — it lifts the element out of the
-   * page into the transition layer, which paints above everything. Leaving one
-   * on all sixteen cards meant sixteen floating groups over the opening modal:
-   * the reported bug. So the name is granted to the single card being morphed,
-   * immediately before the snapshot, and surrendered when the transition ends.
-   */
-  const morphRun = useRef(0);
-  const morph = useCallback(
-    (id: string, direction: "open" | "close", update: () => void) => {
-      if (!document.startViewTransition) {
-        update();
-        return;
-      }
-      // Tells index.css which way this morph runs: opening shows the dimmed,
-      // blurred page from the first frame instead of cross-fading into it.
-      const root = document.documentElement;
-      const run = ++morphRun.current;
-      root.dataset.morph = direction;
-      flushSync(() => setMorphing(id));
-      const transition = document.startViewTransition(() => flushSync(update));
-      void transition.finished.finally(() => {
-        // A quick open-then-close starts a second transition before this one
-        // ends; its flag must survive this one finishing.
-        if (morphRun.current === run) delete root.dataset.morph;
-        setMorphing(null);
-      });
-    },
-    [],
-  );
-
   const onOpenGame = useCallback(
     async (id: string) => {
-      // Have the component in hand *before* the transition starts. If the first
-      // render inside it has to wait for anything, the browser captures no panel
-      // and there is nothing for the card to morph into — see loadGameModal().
+      // The component in hand before the dialog opens, so it shows content
+      // rather than a flash of skeleton — see loadGameModal().
       const Modal = await loadGameModal();
-      // Both updates run inside the transition's flushSync, so the panel exists
-      // — named `game-<id>` — in the very render the browser snapshots.
-      morph(id, "open", () => {
-        setGameModal(() => Modal);
-        openGame(id);
-      });
+      setGameModal(() => Modal);
+      openGame(id);
     },
-    [morph, openGame],
+    [openGame],
   );
-
-  const onCloseGame = useCallback(() => {
-    if (game) morph(game, "close", closeGame);
-    else closeGame();
-  }, [morph, game, closeGame]);
-
-  // The card holds the shared name only until the panel takes it over.
-  const morphCardId = morphing !== null && morphing !== game ? morphing : null;
 
   return (
     <AccentProvider snapshot={snapshot}>
@@ -292,7 +234,6 @@ function Clinch() {
                       teams={teams}
                       label={snapshot.week.label}
                       onOpenGame={onOpenGame}
-                      morphCardId={morphCardId}
                     />
                     {!wide && (
                       <ConferenceSwitch
@@ -313,14 +254,9 @@ function Clinch() {
                     slug={weekSlug}
                     onOpenWeek={openWeek}
                     onOpenGame={onOpenGame}
-                    morphCardId={morphCardId}
                   />
                 ) : route === "bracket" ? (
-                  <BracketTree
-                    snapshot={snapshot}
-                    onOpenGame={onOpenGame}
-                    morphCardId={morphCardId}
-                  />
+                  <BracketTree snapshot={snapshot} onOpenGame={onOpenGame} />
                 ) : (
                   <>
                     {!wide && (
@@ -361,14 +297,7 @@ function Clinch() {
           </main>
         </>
 
-        {/* Always mounted, so closing can fade it out while the panel morphs
-            home — the dialog itself is gone by then. index.css has the why. */}
-        <div
-          aria-hidden="true"
-          className="game-scrim"
-          data-open={game && GameModal ? "" : undefined}
-        />
-        {game && GameModal && <GameModal gameId={game} onClose={onCloseGame} />}
+        {game && GameModal && <GameModal gameId={game} onClose={closeGame} />}
       </div>
     </AccentProvider>
   );

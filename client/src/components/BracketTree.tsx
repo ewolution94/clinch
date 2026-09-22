@@ -15,7 +15,6 @@ import { useStrings } from "../lib/useSettings";
 interface BracketTreeProps {
   snapshot: Snapshot;
   onOpenGame: (id: string) => void;
-  morphCardId: string | null;
 }
 
 /** One round's column: matches spread evenly so the connector maths holds. */
@@ -73,13 +72,11 @@ function ConferencePath({
   conference,
   onPick,
   onOpenGame,
-  morphCardId,
 }: {
   bracket: ConferenceBracket;
   conference: ConferenceView;
   onPick: (matchId: string, abbr: string) => void;
   onOpenGame: (id: string) => void;
-  morphCardId: string | null;
 }) {
   const t = useStrings();
   const tint =
@@ -108,7 +105,6 @@ function ConferencePath({
             match={m}
             onPick={onPick}
             onOpenGame={onOpenGame}
-            morphCardId={morphCardId}
           />
         ))}
       </div>
@@ -123,7 +119,6 @@ function ConferencePath({
             match={m}
             onPick={onPick}
             onOpenGame={onOpenGame}
-            morphCardId={morphCardId}
           />
         ))}
       </div>
@@ -135,7 +130,6 @@ function ConferencePath({
           match={bracket.championship}
           onPick={onPick}
           onOpenGame={onOpenGame}
-          morphCardId={morphCardId}
           size="lg"
         />
       )}
@@ -161,11 +155,7 @@ function divisionalArms(bracket: ConferenceBracket): (string | undefined)[] {
 const COLUMNS =
   "minmax(0,1fr) 26px minmax(0,1fr) 26px minmax(0,1fr) 30px minmax(210px,1.5fr) 30px minmax(0,1fr) 26px minmax(0,1fr) 26px minmax(0,1fr)";
 
-export function BracketTree({
-  snapshot,
-  onOpenGame,
-  morphCardId,
-}: BracketTreeProps) {
+export function BracketTree({ snapshot, onOpenGame }: BracketTreeProps) {
   const t = useStrings();
   const [picks, setPicks] = useState<Picks>({});
 
@@ -225,14 +215,12 @@ export function BracketTree({
           conference={afcView}
           onPick={onPick}
           onOpenGame={onOpenGame}
-          morphCardId={morphCardId}
         />
         <ConferencePath
           bracket={nfc}
           conference={nfcView}
           onPick={onPick}
           onOpenGame={onOpenGame}
-          morphCardId={morphCardId}
         />
       </div>
 
@@ -270,7 +258,6 @@ export function BracketTree({
                   match={m}
                   onPick={onPick}
                   onOpenGame={onOpenGame}
-                  morphCardId={morphCardId}
                 />
               )),
             ]}
@@ -287,7 +274,6 @@ export function BracketTree({
                 match={m}
                 onPick={onPick}
                 onOpenGame={onOpenGame}
-                morphCardId={morphCardId}
               />
             ))}
           </Round>
@@ -304,7 +290,6 @@ export function BracketTree({
                     match={afc.championship}
                     onPick={onPick}
                     onOpenGame={onOpenGame}
-                    morphCardId={morphCardId}
                     size="lg"
                   />,
                 ]
@@ -339,7 +324,6 @@ export function BracketTree({
                     match={nfc.championship}
                     onPick={onPick}
                     onOpenGame={onOpenGame}
-                    morphCardId={morphCardId}
                     mirrored
                     size="lg"
                   />,
@@ -358,7 +342,6 @@ export function BracketTree({
                 match={m}
                 onPick={onPick}
                 onOpenGame={onOpenGame}
-                morphCardId={morphCardId}
                 mirrored
               />
             ))}
@@ -377,7 +360,6 @@ export function BracketTree({
                   match={m}
                   onPick={onPick}
                   onOpenGame={onOpenGame}
-                  morphCardId={morphCardId}
                   mirrored
                 />
               )),

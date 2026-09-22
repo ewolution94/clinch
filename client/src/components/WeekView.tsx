@@ -20,7 +20,6 @@ interface WeekViewProps {
   slug: string | null;
   onOpenWeek: (slug: string) => void;
   onOpenGame: (id: string) => void;
-  morphCardId: string | null;
 }
 
 /** Day headings in the reader's own timezone — the whole point for a European. */
@@ -60,13 +59,11 @@ function GameRow({
   teams,
   favourite,
   onOpenGame,
-  morphCardId,
 }: {
   game: ScoreboardGame;
   teams: Map<string, TeamEntry>;
   favourite: string | null;
   onOpenGame: (id: string) => void;
-  morphCardId: string | null;
 }) {
   const locale = useLocale();
   const away = teams.get(game.away);
@@ -133,14 +130,13 @@ function GameRow({
       onClick={() => onOpenGame(game.id)}
       data-game-id={game.id}
       aria-label={`${game.away} at ${game.home} — game detail`}
-      style={{
-        ...(game.id === morphCardId && {
-          viewTransitionName: `game-${game.id}`,
-        }),
-        ...(mineAccent && {
-          borderColor: `color-mix(in srgb, ${mineAccent} 55%, transparent)`,
-        }),
-      }}
+      style={
+        mineAccent
+          ? {
+              borderColor: `color-mix(in srgb, ${mineAccent} 55%, transparent)`,
+            }
+          : undefined
+      }
       className={clsx(
         "flex w-full flex-col gap-2 rounded-xl border bg-ink/55 p-3 text-left transition-colors hover:border-fog/35 hover:bg-ink-2/70",
         live ? "border-live/40" : "border-line",
@@ -201,7 +197,6 @@ export function WeekView({
   slug,
   onOpenWeek,
   onOpenGame,
-  morphCardId,
 }: WeekViewProps) {
   const locale = useLocale();
   const t = useStrings();
@@ -289,8 +284,7 @@ export function WeekView({
         : null,
     [view, favourite],
   );
-  const favouriteOnBye =
-    !!favourite && !!view?.byeTeams.includes(favourite);
+  const favouriteOnBye = !!favourite && !!view?.byeTeams.includes(favourite);
 
   const days = useMemo(() => {
     const groups = new Map<string, ScoreboardGame[]>();
@@ -384,8 +378,7 @@ export function WeekView({
             <section className="flex flex-col gap-2">
               <h3 className="font-mono text-[11.5px] tracking-[0.16em] text-mist uppercase">
                 {t.yourTeam}
-                {pinned &&
-                  ` · ${dayLabel(pinned.kickoff, locale, t.dateTbd)}`}
+                {pinned && ` · ${dayLabel(pinned.kickoff, locale, t.dateTbd)}`}
               </h3>
               {pinned ? (
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -394,7 +387,6 @@ export function WeekView({
                     teams={teams}
                     favourite={favourite}
                     onOpenGame={onOpenGame}
-                    morphCardId={morphCardId}
                   />
                 </div>
               ) : (
@@ -425,7 +417,6 @@ export function WeekView({
                     teams={teams}
                     favourite={favourite}
                     onOpenGame={onOpenGame}
-                    morphCardId={morphCardId}
                   />
                 ))}
               </div>
@@ -469,7 +460,13 @@ export function WeekView({
 }
 
 /** The reader's team has the week off — worth a line, not an empty section. */
-function ByeNote({ abbr, team }: { abbr: string; team: TeamEntry | undefined }) {
+function ByeNote({
+  abbr,
+  team,
+}: {
+  abbr: string;
+  team: TeamEntry | undefined;
+}) {
   const t = useStrings();
   return (
     <div

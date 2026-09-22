@@ -30,8 +30,7 @@ teams are in the field, which are chasing it, and which are already out.
   projection or a win probability.
 - **Any game opens** — tap a card on the standings page, or a played game in the
   bracket, for a colour-split scoreboard, the quarter-by-quarter linescore and a
-  scoring timeline that names who threw and caught every touchdown. Where the
-  browser supports it, the card morphs into the dialog.
+  scoring timeline that names who threw and caught every touchdown.
 - **Any week, forwards or back** — next week's fixtures, last month's results,
   or the Wild Card round, grouped by day in your own timezone with bye teams and
   division games called out. Arrows, ← / →, or a swipe.

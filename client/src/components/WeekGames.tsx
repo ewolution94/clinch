@@ -13,12 +13,6 @@ interface WeekGamesProps {
   teams: Map<string, TeamEntry>;
   label: string;
   onOpenGame: (id: string) => void;
-  /**
-   * The single card allowed to carry a `view-transition-name` right now. A name
-   * lifts its element into the transition layer, above everything — so naming
-   * every card would float all of them over the opening modal.
-   */
-  morphCardId: string | null;
 }
 
 function Side({
@@ -63,7 +57,6 @@ export const WeekGames = memo(function WeekGames({
   teams,
   label,
   onOpenGame,
-  morphCardId,
 }: WeekGamesProps) {
   const locale = useLocale();
   const favourite = useFavourite();
@@ -121,14 +114,13 @@ export const WeekGames = memo(function WeekGames({
                 onClick={() => onOpenGame(game.id)}
                 data-game-id={game.id}
                 aria-label={`${game.away} at ${game.home} — game detail`}
-                style={{
-                  ...(game.id === morphCardId && {
-                    viewTransitionName: `game-${game.id}`,
-                  }),
-                  ...(mineAccent && {
-                    borderColor: `color-mix(in srgb, ${mineAccent} 55%, transparent)`,
-                  }),
-                }}
+                style={
+                  mineAccent
+                    ? {
+                        borderColor: `color-mix(in srgb, ${mineAccent} 55%, transparent)`,
+                      }
+                    : undefined
+                }
                 className={clsx(
                   "flex w-[148px] shrink-0 flex-col gap-1.5 rounded-xl border bg-ink/55 p-2.5 text-left transition-colors hover:border-fog/35 hover:bg-ink-2/70 sm:w-auto",
                   game.state === "in" ? "border-live/40" : "border-line",

@@ -86,21 +86,15 @@ export function useRoute(): Router {
   }, []);
 
   /**
-   * Closes *synchronously*, then tidies the URL. It used to close by calling
-   * `history.back()` and waiting for `popstate`, which broke two things:
+   * Closes *synchronously*, then tidies the URL.
    *
-   * - **The closing morph never ran.** `back()` is asynchronous, so when App
-   *   calls this inside the view-transition callback nothing has changed yet.
-   *   The browser captured the dialog as its own "after" state and morphed it
-   *   into itself, and the dialog vanished a moment later. Measured in headless
-   *   Chrome: at capture, the panel was still in the DOM holding the name.
-   * - **Closing a shared `?game=` link left the site.** That entry is the tab's
-   *   own, not one this app pushed, so "back" went to wherever the reader came
-   *   from. Confirmed as a real `back_forward` navigation.
-   *
-   * Now the state changes here, inside the transition, and the URL follows: our
-   * own entry is popped (so the Android back gesture still behaves), and an
-   * arrived-on one is rewritten in place.
+   * It used to close by calling `history.back()` and waiting for `popstate`.
+   * That left a shared `?game=` link leaving the site entirely: the entry is
+   * the tab's own, not one this app pushed, so "back" went to wherever the
+   * reader came from — confirmed as a real `back_forward` navigation. Now the
+   * state changes here and the URL follows: our own entry is popped (so the
+   * Android back gesture still behaves), and an arrived-on one is rewritten in
+   * place.
    */
   const closeGame = useCallback(() => {
     setGame(null);

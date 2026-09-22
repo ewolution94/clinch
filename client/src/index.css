@@ -143,6 +143,16 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /*
+   * A focus ring only when the keyboard is driving. Closing the game dialog
+   * hands focus back to the card that opened it, and without this the card
+   * kept a ring around it afterwards — a border stuck on the thing you just
+   * closed. Keyboard users still get the ring, from :focus-visible.
+   */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
   button {
     font: inherit;
     color: inherit;
@@ -231,58 +241,54 @@
     display: none;
   }
 
-  /* The dialog is unstyled by default; these are its own layout + entrance. */
-  /* A normal fixed overlay rather than a top-layer dialog — see the comment in
-     GameModal.tsx: the top layer is invisible to view transitions. */
-  /* Deliberately effect-free: no opacity, no filter, no animation. It is only a
-     positioning context, so that the panel inside it is captured cleanly by a
-     view transition. The dim and blur are `.game-scrim`, drawn by App. */
-  .game-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
+  /*
+   * The game dialog is a real <dialog>, opened with showModal(), so the
+   * browser gives us the top layer, the focus trap, Escape and focus handed
+   * back to the card. The element itself is the full-screen container: no
+   * chrome of its own, the panel and the close button laid out inside it.
+   *
+   * It was a hand-built overlay while the dialog morphed out of its card,
+   * because view transitions can't see the top layer. That morph is gone.
+   */
+  .game-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
     overflow: hidden;
-    /* Not an effect — it paints nothing. A drag anywhere but the dialog's own
-       scroller has nothing to pan, so the page behind stays put whatever the
-       browser makes of the scroll lock (lib/scrollLock.ts). */
+    /* A drag anywhere but the panel's own scroller has nothing to pan, so the
+       page behind stays put whatever the browser makes of the scroll lock. */
     touch-action: none;
   }
 
+  /* Ours is the veil below; the UA's own dim would double it. */
+  .game-dialog::backdrop {
+    background: transparent;
+  }
+
   /*
-   * The game dialog's dim and blur. It lives in App, outside the dialog and
-   * outside any view transition, and it never animates on the way in: opening
-   * shows it on the very first frame. Closing fades the dim out over the
-   * panel's morph home, keeping the blur until the fade is done, then drops
-   * both — the delays on visibility and backdrop-filter are what hold them.
-   *
-   * It is live page content throughout, never a snapshot (see the view
-   * transition notes below), which is what keeps the blur steady on WebKit.
-   * It used to sit inside the dialog and fade in over 0.2s, inside the
-   * transition's own root cross-fade, so the panel stood open over a
-   * still-sharp page and the blur arrived a beat late.
+   * The dim and blur, as an ordinary element rather than `::backdrop` — one
+   * thing, in one place, that behaves the same in every engine. It is there on
+   * the dialog's first frame and never animates in: a fade here used to leave
+   * the panel open over a still-sharp page.
    */
-  .game-scrim {
+  .game-dialog__veil {
     position: fixed;
     inset: 0;
-    z-index: 59;
     pointer-events: none;
     background: color-mix(in srgb, var(--color-abyss) 72%, transparent);
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity 0.22s ease,
-      visibility 0s linear 0.22s,
-      backdrop-filter 0s linear 0.22s;
-  }
-  .game-scrim[data-open] {
-    opacity: 1;
-    visibility: visible;
     /* Unprefixed only. The build (Lightning CSS) adds -webkit- itself for
        older Safari; write both by hand and it keeps just the last one — which
        is how this blur was -webkit- only, and so absent in Chrome, until
        2026-09-22. */
     backdrop-filter: blur(6px);
-    transition: none;
   }
 
   .game-dialog__panel:focus {
@@ -347,18 +353,9 @@
     overscroll-behavior: contain;
   }
 
-  /* Where a shared-element morph runs, it *is* the entrance — playing the
-     fallback on top of it fights the browser's own interpolation. */
-  html.vt .game-dialog__panel {
-    animation: none;
-  }
-
   /* Phone: a sheet that owns the screen, the close button riding above it. */
   @media (width < 40rem) {
-    .game-overlay {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    .game-dialog[open] {
       justify-content: flex-end;
       gap: 0.75rem;
     }
@@ -374,10 +371,7 @@
   }
 
   @media (width >= 40rem) {
-    .game-overlay {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    .game-dialog[open] {
       justify-content: center;
       gap: 0.85rem;
       padding: 3vh 1rem;
@@ -657,45 +651,3 @@
   transition-duration: 0.01ms !important;
 }
 
-/* Shared-element morph between a game card and its dialog. */
-::view-transition-group(*) {
-  animation-duration: 0.32s;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.22s;
-}
-
-/*
- * The game morph never snapshots the page. With the root unnamed, the page and
- * the dialog's scrim keep rendering live underneath, and only the card→panel
- * group animates above them — the scrim's own fade-out on close included.
- *
- * Snapshotting the root was the source of "it blurs, unblurs, then blurs
- * again" on an iPhone. WebKit paints view-transition snapshots with compositing
- * layers flattened, and backdrop-filter exists only as a compositing layer
- * there — so the captured page had the dim but not the blur, and the blur came
- * back when the live page returned at the end. Chrome kept it, which is why it
- * never showed up in headless testing. It also spares both engines two
- * full-screen images cross-fading on every open and close.
- */
-:root[data-morph] {
-  view-transition-name: none;
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"])::view-transition-group(*),
-  :root:not([data-motion="full"])::view-transition-old(*),
-  :root:not([data-motion="full"])::view-transition-new(*) {
-    animation-duration: 0.01ms !important;
-  }
-}
-
-:root[data-motion="reduced"]::view-transition-group(*),
-:root[data-motion="reduced"]::view-transition-old(*),
-:root[data-motion="reduced"]::view-transition-new(*) {
-  animation-duration: 0.01ms !important;
-}
