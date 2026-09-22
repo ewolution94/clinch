@@ -378,6 +378,41 @@ short. For what the app does and how it's built, see `README.md`.
 - **Fonts and logos are served locally** (two variable woff2 files, 32 webp
   marks, ~290 kB total). The page makes no third-party requests — no Google
   Fonts, no ESPN CDN hotlinking.
+- **The tests cover what goes quiet and then has to be right.** `tests/`, run
+  with `npm test`. Four choices in it are deliberate:
+  - **Node's own runner, and no test framework.** `node --test` with `tsx` for
+    the TypeScript. The suite added three devDependencies to the repo root and
+    nothing to either package; the same reasoning as no UI framework and no
+    icon package.
+  - **The fixtures are real responses, not shapes invented to pass.** The 2025
+    standings are ESPN's own JSON, trimmed to the fields `espn.ts` declares.
+    The listings are the anchor tags lifted verbatim out of a live TV Spielfilm
+    page — including a Sunday-night game printed on Sunday and timed 02:00 on
+    Monday — and out of a genuinely past-horizon request, which answers with 25
+    other channels' programmes and no RTL row at all. The ran.joyn page is kept
+    with its own typos ("Septmeber", "Los Ageles Rams"), because surviving
+    those is the documented behaviour. Re-cut them from live sources rather
+    than editing them by hand.
+  - **The 2025 season is the golden table, and it earns its place.** Carolina
+    won the NFC South at 8-9 and is seeded above two 12-5 teams; Green Bay
+    finished 9-7-1, so the half-win currency is load-bearing; Denver and New
+    England both finished 14-3, so the bye rests entirely on the settled-seed
+    tiebreak. ESPN returns the AFC West as LAC, KC, LV, DEN — the division
+    winner last — which is what the sort-by-seed exists to fix.
+  - **Every test was checked by breaking the code.** 36 mutations, each
+    reverting one documented decision (chalk in the bracket, the parser canary,
+    ties as whole wins, `unavailable` for an unknown day, folding `.ics` by
+    character); all 36 turned the suite red. Two early versions of tests passed
+    against a broken build and were rewritten — a test nobody has seen fail is
+    not yet evidence of anything. The script was scratch, not in the repo;
+    doing it again by hand is a few minutes' work and worth it when you add a
+    test to this suite.
+
+  What it does **not** cover: anything rendered. No component, browser or
+  visual tests — layout, colour, motion and the dialog are still checked by
+  hand, and on a phone. `snapshotStore`, the SSE fan-out and `index.ts` are
+  untested too; they are mostly I/O and shutdown sequencing, and the shutdown
+  behaviour has its own reproduction in the entry above.
 
 ## Process notes
 
@@ -429,7 +464,14 @@ short. For what the app does and how it's built, see `README.md`.
 
 ### What has actually been verified
 
-All by hand — **there is no automated test suite**, so budget for that.
+**By the suite** (`npm test`, 127 tests, ~0.3s) — derivation, the bracket, the
+listings parser and the four broadcast states, the calendar export, week
+labelling and the settings guard. See the testing entry above for what it
+deliberately doesn't cover.
+
+**By hand**, everything below, and everything visual. There is no browser or
+component test, so anything about layout, colour or motion is still a person
+looking at it.
 
 - **Derivation** against the finished 2025 season: every clinch/elimination
   label correct, including the 1 seed and the 8-9 division winner. Plus a

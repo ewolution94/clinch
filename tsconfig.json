@@ -1,0 +1,22 @@
+{
+  /*
+   * Typechecks the test suite only. The two packages keep their own configs and
+   * build exactly as they did — this one exists because `tests/` reaches into
+   * both of them, so it needs the DOM (the client's settings module talks to
+   * localStorage) and Node's types (the test runner, Buffer) at the same time.
+   */
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": ["tests"]
+}

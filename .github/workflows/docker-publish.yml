@@ -4,13 +4,49 @@ on:
   push:
     branches:
       - release
+  pull_request:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Runs before anything is published. A push to `release` is the whole deploy
+  # — Watchtower picks the new image up within minutes — so this is the last
+  # point at which a broken build can be stopped without a rollback.
+  verify:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Matches the Dockerfile's build stage.
+          node-version: 22
+
+      - name: Install
+        run: npm ci && npm ci --prefix server && npm ci --prefix client
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
   build-and-push:
+    needs: verify
+    # A pull request is verified but not published; `latest` only ever moves
+    # for a push to `release`.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     permissions:

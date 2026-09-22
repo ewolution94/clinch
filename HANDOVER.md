@@ -34,7 +34,8 @@ client/src/   App · components/ · hooks/ · lib/ (settings, strings, theming,
 scripts/      measure-marks.py — regenerates lib/markWeight.ts (Python + Pillow)
 deploy/       portainer-stack.yml — the image-only stack the NAS should run
 docs/         DECISIONS.md
-.github/      docker-publish.yml — builds the image on every push to `release`
+tests/        the suite + fixtures saved from ESPN and the TV listings
+.github/      docker-publish.yml — verifies, then builds the image, on `release`
 .claude/      launch.json — lets the Claude Code preview start the dev server
 ```
 
@@ -59,10 +60,17 @@ which is the fastest way to see the bracket and playoff views with real data.
   light and creative themes; a settings-open freeze on mobile; the sticky tab bar
   (it never stuck); and the game dialog, whose card morph had never worked on a
   first open or on close.
-- **No automated test suite.** Everything was verified by hand. Performance and
-  view-transition checks were done in headless Chrome over CDP, because the
-  Claude Code browser pane throttles and freezes while hidden; its timings and
-  animation screenshots can't be trusted. The method is in `docs/DECISIONS.md`.
+- **`npm run verify` before you push.** Typecheck, lint and 127 tests (`tests/`,
+  under a second, no network), which is also the CI gate now — a red run
+  publishes no image. It covers the logic that goes quiet for months and then
+  has to be right: clinch and elimination, the bracket, the German listings
+  parser and its four states, the calendar export.
+- **Nothing rendered is tested.** No component or browser tests, so layout,
+  colour, motion and the dialog are still verified by hand, on a phone.
+  Performance and view-transition checks were done in headless Chrome over CDP,
+  because the Claude Code browser pane throttles and freezes while hidden; its
+  timings and animation screenshots can't be trusted. Method in
+  `docs/DECISIONS.md`.
 
 ## Open threads
 

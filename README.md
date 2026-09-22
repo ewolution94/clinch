@@ -114,6 +114,33 @@ npm run dev
 Client: **http://localhost:5176**. API: `http://localhost:4600` (proxied
 through `/api` in dev, same-origin in production — no CORS config either way).
 
+### Checks
+
+```bash
+npm run verify
+```
+
+Typecheck, lint and the test suite — the same three the CI gate runs before an
+image is published. Individually: `npm run typecheck`, `npm run lint`,
+`npm test`.
+
+The suite is in [`tests/`](tests), runs in about a third of a second, and needs
+no network: `node --test` with `tsx`, no test framework. It covers the parts
+that are quiet for months and then have to be right —
+
+| | |
+| --- | --- |
+| **Derivation** | Clinch and elimination labels, seeding, games back, the half-win a tie is worth. Read off the finished 2025 season as a whole table, plus hand-built ones for the branches January can't reach. |
+| **The bracket** | The pairings, the reseed after an upset, and the rule that nothing is ever assumed — no chalk, no completed tree. |
+| **German broadcasts** | The listings parser against pages saved from the live sources, and the four states a game can be in, which is where this feature's honesty lives. |
+| **The calendar export** | RFC 5545 escaping and folding, UTC stamps, the Google link. |
+| **Weeks and settings** | Relative labels across the postseason boundary, and the guard that keeps one corrupt preference from costing all of them. |
+
+Nothing rendered is covered — no component or browser tests. Layout, colour and
+motion are still checked by hand, on a phone. See
+[`docs/DECISIONS.md`](docs/DECISIONS.md) for why the fixtures are real
+responses and how the tests were themselves tested.
+
 ## Deploying (Docker)
 
 ```bash
@@ -375,6 +402,7 @@ clinch/
 │   │                       TeamLogo, TeamWatermark, BracketTree, Broadcast…
 │   ├── hooks/              useSnapshot (SSE), useRoute, useMediaQuery
 │   └── lib/                types, status ladder, bracket resolver, formatting
+├── tests/                  the suite + fixtures saved from the live sources
 ├── Dockerfile              multi-stage build → single runtime image
 └── docker-compose.yml
 ```
