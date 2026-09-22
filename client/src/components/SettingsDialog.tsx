@@ -107,7 +107,10 @@ export function SettingsDialog({
       window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    // touch-none: a drag anywhere but the settings list has nothing to pan, so
+    // the page behind can't scroll whatever the browser makes of the lock. The
+    // list is its own scroll container, and touches inside it pan it as usual.
+    <div className="fixed inset-0 z-50 flex touch-none items-end justify-center sm:items-center">
       {/* A plain scrim, not a blurred one. A full-screen backdrop-filter over
           the field's blurred, forever-animating blooms makes a phone GPU re-blur
           the entire screen every frame; at 80% it is visually the same. */}

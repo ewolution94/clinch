@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { lockScroll } from "./scrollLock";
 
 /** Everything Tab can land on inside a dialog. Shared with GameModal's trap. */
 export const FOCUSABLE =
@@ -75,20 +76,13 @@ export function useDismissable(
     };
     document.addEventListener("keydown", onKey);
 
-    // `overflow: hidden` alone doesn't hold on iOS — the body has to be pinned.
-    const offset = window.scrollY;
-    const { body } = document;
-    const previous = body.style.cssText;
-    body.style.position = "fixed";
-    body.style.top = `-${offset}px`;
-    body.style.left = "0";
-    body.style.right = "0";
+    // The page never moves, so there is no scroll position to put back.
+    const unlock = lockScroll();
 
     return () => {
       document.removeEventListener("keydown", onKey);
       delete root.dataset.overlay;
-      body.style.cssText = previous;
-      window.scrollTo({ top: offset, behavior: "instant" as ScrollBehavior });
+      unlock();
       opener?.focus?.({ preventScroll: true });
     };
   }, [open, panel]);

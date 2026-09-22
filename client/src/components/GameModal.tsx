@@ -10,6 +10,7 @@ import { useLocale, useSettings, useStrings } from "../lib/useSettings";
 import { abroadLabel } from "../lib/abroad";
 import type { Lang } from "../lib/settings";
 import { FOCUSABLE } from "../lib/useDismissable";
+import { lockScroll } from "../lib/scrollLock";
 import type {
   GameDetail,
   GameTeamDetail,
@@ -593,7 +594,6 @@ function GameSkeleton() {
 export default function GameModal({ gameId, onClose }: GameModalProps) {
   const t = useStrings();
   const overlay = useRef<HTMLDivElement>(null);
-  const scrim = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const { detail, loading, error } = useGameDetail(gameId);
 
@@ -650,31 +650,15 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
     };
     document.addEventListener("keydown", onKeyDown);
 
-    /**
-     * iOS ignores `overflow: hidden` on the body often enough that the page
-     * behind a sheet still scrolls. Pinning the body is the reliable lock; the
-     * offset preserves where the reader was, and is put back on close.
-     */
-    const scrollY = window.scrollY;
-    const previous = {
-      overflow: document.body.style.overflow,
-      position: document.body.style.position,
-      top: document.body.style.top,
-      width: document.body.style.width,
-    };
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
+    // This runs inside the view transition's update, so it must not move the
+    // page: pinning the body here repainted everything the morph was about to
+    // reveal. See lib/scrollLock.ts.
+    const unlock = lockScroll();
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       delete root.dataset.overlay;
-      document.body.style.overflow = previous.overflow;
-      document.body.style.position = previous.position;
-      document.body.style.top = previous.top;
-      document.body.style.width = previous.width;
-      window.scrollTo(0, scrollY);
+      unlock();
       // Return to the card by identity rather than to whatever was focused when
       // this mounted — by now focus is inside the panel being removed, and the
       // card may have re-rendered since.
@@ -692,16 +676,13 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       aria-modal="true"
       aria-label={t.gameDetail}
       onMouseDown={(event) => {
-        if (event.target === overlay.current || event.target === scrim.current)
-          onClose();
+        // Anywhere outside the panel is the overlay itself.
+        if (event.target === overlay.current) onClose();
       }}
     >
-      {/* The dim and blur are a *sibling* of the panel, never its ancestor.
-          An ancestor mid-way through an opacity animation is captured at that
-          opacity, so a named descendant's view-transition snapshot comes out
-          transparent — the morph runs, invisibly, and all you see is this
-          fade. */}
-      <div ref={scrim} className="game-overlay__scrim" />
+      {/* The dim and blur are not in here: App draws them as `.game-scrim`,
+          which outlives this component so it can fade out while the panel
+          morphs back into its card. See index.css. */}
       <div
         ref={panel}
         tabIndex={-1}

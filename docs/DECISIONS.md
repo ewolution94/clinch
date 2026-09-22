@@ -138,8 +138,8 @@ short. For what the app does and how it's built, see `README.md`.
   animation clock keeps running (`document.visibilityState` is always "hidden"
   there — sample `currentTime` and the matrix, don't screenshot).
 - **Creative is CSS-only, deliberately.** `field-drift`, `bloom-wander`,
-  `mark-drift` and `.hero-sweep` are keyframes gated on
-  `:root[data-theme="creative"]`. That is why "creative but reduced-motion"
+  `mark-drift`, `.hero-sweep` and — since 2026-09-22 — the sheen are keyframes
+  gated on `:root[data-theme="creative"]`. That is why "creative but reduced-motion"
   needs no code: the existing reduced-motion rules clamp every animation to
   0.01ms. Verified — 21 animations, none running meaningfully. If you add
   creative motion in JS, you have to defeat it by hand, so don't.
@@ -165,14 +165,24 @@ short. For what the app does and how it's built, see `README.md`.
   it: scroll restored, the gear behind the sheet refocused, the body re-pinned.
   Measured: 3 taps caused 21 lock mutations; now 0. App's callbacks are
   `useCallback`s as well, but the ref is what actually guards it.
-- **The settings scrim has no `backdrop-filter`, and ambient motion pauses under
-  dialogs.** A full-screen blur over two `blur(150px)` blooms that animate
-  forever means a phone GPU re-blurs the whole screen every frame. At 80%
-  opacity a plain scrim looks the same. `useDismissable` sets
-  `data-overlay` on the root and index.css pauses the sheen, field lines,
-  blooms, watermark drift and hero sweep underneath. This was not measurable
-  here — headless compositing isn't a phone GPU — so it rests on reasoning,
-  not numbers.
+- **⚠️ The page must be completely still when nothing is happening.** Outside
+  Creative there is no infinite animation anywhere, and that is measured, not
+  taste. The sheen — a 9s opacity drift on the two floodlight blooms and every
+  division banner — changed what sits behind each `backdrop-filter` on the
+  page (sticky bar, hero, division cards), so every one of those blurs was
+  recomputed every frame, forever. With compositing forced onto the CPU (see
+  Process notes), the idle dark page cost **420–460ms of CPU per second**;
+  with the sheen held still it is **0–4ms**. Knocking out each suspect alone
+  pinned it: stopping only the 150px bloom *filter* changed almost nothing;
+  removing every backdrop-filter halved it; stopping the sheen removed all of
+  it. On a 120Hz phone that was a GPU that never rested, and every dialog
+  animation had to fight it for frames — the real reason settings "still lags"
+  after the earlier fixes. If you add ambient motion, gate it on Creative, and
+  never animate anything that sits behind a backdrop-filter.
+- **The settings scrim has no `backdrop-filter`; ambient motion pauses under
+  dialogs.** At 80% a plain scrim looks the same as a blurred one.
+  `useDismissable` and GameModal set `data-overlay` on the root, and index.css
+  pauses whatever motion is left underneath — only Creative has any now.
 - **Accents are themed once, in `themedSnapshot()`.** Components read
   `team.accent` in 35 places; rewriting the snapshot is what keeps a theme from
   being a 35-site change. It is a no-op on dark and creative.
@@ -217,30 +227,47 @@ short. For what the app does and how it's built, see `README.md`.
   164px `<header>` it had nowhere to stick to and scrolled away with the logo,
   tabs and cog included (bar top 100 / 40 / −50 / −300 / −800 at scroll
   0 / 60 / 150 / 400 / 900). Header.tsx now returns a fragment, so the bar's
-  parent is the page. It keeps sticking while a dialog pins the body, because
-  its containing block still spans the viewport — measured at 0 with both
-  dialogs open, so it needs no special case. Don't wrap it back inside `<header>`
-  or any short container.
+  parent is the page. It keeps sticking while a dialog locks scrolling —
+  measured at 0 with both dialogs open, scrolled — **as long as the lock is on
+  the body, not on `<html>`** (see the scroll-lock entry). Don't wrap it back
+  inside `<header>` or any short container.
 - **Nothing above a `view-transition-name`d element may animate opacity.** The
   modal's dim/blur started life *on* the overlay that wraps the panel. At
   capture time that ancestor is at `opacity: 0` (the fade has just begun), so
   the panel's snapshot is captured transparent: the morph runs and is invisible,
   and all you see is the fade with the old page snapshot over it. The dim is now
-  a **sibling** scrim, and `.game-overlay` is deliberately effect-free — no
-  opacity, filter, backdrop-filter, transform or animation. If you add any of
-  those to it, the morph silently disappears again.
-- **Opening a game shows the dim and blur on the first frame.** The scrim used
-  to fade in (0.2s) *inside* the view transition's own 0.22s root cross-fade,
-  while the panel's ease-out morph is nearly done by ~0.1s. So the dialog stood
-  open over a still-sharp page and the blur arrived a beat later, which Eric
-  called out. The scrim now has no animation, and `morph()` in App.tsx tags
-  the root `data-morph="open"|"close"` for the transition's lifetime. On open,
-  index.css drops the root cross-fade: the old page is hidden and the dimmed
-  one shown at once, so only the card→panel group animates. Closing keeps the
-  cross-fade, so the blur eases out as the panel shrinks back. Filmed in
-  headless Chrome at 10% animation speed: before, the scrim opacity went
-  0.04 → 0.37 → 0.67 while the panel had nearly finished growing; after, it's
-  1 from the first frame, with the named group still forming both ways.
+  `.game-scrim`, drawn by App outside the overlay entirely, and `.game-overlay`
+  is deliberately effect-free — no opacity, filter, backdrop-filter, transform
+  or animation. If you add any of those to it, the morph silently disappears
+  again. (`touch-action` is fine: it paints nothing.)
+- **⚠️ The game morph never snapshots the page.** `morph()` in App.tsx tags
+  the root `data-morph` for the transition's lifetime, and index.css gives the
+  root `view-transition-name: none` while it is set. The page and the scrim
+  stay live underneath; only the card→panel group animates. This is the fix
+  for Eric's "it blurs, unblurs, then blurs again" on an iPhone (Chrome on iOS
+  is WebKit). WebKit paints view-transition snapshots with compositing layers
+  flattened, and backdrop-filter exists only as a compositing layer there, so
+  the captured page kept the dim and lost the blur until the live page came
+  back at the end. Chrome kept the blur in its snapshots, which is why no
+  headless run ever showed it. Don't give the root its name back, and don't
+  put a backdrop-filter into anything that gets captured.
+- **The game scrim lives in App and never animates in.** `.game-scrim` is always
+  mounted, switched by `data-open`: on the first frame of opening it is fully
+  there; on close it fades over 0.22s while the panel morphs home, holding
+  the blur until the fade ends (delayed `visibility`/`backdrop-filter`
+  transitions). It used to be inside the dialog, fading in over 0.2s inside
+  the transition's own root cross-fade, so the panel stood open over a
+  still-sharp page. Filmed by pausing and seeking the transition over CDP
+  (Process notes): scrim 1.0 and blur(6px) at 0/16/50/120/320ms of the open;
+  0.94 → 0.64 → 0.16 → hidden on close, blur held to the end.
+- **Write `backdrop-filter` unprefixed only.** The build's CSS minifier
+  (Lightning CSS, via Tailwind v4) treats `backdrop-filter` and
+  `-webkit-backdrop-filter` as one property and keeps only the last one
+  written. Every hand-written pair here had the prefix last, so the output was
+  `-webkit-` only — which Chrome ignores. The game dialog's blur never existed
+  in desktop or Android Chrome until 2026-09-22; iPhones, reading the prefix,
+  always had it. Written unprefixed, the build emits both. Tailwind's own
+  `backdrop-blur-*` utilities were never affected.
 - **The favourite's game is pinned, never duplicated.** The week view lifts it
   out of its day group into "Your team" rather than showing it twice. A second
   card would carry the same `data-game-id` and, mid-morph, the same
@@ -313,10 +340,23 @@ short. For what the app does and how it's built, see `README.md`.
   The panel is a flex column with `overflow: hidden` and an inner
   `.game-dialog__scroll` does the scrolling. Heights use `dvh`, not `vh` —
   `vh` on iOS counts the area behind the browser chrome.
-- **Locking background scroll needs `position: fixed` on the body.**
-  `overflow: hidden` alone does not hold on iOS. The body is pinned and its
-  offset restored on close; the scroll container has `overscroll-behavior:
-  contain` and the scrim `touch-action: none`.
+- **Background scroll is locked with `overflow: hidden` on the body — not a body
+  pin, and not on `<html>`.** `lib/scrollLock.ts`. This replaced pinning the
+  body at `position: fixed; top: -scrollY`, which moved every layer on the
+  page, so WebKit re-laid out and repainted the whole visible page on every
+  open and again on close (and the game dialog did it *inside* the view
+  transition's update). The reason for the pin is gone: WebKit fixed
+  `overflow: hidden` not stopping touch scrolling in 2021 (bug 153852), and its
+  last loophole — scrolling once Safari's toolbar had collapsed — in Safari
+  26.4 (bug 240859). Belt and braces: both overlays are `touch-action: none`,
+  so a drag anywhere but the dialog's own scroller has nothing to pan, whatever
+  a browser makes of the lock. **On the body, not `<html>`:** the body's own
+  `overflow-x: hidden` is normally handed to the viewport; give `<html>` an
+  overflow and the body keeps its own and turns into a scroll container around
+  the whole page — measured: the sticky bar jumped 20px out of place, and
+  WebKit would rebuild the page into a new scrolling layer. Verified with touch
+  drags: page stays put under drags on the scrim and the sheet header, the
+  settings list still scrolls, scroll position survives close untouched.
 - **Team colour never goes *behind* a logo.** The first version put a blurred
   disc of the team's accent behind the mark, which erased the Jets, Eagles,
   Seahawks and Giants — their logos are the same hue as their brand. `TeamLogo`
@@ -439,6 +479,29 @@ All by hand — **there is no automated test suite**, so budget for that.
   good fields and defaults only bad ones.
 - **Shutdown**: SIGTERM with one, three and twelve signals, and three `tsx
   watch` reloads with a stream held open — all exit in 0s with no warnings.
+
+**Chrome on an iPhone is WebKit.** Every iOS browser is. So anything that
+differs between Blink and WebKit — view-transition snapshots, backdrop-filter,
+scroll locking — cannot be seen from headless Chrome, and it is where the
+hardest bugs here came from. The Mac has Xcode and an iOS runtime installed;
+once the Xcode licence is accepted
+(`sudo /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -license accept`
+— `xcode-select` points at the Command Line Tools, so plain `xcodebuild`
+fails), the iOS Simulator runs the real iOS WebKit and is the way to check.
+
+**GPU cost, approximated: run Chrome with `--disable-gpu`.** Compositing then
+happens on the CPU, and `SystemInfo.getProcessInfo` over CDP reports the GPU
+process's CPU time — blurs, filters and layer blending included. Diff it over
+a few idle seconds and around an interaction. That is how the always-animating
+page was found (420–460ms/s idle → 0–4ms/s). Knock suspects out one at a time
+by injecting a `<style>` and re-measuring.
+
+**Filming a transition: pause and seek it over CDP.** Racing screenshots
+against a running animation lies (captures lag the screen). Instead listen for
+`Animation.animationStarted`, `Animation.setPaused` every animation, then
+`Animation.seekAnimations` to exact times and screenshot each. It catches CSS
+transitions too. And `Page.captureScreenshot`'s `clip` is in *document*
+coordinates — on a scrolled page it photographs the wrong region.
 
 **Performance: don't time things in the Claude Code browser pane.** It is
 always `visibilityState: "hidden"`, so timers get throttled harder the longer

@@ -348,6 +348,13 @@ function Clinch() {
           </main>
         </>
 
+        {/* Always mounted, so closing can fade it out while the panel morphs
+            home — the dialog itself is gone by then. index.css has the why. */}
+        <div
+          aria-hidden="true"
+          className="game-scrim"
+          data-open={game && GameModal ? "" : undefined}
+        />
         {game && GameModal && <GameModal gameId={game} onClose={onCloseGame} />}
       </div>
     </AccentProvider>

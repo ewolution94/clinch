@@ -25,14 +25,20 @@ export function FieldBackdrop() {
       />
 
       {/* Opacity is a theme variable: the same bloom that reads as floodlight on
-          near-black turns the paper theme muddy. */}
+          near-black turns the paper theme muddy. Half of it is the sheen's
+          midpoint, where the blooms now rest outside Creative — the drift used
+          to override this inline value entirely, so the light theme's quarter
+          strength never actually applied. */}
       <div
         className="field-bloom animate-sheen absolute -top-48 left-1/2 h-[620px] w-[900px] -translate-x-1/2 rounded-full bg-brand/10 blur-[150px]"
-        style={{ opacity: "var(--backdrop-bloom)" }}
+        style={{ opacity: "calc(var(--backdrop-bloom) * 0.5)" }}
       />
       <div
         className="animate-sheen absolute -bottom-64 -left-40 h-[520px] w-[520px] rounded-full bg-jade/[0.07] blur-[150px]"
-        style={{ animationDelay: "-4.5s", opacity: "var(--backdrop-bloom)" }}
+        style={{
+          animationDelay: "-4.5s",
+          opacity: "calc(var(--backdrop-bloom) * 0.5)",
+        }}
       />
 
       <div
