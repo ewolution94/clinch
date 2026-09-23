@@ -13,10 +13,15 @@ Eric watches the NFL from Germany and reads this on his phone. It's live at
 **clinch.ewolution.cloud**.
 
 Views: standings (`/`), schedule for any week (`/week/:slug`), playoff picture
-(`/playoffs`) and a playable bracket (`/bracket`). Any game opens a detail
-dialog (`?game=`) that morphs out of its card. On top of that: German TV badges
-(is the game on RTL / RTL+?), and settings — theme (dark / light / creative),
-English or German, which view to open on, default conference, and motion.
+(`/playoffs`), a playable bracket (`/bracket`) and settings (`/settings`). Any
+game opens a native `<dialog>` (`?game=`). On top of that: German TV badges (is
+the game on RTL / RTL+?), a favourite team, calendar export, and settings —
+theme (dark / light / creative), English or German, which view to open on,
+default conference, and motion.
+
+Any view also takes `?season=2023` and shows that finished season instead —
+2021 to 2025 are archived in full. It installs to a home screen and opens
+offline, showing the last table it saw.
 
 ## Stack and layout
 
@@ -60,7 +65,7 @@ which is the fastest way to see the bracket and playoff views with real data.
   light and creative themes; a settings-open freeze on mobile; the sticky tab bar
   (it never stuck); and the game dialog, whose card morph had never worked on a
   first open or on close.
-- **`npm run verify` before you push.** Typecheck, lint and 127 tests (`tests/`,
+- **`npm run verify` before you push.** Typecheck, lint and 139 tests (`tests/`,
   under a second, no network), which is also the CI gate now — a red run
   publishes no image. It covers the logic that goes quiet for months and then
   has to be right: clinch and elimination, the bracket, the German listings

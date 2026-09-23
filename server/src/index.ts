@@ -8,6 +8,7 @@ import { gameEvent, googleCalendarPage, toIcs, type GameEvent } from "./calendar
 import type { Request } from "express";
 import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
+import { archiveStore } from "./archiveStore.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const clientDist = join(here, "..", "..", "client", "dist");
@@ -36,6 +37,9 @@ app.get("/api/snapshot", (_req, res) => {
     res.status(503).json({ error: "warming up" });
     return;
   }
+  // Live data, and the offline shell keeps its own copy — a browser holding a
+  // second one behind our back is how a stale table arrives looking current.
+  res.setHeader("cache-control", "no-store");
   res.json(snapshot);
 });
 
@@ -53,6 +57,52 @@ app.get("/api/week/:seasonType/:week", async (req, res) => {
     res.json(await store.week(seasonType, week));
   } catch (error) {
     console.error("[clinch] week failed:", describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
+/**
+ * A finished season. Built once and then held, because it cannot change — so
+ * unlike everything else here it is worth letting a browser keep a copy too.
+ */
+app.get("/api/season/:year", async (req, res) => {
+  const year = Number.parseInt(req.params.year, 10);
+  if (!archiveStore.offers(year)) {
+    res.status(404).json({ error: "no such season" });
+    return;
+  }
+
+  try {
+    const snapshot = await archiveStore.snapshot(year);
+    res.setHeader("cache-control", "public, max-age=86400");
+    // Added here rather than baked into the cached season: which year is
+    // current changes, and a finished season does not.
+    res.json({ ...snapshot, currentSeason: store.current?.season.year ?? year });
+  } catch (error) {
+    console.error(`[clinch] season ${year} failed:`, describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
+app.get("/api/season/:year/week/:seasonType/:week", async (req, res) => {
+  const year = Number.parseInt(req.params.year, 10);
+  const seasonType = Number.parseInt(req.params.seasonType, 10);
+  const week = Number.parseInt(req.params.week, 10);
+  if (!archiveStore.offers(year)) {
+    res.status(404).json({ error: "no such season" });
+    return;
+  }
+  // Both land in an upstream URL, so both are checked rather than trusted.
+  if ((seasonType !== 2 && seasonType !== 3) || !Number.isFinite(week) || week < 1 || week > 25) {
+    res.status(400).json({ error: "bad week" });
+    return;
+  }
+
+  try {
+    res.setHeader("cache-control", "public, max-age=86400");
+    res.json(await archiveStore.week(year, seasonType, week));
+  } catch (error) {
+    console.error(`[clinch] season ${year} week failed:`, describeError(error));
     res.status(502).json({ error: "upstream unavailable" });
   }
 });

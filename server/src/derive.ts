@@ -218,8 +218,6 @@ function applyPlayoffStatus(teams: TeamEntry[]): void {
   if (!cut) return;
 
   const outsiders = bySeed.slice(PLAYOFF_SPOTS);
-  const bestOutsiderCeiling = outsiders.reduce((max, t) => Math.max(max, ceilingPoints(t)), 0);
-  const cutFloor = floorPoints(cut);
 
   for (const team of teams) {
     const inPlayoffs = team.seed <= PLAYOFF_SPOTS;
@@ -243,7 +241,14 @@ function applyPlayoffStatus(teams: TeamEntry[]): void {
       continue;
     }
 
-    if (ceilingPoints(team) < cutFloor) team.status = "eliminated";
+    /*
+     * `finishesAhead` rather than a bare ceiling-against-floor comparison, so
+     * that a season which is *over* settles too. Seattle finished 2023 at 9-8,
+     * level with the Packers, who took the last NFC place on tiebreakers — with
+     * the raw comparison its ceiling only equalled the cut's floor, so it read
+     * as "on the bubble" in January. Nobody is on the bubble in January.
+     */
+    if (finishesAhead(cut, team)) team.status = "eliminated";
     else if (team.gamesBack <= 1) team.status = "bubble";
     else if (team.gamesBack <= 3) team.status = "hunt";
     else team.status = "longshot";

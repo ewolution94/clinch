@@ -288,6 +288,31 @@ describe("a season still being played", () => {
     assert.equal(statuses(afc).MIA, "eliminated");
   });
 
+  it("leaves nobody on the bubble once the season is over", () => {
+    // Seattle finished 2023 at 9-8, level with the Packers, who took the last
+    // NFC place on tiebreakers. Comparing ceiling against floor alone, its best
+    // case only *equalled* the cut's worst case, so it read as "on the bubble"
+    // in January — with no games left to play. The seed had already settled it.
+    const finished: TeamSpec[] = [
+      { abbr: "SF", wins: 12, losses: 5, seed: 1 },
+      { abbr: "DAL", wins: 12, losses: 5, seed: 2 },
+      { abbr: "DET", wins: 12, losses: 5, seed: 3 },
+      { abbr: "TB", wins: 9, losses: 8, seed: 4 },
+      { abbr: "PHI", wins: 11, losses: 6, seed: 5 },
+      { abbr: "LAR", wins: 10, losses: 7, seed: 6 },
+      { abbr: "GB", wins: 9, losses: 8, seed: 7 },
+      { abbr: "SEA", wins: 9, losses: 8, seed: 8 },
+      { abbr: "NO", wins: 9, losses: 8, seed: 9 },
+    ];
+    const nfc = buildConferences(standings(finished), [])[1];
+
+    assert.equal(find(nfc, "SEA").gamesRemaining, 0);
+    assert.equal(find(nfc, "SEA").gamesBack, 0, "level on record with the 7 seed");
+    assert.equal(statuses(nfc).SEA, "eliminated");
+    assert.equal(statuses(nfc).NO, "eliminated");
+    assert.equal(statuses(nfc).GB, "clinched", "and the team that got in is in");
+  });
+
   it("orders a division by the seed rather than by the record", () => {
     // Two teams level on record, seeded apart by tiebreakers ESPN has already
     // applied — and fed in the wrong order, as ESPN really does. Sorting by

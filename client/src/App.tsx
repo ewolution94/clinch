@@ -20,6 +20,7 @@ import { Skeleton } from "./components/Skeleton";
 import { ConferenceSwitch } from "./components/ConferenceSwitch";
 import { WeekView } from "./components/WeekView";
 import { SettingsView } from "./components/SettingsView";
+import { ArchiveBand } from "./components/SeasonSwitch";
 
 // Kept out of the main bundle: most visits never open a game.
 type GameModalComponent = (typeof import("./components/GameModal"))["default"];
@@ -65,7 +66,18 @@ function Clinch() {
   const { settings, hydrated, update } = useSettings();
   const locale = useLocale();
   const t = useStrings();
-  const { snapshot: raw, connection } = useSnapshot();
+  const {
+    route,
+    navigate,
+    game,
+    openGame,
+    closeGame,
+    weekSlug,
+    openWeek,
+    season,
+    openSeason,
+  } = useRoute();
+  const { snapshot: raw, connection } = useSnapshot(season);
   // Accents are picked for the dark page; on light they are remapped once here
   // so every `team.accent` read downstream is already correct.
   const snapshot = useMemo(
@@ -75,8 +87,6 @@ function Clinch() {
   const [GameModal, setGameModal] = useState<GameModalComponent | null>(
     () => loadedGameModal,
   );
-  const { route, navigate, game, openGame, closeGame, weekSlug, openWeek } =
-    useRoute();
   const [conference, setConference] = useState<ConferenceId>("AFC");
   const wide = useMediaQuery(DESKTOP_QUERY);
 
@@ -97,9 +107,10 @@ function Clinch() {
         : settings.conference;
     setConference(wanted);
 
-    // Only ever from the bare root. A shared link to /week/3 or /bracket is the
-    // reader asking for that page, and outranks a default.
-    if (window.location.pathname !== "/") return;
+    // Only ever from the bare root. A shared link to /week/3, /bracket or an
+    // archived season is the reader asking for that page, and outranks a
+    // default.
+    if (window.location.pathname !== "/" || window.location.search) return;
     const target =
       settings.landing === "last"
         ? (settings.lastRoute ?? "standings")
@@ -150,7 +161,9 @@ function Clinch() {
               ? "Settings"
               : "Standings";
     document.title = snapshot
-      ? `${view} · ${snapshot.week.label} — Clinch`
+      ? snapshot.archived
+        ? `${view} · ${snapshot.season.year} — Clinch`
+        : `${view} · ${snapshot.week.label} — Clinch`
       : "Clinch";
   }, [snapshot, route]);
 
@@ -208,9 +221,16 @@ function Clinch() {
             connection={connection}
             route={route}
             onRoute={onRoute}
+            onSeason={openSeason}
           />
 
           <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
+            {season !== null && route !== "settings" && (
+              <div className="mb-5">
+                <ArchiveBand year={season} onLeave={() => openSeason(null)} />
+              </div>
+            )}
+
             {/* Settings doesn't wait for the league: it works offline too. */}
             {route === "settings" ? (
               <SettingsView
@@ -287,9 +307,21 @@ function Clinch() {
 
                 <footer className="border-t border-line-soft pt-5 text-center">
                   <p className="font-mono text-[13px] tracking-[0.1em] text-mist">
-                    {snapshot.season.label.toUpperCase()} ·{" "}
-                    {snapshot.week.label.toUpperCase()} OF {snapshot.week.total}{" "}
-                    · UPDATED {formatClock(snapshot.generatedAt, locale)}
+                    {/* A finished season has no "updated" worth printing — the
+                        clock would be when this container happened to build it. */}
+                    {snapshot.archived ? (
+                      <>
+                        {snapshot.season.year} · {t.archive} ·{" "}
+                        {snapshot.season.label.toUpperCase()}
+                      </>
+                    ) : (
+                      <>
+                        {snapshot.season.label.toUpperCase()} ·{" "}
+                        {snapshot.week.label.toUpperCase()} OF{" "}
+                        {snapshot.week.total} · UPDATED{" "}
+                        {formatClock(snapshot.generatedAt, locale)}
+                      </>
+                    )}
                   </p>
                 </footer>
               </div>

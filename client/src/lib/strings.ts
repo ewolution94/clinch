@@ -31,6 +31,15 @@ export const STRINGS = {
     routeBracketLong: "Bracket",
     routeSettings: "Settings",
 
+    /* season archive */
+    season: "Season",
+    thisSeason: "This season",
+    archive: "ARCHIVE",
+    archiveNote:
+      "The {year} season, finished — final table, every result, and the bracket as it was played.",
+    backToCurrent: "BACK TO THIS SEASON",
+    archiveFailed: "Couldn't load that season",
+
     /* loading + errors */
     loadingLeague: "Loading the league",
     loadingWeek: "Loading week",
@@ -172,6 +181,15 @@ export const STRINGS = {
     routeBracketLong: "Bracket",
     // The phone tab label; the full "Einstellungen" doesn't fit five across.
     routeSettings: "Optionen",
+
+    /* season archive */
+    season: "Saison",
+    thisSeason: "Aktuelle Saison",
+    archive: "ARCHIV",
+    archiveNote:
+      "Die Saison {year}, abgeschlossen — Endtabelle, alle Ergebnisse und der Bracket, wie er gespielt wurde.",
+    backToCurrent: "ZURÜCK ZUR AKTUELLEN SAISON",
+    archiveFailed: "Diese Saison konnte nicht geladen werden",
 
     /* loading + errors */
     loadingLeague: "Liga wird geladen",

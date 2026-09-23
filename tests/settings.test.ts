@@ -54,17 +54,19 @@ describe("loading preferences", () => {
     }
   });
 
-  it("turns an unset lastRoute into standings on the way back in", () => {
-    // Not what you'd expect from the round trip, and harmless: JSON keeps the
-    // null, `normalize` only counts `undefined` as unset, so a stored null
-    // becomes "standings". Both mean the same thing to the only reader of this
-    // field — landing "last" with nothing remembered opens the standings — so
-    // this records the behaviour rather than asserting the tidier version.
+  it("keeps an unset lastRoute unset through a round trip", () => {
+    // JSON keeps a null, so "nothing remembered yet" used to come back as
+    // "standings" — harmless, since that is where landing "last" sends you
+    // with nothing remembered, but not what was stored.
     withStorage();
     saveSettings({ ...DEFAULT_SETTINGS, lastRoute: null });
 
+    assert.equal(loadSettings().lastRoute, null);
+  });
+
+  it("still defaults a lastRoute that names no view", () => {
+    withStorage(JSON.stringify({ lastRoute: "nonsense" }));
     assert.equal(loadSettings().lastRoute, "standings");
-    assert.equal(DEFAULT_SETTINGS.lastRoute, null, "though the default really is unset");
   });
 
   it("keeps the good fields of a half-corrupt value and defaults only the bad", () => {

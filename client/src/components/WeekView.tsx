@@ -201,11 +201,25 @@ export function WeekView({
   const locale = useLocale();
   const t = useStrings();
   const calendar = snapshot.calendar;
+  /** Null for the live season; the year for an archived one. */
+  const season = snapshot.archived ? snapshot.season.year : null;
+  // A finished season has no "this week" to be ahead of or behind, so it gets
+  // no relative label and no way back to one.
   const now = useMemo(
-    () => currentWeek(calendar, snapshot.week.number, snapshot.season.type),
-    [calendar, snapshot.week.number, snapshot.season.type],
+    () =>
+      snapshot.archived
+        ? null
+        : currentWeek(calendar, snapshot.week.number, snapshot.season.type),
+    [calendar, snapshot.week.number, snapshot.season.type, snapshot.archived],
   );
-  const selected = findBySlug(calendar, slug) ?? now ?? calendar[0] ?? null;
+  /*
+   * Where a season opens when no week is named. The live one opens on the week
+   * being played; a finished one opens on its *last* week — the Super Bowl —
+   * because that is where the season arrived, and week 1 of 2023 is an
+   * arbitrary place to be put down in a season whose ending is the point.
+   */
+  const fallback = snapshot.archived ? calendar[calendar.length - 1] : calendar[0];
+  const selected = findBySlug(calendar, slug) ?? now ?? fallback ?? null;
   const index = selected
     ? calendar.findIndex((e) => weekSlug(e) === weekSlug(selected))
     : -1;
@@ -216,6 +230,7 @@ export function WeekView({
   const { view, loading } = useWeek(
     selected?.seasonType ?? 2,
     selected?.week ?? 1,
+    season,
   );
 
   // Which way the last move went, so the incoming week enters from that side.
@@ -231,9 +246,9 @@ export function WeekView({
 
   // Warm the neighbours so the arrows land instantly.
   useEffect(() => {
-    if (previous) prefetchWeek(previous.seasonType, previous.week);
-    if (next) prefetchWeek(next.seasonType, next.week);
-  }, [previous, next]);
+    if (previous) prefetchWeek(previous.seasonType, previous.week, season);
+    if (next) prefetchWeek(next.seasonType, next.week, season);
+  }, [previous, next, season]);
 
   // ← / → step through the season.
   useEffect(() => {
@@ -245,6 +260,11 @@ export function WeekView({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [previous, next, go]);
+
+  const warm = useCallback(
+    (seasonType: number, week: number) => prefetchWeek(seasonType, week, season),
+    [season],
+  );
 
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onPointerDown = (event: React.PointerEvent) => {
@@ -316,21 +336,25 @@ export function WeekView({
             direction="prev"
             target={previous}
             onSelect={() => go(previous, "back")}
-            onHover={prefetchWeek}
+            onHover={warm}
           />
           <div className="flex min-w-0 flex-1 flex-col items-center">
             <h2 className="font-display text-[clamp(24px,6vw,34px)] leading-none font-bold tracking-[-0.02em] text-paper">
               {selected.label}
             </h2>
             <span className="mt-1.5 font-mono text-[11.5px] tracking-[0.14em] text-mist">
-              {relative ? relative.toUpperCase() : "THIS WEEK"}
+              {snapshot.archived
+                ? String(snapshot.season.year)
+                : relative
+                  ? relative.toUpperCase()
+                  : "THIS WEEK"}
             </span>
           </div>
           <WeekArrow
             direction="next"
             target={next}
             onSelect={() => go(next, "forward")}
-            onHover={prefetchWeek}
+            onHover={warm}
           />
         </div>
 

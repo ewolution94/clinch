@@ -46,8 +46,13 @@ teams are in the field, which are chasing it, and which are already out.
   when it's known, and a link back.
 - **Games abroad flagged** — Munich, London, Madrid, Mexico City and the rest
   carry a flag and the city, in German where it has a German name.
-- **Installs to a home screen** — a web manifest and icons, so it opens
-  full-screen like an app.
+- **Installs to a home screen, and opens without a signal** — a web manifest,
+  icons and a service worker, so it opens full-screen like an app and shows the
+  last table you saw on a train with no reception, marked as old rather than
+  passed off as current.
+- **Every season back to 2021** — the finished ones are browsable in full:
+  final table, every result, and the bracket as it was actually played. Pick a
+  year in the header.
 - **Live during games** — scores and states stream over SSE; the page never
   needs a refresh.
 - **Built for a phone first** — the tables drop columns as the space narrows
@@ -66,6 +71,9 @@ teams are in the field, which are chasing it, and which are already out.
 | `/week/:slug` | **Schedule.** Any week of the season — `/week/5`, `/week/wild-card` — grouped by day in your own timezone, with byes, division games flagged, and every game opening the same detail modal. |
 | `/settings` | **Settings.** Theme, language, favourite team, which view to open on, default conference and motion. |
 
+Any of them takes `?season=2023` and shows that finished season instead — see
+[The archive](#the-archive).
+
 ### What the week browser does and doesn't do
 
 It changes **which games you are looking at**. The standings, seeds and bracket
@@ -76,6 +84,32 @@ Standings *as of* a past week are deliberately absent. ESPN only ever exposes
 the **current** `playoffSeed`; records could be recomputed from results, but
 seeds could not, and inventing historical ones would break the rule the rest of
 the app rests on. A week is a schedule, not a time machine for the table.
+
+## The archive
+
+The five finished seasons before this one — 2021 to 2025 — can be read in full.
+Pick a year next to the week in the header, or link straight to one:
+`/?season=2023`, `/bracket?season=2022`. A band across the top says which season
+you are in and gets you back to the current one.
+
+What an archived season **is**: that season's final table with every label
+settled, all 272 results, and the bracket as it was actually played, Super Bowl
+included. The schedule opens on its last week rather than its first, because the
+ending is the point.
+
+What it **isn't**: the app pointed at an old year. There are no TV badges —
+German listings don't go back, and the games are long played — nothing streams,
+because nothing changes, and the season's own week list is what it was.
+
+The list stops at 2021 on purpose. ESPN's endpoints go back much further, but
+the further back you go the less the data matches what this app assumes: the
+17th game arrived in 2021, and the seventh playoff seed in 2020. A season with a
+different shape would render, and be quietly wrong.
+
+Each one is built once — 22 upstream requests, about a second and a half — and
+then held for as long as the container lives, because a finished season cannot
+change. That is also why it is the only response here a browser is allowed to
+cache.
 
 ### How the bracket fills itself in
 
@@ -135,6 +169,7 @@ that are quiet for months and then have to be right —
 | **German broadcasts** | The listings parser against pages saved from the live sources, and the four states a game can be in, which is where this feature's honesty lives. |
 | **The calendar export** | RFC 5545 escaping and folding, UTC stamps, the Google link. |
 | **Weeks and settings** | Relative labels across the postseason boundary, and the guard that keeps one corrupt preference from costing all of them. |
+| **The archive** | That only finished seasons can be asked for, that a season is assembled once and survives a week that didn't answer. |
 
 Nothing rendered is covered — no component or browser tests. Layout, colour and
 motion are still checked by hand, on a phone. See
@@ -178,6 +213,7 @@ run changes nothing on the host until someone re-pulls the image.
 | `CLINCH_BROADCAST`         | *(on)*    | Set to `off` to stop looking German broadcasts up entirely.  |
 | `CLINCH_BROADCAST_TTL_MS`  | `21600000`| How long a day of TV listings is trusted.                    |
 | `CLINCH_OUTLETS`           | `RTL,RTL+`| Which outlets count as watchable — also `Nitro`, `Sky`.      |
+| `CLINCH_ARCHIVE_SEASONS`   | `2021…2025` | Finished seasons offered in the season picker.            |
 
 ## Where the data comes from
 
@@ -190,6 +226,12 @@ ESPN's public NFL endpoints — `standings?level=3` for the division tables,
 `scoreboard` for schedule and scores (including the postseason rounds that fill
 the bracket in), and `summary?event=` behind `/api/game/:id` for a single game's
 detail. No key, no account, no scraping.
+
+`/api/season/:year` is a finished season built from the same endpoints —
+standings for the year, all 18 weeks, and the four postseason rounds — and
+`/api/season/:year/week/:seasonType/:week` is one of its weeks. Only the years
+in `CLINCH_ARCHIVE_SEASONS` are served; the year lands in an upstream URL, so it
+is checked rather than trusted.
 
 `/api/game/:id/calendar.ics?lang=de|en` turns that same detail, plus the week's
 broadcast, into a one-event calendar file, and `/api/game/:id/google-calendar`
@@ -395,6 +437,7 @@ clinch/
 │   ├── index.ts            API, SSE, static serving
 │   └── types.ts
 ├── client/public/
+│   ├── sw.js               the offline shell
 │   ├── fonts/              two variable woff2 files, self-hosted
 │   └── logos/              32 team marks, 160px webp, ~230 kB total
 ├── client/src/

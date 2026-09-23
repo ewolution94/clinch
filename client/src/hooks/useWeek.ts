@@ -1,22 +1,23 @@
 import { useEffect, useState } from "react";
+import { weekUrl } from "../lib/api";
 import type { WeekView } from "../lib/types";
 
 const cache = new Map<string, WeekView>();
 const inFlight = new Map<string, Promise<WeekView>>();
 
-function key(seasonType: number, week: number): string {
-  return `${seasonType}:${week}`;
+function key(seasonType: number, week: number, season: number | null): string {
+  return `${season ?? "live"}:${seasonType}:${week}`;
 }
 
-async function load(seasonType: number, week: number): Promise<WeekView> {
-  const id = key(seasonType, week);
+async function load(seasonType: number, week: number, season: number | null): Promise<WeekView> {
+  const id = key(seasonType, week, season);
   const cached = cache.get(id);
   if (cached) return cached;
 
   const existing = inFlight.get(id);
   if (existing) return existing;
 
-  const request = fetch(`/api/week/${seasonType}/${week}`)
+  const request = fetch(weekUrl(seasonType, week, season))
     .then(async (res) => {
       if (!res.ok) throw new Error(String(res.status));
       const view = (await res.json()) as WeekView;
@@ -32,8 +33,8 @@ async function load(seasonType: number, week: number): Promise<WeekView> {
 }
 
 /** Warms a week without rendering it, so the arrows feel instant. */
-export function prefetchWeek(seasonType: number, week: number): void {
-  void load(seasonType, week).catch(() => undefined);
+export function prefetchWeek(seasonType: number, week: number, season: number | null): void {
+  void load(seasonType, week, season).catch(() => undefined);
 }
 
 interface WeekState {
@@ -42,23 +43,27 @@ interface WeekState {
   error: boolean;
 }
 
-export function useWeek(seasonType: number, week: number): WeekState {
+export function useWeek(
+  seasonType: number,
+  week: number,
+  season: number | null,
+): WeekState {
   const [loaded, setLoaded] = useState<{
     id: string;
     view: WeekView | null;
     error: boolean;
   } | null>(() => {
-    const cached = cache.get(key(seasonType, week));
+    const cached = cache.get(key(seasonType, week, season));
     return cached
-      ? { id: key(seasonType, week), view: cached, error: false }
+      ? { id: key(seasonType, week, season), view: cached, error: false }
       : null;
   });
 
   useEffect(() => {
     let cancelled = false;
-    const id = key(seasonType, week);
+    const id = key(seasonType, week, season);
 
-    load(seasonType, week)
+    load(seasonType, week, season)
       .then((view) => {
         if (!cancelled) setLoaded({ id, view, error: false });
       })
@@ -69,9 +74,10 @@ export function useWeek(seasonType: number, week: number): WeekState {
     return () => {
       cancelled = true;
     };
-  }, [seasonType, week]);
+  }, [seasonType, week, season]);
 
-  const current = loaded && loaded.id === key(seasonType, week) ? loaded : null;
+  const current =
+    loaded && loaded.id === key(seasonType, week, season) ? loaded : null;
   return {
     view: current?.view ?? null,
     loading: current === null,

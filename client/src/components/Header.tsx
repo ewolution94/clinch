@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { clsx } from "clsx";
 import { useStrings } from "../lib/useSettings";
 import { ClinchMark } from "./ClinchMark";
+import { SeasonSelect } from "./SeasonSwitch";
 import type { Route } from "../hooks/useRoute";
 import type { ConnectionState, Snapshot } from "../lib/types";
 
@@ -10,6 +11,8 @@ interface HeaderProps {
   connection: ConnectionState;
   route: Route;
   onRoute: (route: Route) => void;
+  /** Null for the live season; a year while an archived one is being read. */
+  onSeason: (year: number | null) => void;
 }
 
 // Where the season is now, then where it's heading. Labels come from the string
@@ -21,6 +24,7 @@ export function Header({
   connection,
   route,
   onRoute,
+  onSeason,
 }: HeaderProps) {
   const t = useStrings();
   const tabs = [
@@ -43,6 +47,7 @@ export function Header({
     { id: "settings" as const, label: t.settings, short: t.routeSettings },
   ].sort((a, b) => TAB_IDS.indexOf(a.id) - TAB_IDS.indexOf(b.id));
   const live = snapshot?.live ?? false;
+  const archived = snapshot?.archived ?? false;
   const weekLabel = snapshot ? snapshot.week.label : "Loading";
   const progress =
     snapshot && snapshot.week.number > 0
@@ -76,7 +81,11 @@ export function Header({
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            {live ? (
+            {archived ? (
+              <span className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-gold">
+                {t.archive}
+              </span>
+            ) : live ? (
               <span className="flex items-center gap-1.5 rounded-full border border-live/30 bg-live/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-live">
                 <span className="animate-live-dot h-1.5 w-1.5 rounded-full bg-live" />
                 {t.live}
@@ -107,9 +116,19 @@ export function Header({
                     : "OFFLINE"}
               </span>
             )}
-            <span className="font-mono text-[12.5px] tracking-[0.12em] whitespace-nowrap text-mist">
+            <span className="flex items-center gap-1.5 font-mono text-[12.5px] tracking-[0.12em] whitespace-nowrap text-mist">
               {weekLabel.toUpperCase()}
-              {snapshot ? ` · ${snapshot.season.year}` : ""}
+              {snapshot && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <SeasonSelect
+                    year={snapshot.season.year}
+                    current={snapshot.currentSeason}
+                    archive={snapshot.archiveSeasons}
+                    onChange={onSeason}
+                  />
+                </>
+              )}
             </span>
           </div>
         </div>

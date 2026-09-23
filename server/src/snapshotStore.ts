@@ -240,6 +240,8 @@ export class SnapshotStore {
         games: weekGames,
         postseason,
         calendar: live.calendar,
+        archiveSeasons: config.archiveSeasons.filter((y) => y !== season),
+        currentSeason: season,
       });
 
       this.schedule(anyLive ? config.liveRefreshMs : config.refreshMs);

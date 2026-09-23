@@ -81,10 +81,10 @@ function normalize(raw: unknown): Settings {
         ? obj.favourite
         : null,
     tvOnly: obj.tvOnly === true,
+    // `== null` rather than `=== undefined`: JSON keeps a null, so a stored
+    // "nothing remembered yet" came back as "standings" instead of unset.
     lastRoute:
-      obj.lastRoute === undefined
-        ? null
-        : one(LANDINGS, obj.lastRoute, "standings"),
+      obj.lastRoute == null ? null : one(LANDINGS, obj.lastRoute, "standings"),
     lastConference:
       obj.lastConference === "AFC" || obj.lastConference === "NFC"
         ? obj.lastConference

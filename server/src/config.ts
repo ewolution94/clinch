@@ -13,6 +13,23 @@ function outlets(): ("RTL" | "RTL+" | "Nitro" | "Sky")[] {
   return picked.length > 0 ? [...picked] : ["RTL", "RTL+"];
 }
 
+/**
+ * Finished seasons that can be browsed as an archive, newest first.
+ *
+ * A fixed list rather than "everything ESPN has": the endpoints go back much
+ * further, but the further back you go the more the data drifts from what this
+ * app assumes — 2020 had no 17th game, and the field was 14 teams only from
+ * 2020 on. These five are the seasons whose shape matches the app's.
+ */
+function archiveSeasons(): number[] {
+  const raw = process.env.CLINCH_ARCHIVE_SEASONS ?? "2021,2022,2023,2024,2025";
+  const years = raw
+    .split(",")
+    .map((s) => Number.parseInt(s.trim(), 10))
+    .filter((y) => Number.isFinite(y) && y >= 2000 && y <= 2100);
+  return [...new Set(years)].sort((a, b) => b - a);
+}
+
 export const config = {
   port: int("PORT", 4600),
   /** Pin a season (e.g. 2025) instead of following the live one. */
@@ -36,4 +53,6 @@ export const config = {
    * parser already sees every channel.
    */
   outlets: outlets(),
+  /** Finished seasons offered in the season picker, newest first. */
+  archiveSeasons: archiveSeasons(),
 };

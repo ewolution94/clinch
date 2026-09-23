@@ -378,6 +378,67 @@ short. For what the app does and how it's built, see `README.md`.
 - **Fonts and logos are served locally** (two variable woff2 files, 32 webp
   marks, ~290 kB total). The page makes no third-party requests — no Google
   Fonts, no ESPN CDN hotlinking.
+- **The offline shell is a service worker, and it is network-first on purpose.**
+  `client/public/sw.js`. Installed to a home screen the app looked like an app
+  but opened like a website — a blank screen until the network answered. Three
+  rules, and the reasoning is the part worth keeping: navigations and API data
+  go to the **network first** and fall back to the cache, because cache-first
+  would mean a deploy cannot reach a reader who keeps the app installed, and
+  this ships several times a week; fingerprinted files under `/assets/` go
+  cache-first, since a hit is always correct; and a snapshot served from the
+  cache is rewritten with `stale: true` on the way out, so the page shows the
+  banner it already has for old data instead of presenting last Sunday's table
+  as this Sunday's. Three things learned the hard way while verifying it:
+  - **`fetch(request)` inside a worker can be answered by the browser's own
+    HTTP cache**, so "network first" quietly meant "HTTP cache first" — a stale
+    snapshot arrived looking live and a redeployed shell never landed. Every
+    network-first fetch passes `cache: "no-store"`. `/api/snapshot` is now sent
+    `no-store` by the server too, for the same reason.
+  - **A navigation request cannot be re-created with different options** (the
+    Request constructor rejects mode `navigate`), so the shell is fetched by URL
+    instead. One cached entry answers every route, which also stops a `?game=`
+    link putting a copy of the shell in the cache per game.
+  - **The worker precaches what the shell names.** It is a plain file the
+    bundler never sees, so it cannot know this build's hashed filenames — it
+    reads them back out of the HTML it just fetched. Without that, a reader who
+    installs the app and is next offline gets an unstyled page, because nothing
+    but the HTML was cached.
+  Verified in headless Chrome by **stopping the server**, not by CDP's offline
+  emulation: `Network.emulateNetworkConditions` applies to the page's network
+  context and not the worker's, so the worker kept fetching happily and every
+  offline assertion passed for the wrong reason. Checked: installs and takes
+  control, precaches shell + JS + CSS + fonts, boots with the server down,
+  serves the last snapshot marked stale, never serves `/api/stream` from cache,
+  and a redeploy still reaches an installed reader.
+- **An archived season is a separate store, not a season argument.** 2021–2025,
+  `server/src/archiveStore.ts`, `/api/season/:year`. `SnapshotStore`'s week
+  cache is keyed by week alone — correct while only one season is ever in it,
+  and silently wrong the moment 2023's week 3 can land in the same slot as this
+  week's. The archive keys by year as well, caches the *promise* rather than the
+  result (so two readers on a cold container don't both spend 22 requests), and
+  deletes a season that failed to build so one bad afternoon upstream doesn't
+  break that year until the container restarts. A finished season cannot change,
+  so it is held forever and is the one response here a browser may cache.
+  The list stops at 2021 deliberately: the 17th game arrived that year and the
+  seventh seed in 2020, so an older season would render and be quietly wrong.
+- **⚠️ Elimination asks `finishesAhead`, not ceiling-against-floor.** Found by
+  the archive: Seattle finished 2023 at 9-8, level with the Packers, who took
+  the last NFC place on tiebreakers — and the raw comparison only had Seattle's
+  ceiling *equalling* the cut's floor, so it read "on the bubble" in January
+  with no games left to play. `finishesAhead` already handled the settled case
+  for clinching (both teams done, level, the seed decides); elimination now uses
+  it too. Live-season behaviour is unchanged — it is a strict generalisation.
+- **The season lives in the URL, not in settings.** `?season=2023`, preserved
+  across every navigation by `useRoute`. It is a property of what you are
+  looking at rather than a preference: a link to the 2023 table should open the
+  2023 table for whoever you send it to. Changing season drops the week, because
+  `/week/14` of 2023 and of this season are different pages and the one you were
+  reading may not exist in the other.
+- **The season picker is a native `<select>`.** It is the one control that has
+  to open on top of everything else, and every hard bug in this app has been an
+  overlay. On iOS the native one is a wheel the reader already knows. It sits
+  where the year was already printed in the header, so it costs no width on a
+  phone — the sticky row below is already five tabs wide.
 - **The tests cover what goes quiet and then has to be right.** `tests/`, run
   with `npm test`. Four choices in it are deliberate:
   - **Node's own runner, and no test framework.** `node --test` with `tsx` for
@@ -399,7 +460,7 @@ short. For what the app does and how it's built, see `README.md`.
     England both finished 14-3, so the bye rests entirely on the settled-seed
     tiebreak. ESPN returns the AFC West as LAC, KC, LV, DEN — the division
     winner last — which is what the sort-by-seed exists to fix.
-  - **Every test was checked by breaking the code.** 36 mutations, each
+  - **Every test was checked by breaking the code.** 46 mutations, each
     reverting one documented decision (chalk in the bracket, the parser canary,
     ties as whole wins, `unavailable` for an unknown day, folding `.ics` by
     character); all 36 turned the suite red. Two early versions of tests passed
@@ -464,9 +525,9 @@ short. For what the app does and how it's built, see `README.md`.
 
 ### What has actually been verified
 
-**By the suite** (`npm test`, 127 tests, ~0.3s) — derivation, the bracket, the
-listings parser and the four broadcast states, the calendar export, week
-labelling and the settings guard. See the testing entry above for what it
+**By the suite** (`npm test`, 139 tests, ~0.7s) — derivation, the bracket, the
+listings parser and the four broadcast states, the calendar export, the season
+archive, week labelling and the settings guard. See the testing entry above for what it
 deliberately doesn't cover.
 
 **By hand**, everything below, and everything visual. There is no browser or

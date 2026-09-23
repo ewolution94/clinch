@@ -221,6 +221,19 @@ export interface Snapshot {
   postseason: PostseasonGame[];
   /** Every week that can be browsed, in order. */
   calendar: CalendarWeek[];
+  /**
+   * Set only on a finished season served from the archive. The live snapshot
+   * leaves it off, so "is this the current season?" is one check everywhere.
+   */
+  archived?: boolean;
+  /** Finished seasons that can be browsed instead of this one, newest first. */
+  archiveSeasons: number[];
+  /**
+   * The season actually being played. Carried on every snapshot, including an
+   * archived one — otherwise a reader who lands straight on a 2023 link has no
+   * way to know which year to offer them as the way back.
+   */
+  currentSeason: number;
 }
 
 /* ------------------------------------------------------------ game detail */
