@@ -266,6 +266,18 @@ short. For what the app does and how it's built, see `README.md`.
   failed — so they get `attachment` and show their own download UI. The dialog
   also says where the file went once it's tapped, because the page cannot tell
   whether it landed.
+- **⚠️ The calendar buttons are desktop-only, from 1280px up.** Neither route
+  works on Eric's phone — the Google link is swallowed by the Google Calendar
+  app (see the entry below) and the `.ics` lands somewhere Chrome for iOS never
+  surfaces, so the tap reads as having done nothing. Removed from the phone on
+  2026-09-23 at his request: a button that silently fails is worse than no
+  button. The gate is `xl:` in `GameModal`'s `CalendarLinks`, matching the
+  app's own `DESKTOP_QUERY`, and it is a width standing in for the real
+  condition — an iPad in landscape still sees them. Done in CSS, not with a
+  media-query hook, so there is no frame where the buttons exist and then
+  vanish. If this is revisited, the *file* is the half worth keeping: it is the
+  only one that can reach a calendar on an iPhone at all, via Safari turning an
+  inline `text/calendar` into its own "Add to Calendar" sheet.
 - **⚠️ A link cannot put an event into the Google Calendar app on an iPhone.**
   Settled on the device, twice. iOS hands a link to `calendar.google.com` to
   the installed Google Calendar app, and the app ignores `action=TEMPLATE`

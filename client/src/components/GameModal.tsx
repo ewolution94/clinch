@@ -298,14 +298,22 @@ function venuePlace(
  * Two ways into a calendar, both built by the server so they carry the German
  * broadcast (see server/src/calendar.ts).
  *
- * The file leads, because it is the one that can reach a calendar on an
- * iPhone: Safari adds it straight away, and other browsers save it to be
- * opened from downloads. The Google link is second — it fills in Google's own
- * new-event page, which is the quickest route on a desktop or on Android, but
- * on an iPhone with the Google Calendar app installed iOS hands the link to
- * the app, and the app drops everything in it. That is Google's behaviour, not
- * something this page can route around; a redirect and a scripted navigation
- * were both tried.
+ * ⚠️ **Desktop only, from 1280px up.** Neither route works on Eric's phone:
+ * iOS hands a `calendar.google.com` link to the Google Calendar app, which
+ * drops the prefilled event and just opens (a redirect and a scripted
+ * navigation were both tried — it is the app's behaviour, not something this
+ * page can route around), and the `.ics` file lands somewhere Chrome for iOS
+ * never surfaces, so the tap reads as having done nothing. A button that
+ * silently fails is worse than no button, so on a phone there is no button.
+ *
+ * The gate is a width, which is a proxy for the real condition and an imperfect
+ * one — it is the app's own `DESKTOP_QUERY` breakpoint, so an iPad held in
+ * landscape still sees them. Done in CSS rather than with a media-query hook so
+ * there is no frame where the buttons exist and then vanish.
+ *
+ * Whenever this is revisited: the file is the half worth saving, since it is
+ * the only one that can reach a calendar on an iPhone at all — through Safari,
+ * which turns an inline `text/calendar` into its own "Add to Calendar" sheet.
  */
 function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
   const t = useStrings();
@@ -315,7 +323,7 @@ function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
   const pill =
     "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 font-mono text-[12px] tracking-[0.08em] transition-colors";
   return (
-    <div className="mt-0.5 flex flex-col gap-2">
+    <div className="mt-0.5 hidden flex-col gap-2 xl:flex">
       <div className="flex flex-wrap items-center gap-2">
         <a
           href={`/api/game/${gameId}/calendar.ics?lang=${lang}`}
