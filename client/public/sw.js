@@ -173,9 +173,20 @@ function isCacheableApi(url) {
   return CACHEABLE_API.some((prefix) => url.pathname.startsWith(prefix)) || GAME_JSON.test(url.pathname);
 }
 
+/**
+ * Looked up by opening the cache rather than via `caches.match`'s `cacheName`
+ * option — the option is spec'd but is one more thing that has behaved
+ * differently between engines, and this path is the one that has to work on the
+ * engine we cannot test here.
+ */
+async function matchIn(cacheName, request) {
+  const cache = await caches.open(cacheName);
+  return cache.match(request);
+}
+
 /** Cache first: these never change under a given URL. */
 async function fromCacheFirst(request) {
-  const hit = await caches.match(request, { cacheName: ASSETS });
+  const hit = await matchIn(ASSETS, request);
   if (hit) return hit;
 
   const response = await fetch(request);
@@ -204,7 +215,7 @@ async function fromNetworkFirst(request, cacheName, onFallback) {
     }
     return response;
   } catch (error) {
-    const hit = await caches.match(request, { cacheName });
+    const hit = await matchIn(cacheName, request);
     if (hit) return onFallback ? onFallback(hit) : hit;
     throw error;
   }
@@ -256,7 +267,7 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         } catch {
-          return (await caches.match(SHELL_URL, { cacheName: SHELL })) ?? Response.error();
+          return (await matchIn(SHELL, SHELL_URL)) ?? Response.error();
         }
       })(),
     );

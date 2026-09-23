@@ -54,18 +54,31 @@ export function AbroadBadge({
       className="flex h-[19px] shrink-0 items-center gap-1 rounded-full border border-line px-1.5 leading-none"
       title={`${city}, ${country}`}
     >
-      {flag && (
-        <span aria-hidden="true" className="text-[11px]">
-          {flag}
-        </span>
-      )}
-      {compact ? (
-        <span className="sr-only">{city}</span>
-      ) : (
-        <span className="mono-tabular text-[11px] tracking-[0.06em] text-fog uppercase">
-          {city}
-        </span>
-      )}
+      {/*
+       * The flag and the city sit on a shared *baseline*, not on a shared box
+       * centre. A flag emoji and the mono face put their ink in very different
+       * places within a line box — the emoji's is about 16px tall inside an
+       * 11px box — so centring the two boxes leaves the flag visibly off
+       * against the text beside it, and by a different amount on each engine.
+       * Measured: relative to the baseline both inks are centred at the same
+       * offset (-4.0px at 11px), so aligning the baselines aligns the ink, and
+       * does it without a per-platform nudge. The pill itself stays centred in
+       * its row, and 19px tall to match the broadcast badge next to it.
+       */}
+      <span className="flex items-baseline gap-1">
+        {flag && (
+          <span aria-hidden="true" className="text-[11px]">
+            {flag}
+          </span>
+        )}
+        {compact ? (
+          <span className="sr-only">{city}</span>
+        ) : (
+          <span className="mono-tabular text-[11px] tracking-[0.06em] text-fog uppercase">
+            {city}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

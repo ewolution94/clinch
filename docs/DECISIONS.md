@@ -413,6 +413,17 @@ short. For what the app does and how it's built, see `README.md`.
     visit ever, and the difference between an app that works offline and one
     that only looks like it does. Don't delete it because "the page already
     fetches that" — the page fetching it is exactly what cannot be relied on.
+  - **⚠️ The snapshot is kept in `localStorage` as well, and that is the copy
+    that actually has to work.** The worker's cache is the browser's to evict,
+    its lifecycle differs between engines, and after the install-time precache
+    above was deployed the app *still* opened empty in flight mode on Eric's
+    iPhone — with no way to see why from here, since none of it reproduces in
+    Chrome. `localStorage` is synchronous, behaves the same everywhere, and is
+    already how settings survive. `useSnapshot` hydrates from it on the first
+    frame, writes on the first snapshot of a session and again on the way out.
+    Verified by deleting the worker's data cache outright and going offline:
+    the table still renders, marked stale. Treat the worker's copy as the
+    optimisation and this as the guarantee.
   - **Live scores are handed over when the app goes into the background.** They
     arrive over SSE, which the worker never sees, so its copy would otherwise be
     whatever the last page *load* fetched — an app left open through a Sunday
@@ -437,6 +448,42 @@ short. For what the app does and how it's built, see `README.md`.
   app is backgrounded, boots with the server down showing the last table marked
   stale, never serves `/api/stream` from cache, and a redeploy still reaches an
   installed reader.
+- **⚠️ The week strip needs `contain: paint`, or the whole page pans sideways.**
+  `WeekGames`' horizontal strip is sixteen 148px cards behind `overflow-x:
+  auto`. That clips them *visually*, but their scrollable overflow — about
+  2000px of it — still counted towards the document's own scrollable area, so
+  the page could be dragged left with nothing visible out there. Measured:
+  `documentElement.scrollWidth` 2004 against a 500px viewport, and `<header>`
+  physically moving 400px on `scrollTo(400, 0)`. **`overflow-x: hidden` on
+  `<html>` and `<body>` does not stop it**, and neither did the bleed margins,
+  a `max-width`, `overscroll-behavior`, or clipping any ancestor; paint
+  containment is the one thing that does, because it stops the overflow
+  propagating at all (scrollWidth drops to 490). Only applied while it is a
+  scroller — from `sm` up it is an ordinary grid. Reproduce by reading
+  `header.getBoundingClientRect().left` after `window.scrollTo(400, 0)`:
+  `window.scrollX` alone lies, it reports 400 whether or not anything moved.
+- **A form control under 16px makes iOS zoom, and a zoomed page pans.** The
+  season picker was a 12.5px `<select>`, which is the size the header chrome is
+  drawn at — and focusing it zoomed the whole page in on iPhone. The select is
+  now transparent, 16px, and sits *over* a visible span that carries the design
+  at 12.5px. Don't merge them back together, and don't reach for
+  `maximum-scale=1` on the viewport: it buys the same thing by taking pinch
+  zoom away from everyone.
+- **`overflow-x: clip` on `<html>` and `<body>`, never `hidden`.** `hidden`
+  against a visible other axis computes that axis to `auto`, which makes the
+  element a scroll container — and an overflow on `<html>` then leaves `<body>`
+  as a scroller wrapping the page, which is what threw the sticky bar 20px out
+  (see `lib/scrollLock.ts`). `clip` creates no scroll container. Verified after
+  the change: vertical scrolling lands exactly at 0/150/400/900 and the sticky
+  bar sits at 106 then pins to 0, unchanged.
+- **The flag and the city in the abroad badge share a baseline, not a box
+  centre.** A flag emoji's ink is about 16px tall inside an 11px line box while
+  the mono face's is 8px, so centring the two *boxes* leaves the flag visibly
+  off against the text — by a different amount on each engine. Measured with
+  canvas metrics: relative to the baseline both inks are centred at the same
+  offset (−4.0px at 11px), so aligning baselines aligns the ink without a
+  per-platform nudge. The pill itself stays centred in its row and 19px tall to
+  match the broadcast badge.
 - **An archived season is a separate store, not a season argument.** 2021–2025,
   `server/src/archiveStore.ts`, `/api/season/:year`. `SnapshotStore`'s week
   cache is keyed by week alone — correct while only one season is ever in it,

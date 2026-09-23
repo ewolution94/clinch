@@ -128,6 +128,19 @@
     color-scheme: dark;
     /* The header is sticky; anchor jumps shouldn't hide behind it. */
     scroll-padding-top: 7rem;
+    /*
+     * Nothing pans sideways. `clip`, never `hidden`, and the difference is the
+     * whole reason this line is safe to have here: `overflow-x: hidden` with a
+     * visible `overflow-y` computes the other axis to `auto`, which makes this
+     * a scroll container — and an overflow on <html> then leaves <body> as a
+     * scroller wrapping the whole page, which is what sent the sticky bar 20px
+     * out of place (see lib/scrollLock.ts). `clip` creates no scroll container,
+     * so both axes stay as they were.
+     *
+     * Ignored by anything older than Safari 16, which falls back to the body
+     * rule below — the behaviour we already had.
+     */
+    overflow-x: clip;
   }
 
   body {
@@ -138,7 +151,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* `hidden` first as the fallback; `clip` wins wherever it is understood,
+       and unlike `hidden` it leaves this element out of the scrolling chain. */
     overflow-x: hidden;
+    overflow-x: clip;
     /* Standings are dense; stop iOS from reflowing them on rotate. */
     -webkit-text-size-adjust: 100%;
   }

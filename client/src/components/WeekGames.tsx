@@ -91,7 +91,23 @@ export const WeekGames = memo(function WeekGames({
           grid — which never overflows — is left alone entirely. */}
       <div
         ref={scroller}
-        className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0"
+        /*
+         * ⚠️ `contain: paint` is what stops the whole page panning sideways.
+         *
+         * `overflow-x: auto` clips this strip *visually*, but its scrollable
+         * overflow — sixteen 148px cards, about 2000px of it — still counted
+         * towards the document's own scrollable area, so the page could be
+         * dragged left even though nothing was visible out there. Measured:
+         * document scrollWidth 2004 against a 500px viewport, and the header
+         * physically moving 400px. `overflow-x: hidden` on <html> and <body>
+         * does not help, and neither does anything else tried — paint
+         * containment is the one thing that does, because it stops the overflow
+         * propagating in the first place (scrollWidth drops to 490).
+         *
+         * Only while this is a scroller: from `sm` up it becomes an ordinary
+         * grid that has nothing to contain.
+         */
+        className="no-scrollbar -mx-4 overflow-x-auto px-4 [contain:paint] sm:mx-0 sm:overflow-visible sm:px-0 sm:[contain:none]"
         style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
       >
         <div className="flex gap-2 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))]">

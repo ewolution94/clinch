@@ -10,6 +10,44 @@ interface Loaded {
 }
 
 /**
+ * The last table this browser saw, kept where nothing can take it away.
+ *
+ * There is a copy in the service worker's cache too, and on paper that is the
+ * tidier place for it. In practice the worker is the part of this app we can
+ * least see: its caches are the browser's to evict, its lifecycle differs
+ * between engines, and every offline bug so far has been a difference between
+ * what Chrome does with it and what WebKit does. `localStorage` is synchronous,
+ * behaves the same everywhere, and is already how settings survive.
+ *
+ * So this is the belt and the worker is the braces — and it buys something on
+ * top: the table is on screen on the *first* frame of every cold open, before
+ * any request has been made, offline or not.
+ */
+const CACHE_KEY = "clinch-snapshot-v1";
+
+function readCached(): Snapshot | null {
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Snapshot;
+    // Shape check, not trust: a payload from an older build could be missing
+    // anything, and half a table is worse than a skeleton.
+    return Array.isArray(parsed?.conferences) && parsed.conferences.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCached(snapshot: Snapshot): void {
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Full, blocked, or private mode. The session still works; it just won't
+    // have anything to show the next time it opens without a signal.
+  }
+}
+
+/**
  * The season on screen.
  *
  * For the live one the snapshot arrives over SSE and is pushed again whenever
@@ -29,11 +67,13 @@ export function useSnapshot(season: number | null): {
   snapshot: Snapshot | null;
   connection: ConnectionState;
 } {
-  const [loaded, setLoaded] = useState<Loaded>({
+  // The live season opens on the last table this browser saw, before a single
+  // request has been made. An archived one has nothing cached to show.
+  const [loaded, setLoaded] = useState<Loaded>(() => ({
     season,
-    snapshot: null,
+    snapshot: season === null ? readCached() : null,
     connection: "connecting",
-  });
+  }));
   const gotStream = useRef(false);
 
   useEffect(() => {
@@ -59,22 +99,34 @@ export function useSnapshot(season: number | null): {
       .then((data: Snapshot | null) => {
         if (cancelled || !data || gotStream.current) return;
         setLoaded((current) => ({ ...current, season: null, snapshot: data }));
+        writeCached(data);
       })
       .catch(() => undefined);
 
     const source = new EventSource(STREAM_URL);
+    let stored = false;
     source.onmessage = (event) => {
       gotStream.current = true;
-      setLoaded({
-        season: null,
-        snapshot: JSON.parse(event.data) as Snapshot,
-        connection: "live",
-      });
+      const snapshot = JSON.parse(event.data) as Snapshot;
+      setLoaded({ season: null, snapshot, connection: "live" });
+      // Once per session on arrival, then again on the way out. Writing every
+      // push would put ~90 kB through localStorage every 25 seconds on a game
+      // day, and the only copy that matters is the last one.
+      if (!stored) {
+        stored = true;
+        writeCached(snapshot);
+      }
     };
     source.onopen = () =>
       setLoaded((current) => ({ ...current, connection: "live" }));
     source.onerror = () =>
-      setLoaded((current) => ({ ...current, connection: "offline" }));
+      setLoaded((current) => ({
+        ...current,
+        connection: "offline",
+        // Whatever is on screen came from the last visit, so say so — the page
+        // already has a banner for exactly this.
+        snapshot: current.snapshot ? { ...current.snapshot, stale: true } : null,
+      }));
 
     return () => {
       cancelled = true;
@@ -83,13 +135,14 @@ export function useSnapshot(season: number | null): {
   }, [season]);
 
   /*
-   * Hand the offline shell what is on screen when the app goes away.
+   * Hand over what is on screen when the app goes away — to storage, and to the
+   * service worker's own cache.
    *
-   * Live scores arrive over SSE, which the service worker never sees, so its
-   * copy would otherwise be whatever the last page load fetched — an app left
-   * open through a Sunday would still show the 19:00 table on Tuesday. Doing it
-   * on the way out rather than on every push keeps a game day from writing to
-   * the cache every 25 seconds for a copy nobody reads.
+   * Live scores arrive over SSE, which the worker never sees, so its copy would
+   * otherwise be whatever the last page *load* fetched: an app left open
+   * through a Sunday would still show the 19:00 table on Tuesday. Doing it on
+   * the way out rather than on every push keeps a game day from writing ~90 kB
+   * every 25 seconds for a copy nobody reads.
    */
   const latest = useRef<Snapshot | null>(null);
   useEffect(() => {
@@ -100,6 +153,7 @@ export function useSnapshot(season: number | null): {
     if (season !== null) return;
     const remember = () => {
       if (document.visibilityState !== "hidden" || !latest.current) return;
+      writeCached(latest.current);
       navigator.serviceWorker?.controller?.postMessage({
         type: "snapshot",
         body: JSON.stringify(latest.current),
