@@ -82,6 +82,33 @@ export function useSnapshot(season: number | null): {
     };
   }, [season]);
 
+  /*
+   * Hand the offline shell what is on screen when the app goes away.
+   *
+   * Live scores arrive over SSE, which the service worker never sees, so its
+   * copy would otherwise be whatever the last page load fetched — an app left
+   * open through a Sunday would still show the 19:00 table on Tuesday. Doing it
+   * on the way out rather than on every push keeps a game day from writing to
+   * the cache every 25 seconds for a copy nobody reads.
+   */
+  const latest = useRef<Snapshot | null>(null);
+  useEffect(() => {
+    latest.current = season === null ? loaded.snapshot : null;
+  }, [loaded.snapshot, season]);
+
+  useEffect(() => {
+    if (season !== null) return;
+    const remember = () => {
+      if (document.visibilityState !== "hidden" || !latest.current) return;
+      navigator.serviceWorker?.controller?.postMessage({
+        type: "snapshot",
+        body: JSON.stringify(latest.current),
+      });
+    };
+    document.addEventListener("visibilitychange", remember);
+    return () => document.removeEventListener("visibilitychange", remember);
+  }, [season]);
+
   // A snapshot loaded for another season is not an answer to this one.
   if (loaded.season !== season) return { snapshot: null, connection: "connecting" };
   return { snapshot: loaded.snapshot, connection: loaded.connection };

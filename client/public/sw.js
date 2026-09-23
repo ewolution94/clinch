@@ -89,11 +89,62 @@ async function precacheShell() {
   );
 }
 
+/**
+ * ⚠️ The snapshot is fetched *here*, by the worker, and that is load-bearing.
+ *
+ * The page asks for it once, when it mounts. On a first visit that request is
+ * already in flight before this worker has been installed, let alone taken
+ * control — so nothing goes through the fetch handler and nothing lands in the
+ * cache. Install the app, close it, turn on flight mode, open it again, and you
+ * get the shell with no data in it: exactly what Eric got, and what the first
+ * version of this file did.
+ *
+ * Fetching it again from in here costs one request on the first visit ever, and
+ * is the difference between an app that works offline and one that only looks
+ * like it does. Don't remove it because "the page already fetches that" — the
+ * page fetching it is precisely what cannot be relied on.
+ */
+async function precacheSnapshot() {
+  const response = await fetch("/api/snapshot", { cache: "no-store" });
+  if (!storable(response)) return;
+  const cache = await caches.open(DATA);
+  await cache.put("/api/snapshot", response);
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    precacheShell()
-      .catch(() => undefined)
-      .then(() => self.skipWaiting()),
+    Promise.all([
+      precacheShell().catch(() => undefined),
+      precacheSnapshot().catch(() => undefined),
+    ]).then(() => self.skipWaiting()),
+  );
+});
+
+/**
+ * The page handing over what it is currently showing.
+ *
+ * Live scores arrive over SSE, which this worker never sees — so without this
+ * the offline copy would be whatever the last *page load* fetched, and an app
+ * left open through a Sunday would still show the 19:00 table on Tuesday. The
+ * page posts its latest snapshot when it goes into the background, which is the
+ * moment before it might next be opened with no signal.
+ */
+self.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data || data.type !== "snapshot" || typeof data.body !== "string") return;
+  event.waitUntil(
+    caches
+      .open(DATA)
+      .then((cache) =>
+        cache.put(
+          "/api/snapshot",
+          new Response(data.body, {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        ),
+      )
+      .catch(() => undefined),
   );
 });
 

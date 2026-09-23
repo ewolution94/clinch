@@ -403,13 +403,40 @@ short. For what the app does and how it's built, see `README.md`.
     reads them back out of the HTML it just fetched. Without that, a reader who
     installs the app and is next offline gets an unstyled page, because nothing
     but the HTML was cached.
-  Verified in headless Chrome by **stopping the server**, not by CDP's offline
-  emulation: `Network.emulateNetworkConditions` applies to the page's network
-  context and not the worker's, so the worker kept fetching happily and every
-  offline assertion passed for the wrong reason. Checked: installs and takes
-  control, precaches shell + JS + CSS + fonts, boots with the server down,
-  serves the last snapshot marked stale, never serves `/api/stream` from cache,
-  and a redeploy still reaches an installed reader.
+  - **⚠️ The worker fetches the snapshot itself, and that line is load-bearing.**
+    The page asks for `/api/snapshot` once, when it mounts — and on a first
+    visit that request is already in flight before the worker is installed, let
+    alone controlling the page, so it never reaches the fetch handler and
+    nothing lands in the data cache. Eric installed the app, closed it, turned
+    on flight mode, opened it again and got the shell with no data in it. The
+    install step now fetches the snapshot too: one extra request, on the first
+    visit ever, and the difference between an app that works offline and one
+    that only looks like it does. Don't delete it because "the page already
+    fetches that" — the page fetching it is exactly what cannot be relied on.
+  - **Live scores are handed over when the app goes into the background.** They
+    arrive over SSE, which the worker never sees, so its copy would otherwise be
+    whatever the last page *load* fetched — an app left open through a Sunday
+    would still show the 19:00 table on Tuesday. `useSnapshot` posts the current
+    snapshot to the worker on `visibilitychange`, which is the moment before it
+    might next be opened with no signal, and cheaper than writing to the cache
+    every 25 seconds through a game.
+  **How to verify it, and two ways this has already been got wrong.** Drive a
+  headless Chrome through the real sequence — one ordinary visit, navigate away,
+  **stop the server**, visit again — and assert on what renders.
+  - Don't use CDP's offline emulation. `Network.emulateNetworkConditions`
+    applies to the page's network context and not the worker's, so the worker
+    keeps fetching happily and every offline assertion passes for the wrong
+    reason. Stop the server instead: that is offline for everybody.
+  - Don't let the script fetch anything by hand. The first version of this test
+    did `fetch("/api/snapshot")` after the worker took control, which populated
+    the data cache — work the real app does not do. It passed, shipped, and
+    failed on Eric's phone the same evening. **The test must do nothing the app
+    would not do.**
+  Checked, after both: installs and takes control, precaches the shell, JS, CSS
+  and fonts, caches the snapshot at install, restores the data cache when the
+  app is backgrounded, boots with the server down showing the last table marked
+  stale, never serves `/api/stream` from cache, and a redeploy still reaches an
+  installed reader.
 - **An archived season is a separate store, not a season argument.** 2021–2025,
   `server/src/archiveStore.ts`, `/api/season/:year`. `SnapshotStore`'s week
   cache is keyed by week alone — correct while only one season is ever in it,
