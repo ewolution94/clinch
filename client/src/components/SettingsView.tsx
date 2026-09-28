@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { SelectField } from "./SelectField";
 import { useSettings, useStrings } from "../lib/useSettings";
 import type { ConferenceView } from "../lib/types";
 import type {
@@ -153,11 +154,12 @@ export function SettingsView({ conferences }: SettingsViewProps) {
         </Row>
 
         <Row label={t.favouriteTeam} hint={t.favouriteHint}>
-          <select
+          <SelectField
             aria-label={t.favouriteTeam}
             value={settings.favourite ?? ""}
             onChange={(e) => set("favourite", e.target.value || null)}
-            className="w-full rounded-lg border border-line bg-abyss-2/70 px-3 py-2 font-mono text-[12.5px] text-paper sm:w-auto"
+            wrapperClassName="w-full sm:inline-block sm:w-auto"
+            className="sm:w-auto"
           >
             <option value="">{t.favouriteNone}</option>
             {conferences.flatMap((conference) =>
@@ -178,15 +180,16 @@ export function SettingsView({ conferences }: SettingsViewProps) {
                 </optgroup>
               )),
             )}
-          </select>
+          </SelectField>
         </Row>
 
         <Row label={t.opensOn} hint={t.opensOnHint}>
-          <select
+          <SelectField
             aria-label={t.opensOn}
             value={settings.landing}
             onChange={(e) => set("landing", e.target.value as Landing)}
-            className="w-full rounded-lg border border-line bg-abyss-2/70 px-3 py-2 font-mono text-[12.5px] text-paper sm:w-auto"
+            wrapperClassName="w-full sm:inline-block sm:w-auto"
+            className="sm:w-auto"
           >
             <option value="standings">{t.routeStandings}</option>
             <option value="week">{t.routeWeek}</option>
@@ -194,7 +197,7 @@ export function SettingsView({ conferences }: SettingsViewProps) {
             <option value="playoffs">{t.routePlayoffs}</option>
             <option value="bracket">{t.routeBracket}</option>
             <option value="last">{t.landingLast}</option>
-          </select>
+          </SelectField>
         </Row>
 
         <Row label={t.defaultConference} hint={t.defaultConferenceHint}>

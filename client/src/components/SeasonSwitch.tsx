@@ -67,7 +67,7 @@ export function SeasonSelect({ year, current, archive, onChange }: SeasonSelectP
       </select>
       <span
         aria-hidden="true"
-        className="mono-tabular pointer-events-none flex items-center gap-1 rounded-md border border-line bg-ink/70 py-0.5 pr-1.5 pl-1.5 text-[12.5px] tracking-[0.08em] text-mist transition-colors peer-hover:border-fog/40 peer-hover:text-paper peer-focus-visible:border-fog/60 peer-focus-visible:text-paper"
+        className="mono-tabular pointer-events-none flex items-center gap-1.5 rounded-md border border-line bg-ink/70 py-0.5 pr-2.5 pl-2 text-[12.5px] tracking-[0.08em] text-mist transition-colors peer-hover:border-fog/40 peer-hover:text-paper peer-focus-visible:border-fog/60 peer-focus-visible:text-paper"
       >
         {year}
         <span className="text-[9px]">▼</span>

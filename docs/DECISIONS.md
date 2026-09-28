@@ -630,6 +630,28 @@ short. For what the app does and how it's built, see `README.md`.
   at 12.5px. Don't merge them back together, and don't reach for
   `maximum-scale=1` on the viewport: it buys the same thing by taking pinch
   zoom away from everyone.
+- **⚠️ The scroll lock goes on `<html>`, and the reason is the line above it.**
+  `client/src/lib/scrollLock.ts`. CSS gives the *viewport's* overflow to the
+  root element, with one exception: when `<html>` is `visible` in **both** axes
+  the viewport takes `<body>`'s values instead. The lock used to sit on the
+  body for exactly that reason — and then the horizontal-panning fix gave
+  `<html>` an `overflow-x: clip`, which took it out of `visible`, cancelled the
+  exception, and turned `body { overflow: hidden }` into a no-op. **The scroll
+  lock did nothing for weeks and nobody saw it**, because `touch-action: none`
+  on the dialog still caught most drags; it only leaked when a drag began in
+  the dialog's own scroller, so it showed up as "sometimes the background
+  scrolls on mobile". Measured at 390px from scroll 600: body-hidden let a
+  wheel move the page, html-hidden held it. Two CSS changes in different files,
+  each correct alone, that broke each other — if you touch either, re-check the
+  other.
+- **The lock pays back the scrollbar it takes.** Hiding the root's overflow
+  removes the scrollbar, and on a classic one that returns its width to the
+  page: 1270 → 1280 at desktop width, everything jumping 10px on open and back
+  on close. `lockScroll` measures `innerWidth - clientWidth` *before* hiding
+  and replaces it with `padding-right`. `scrollbar-gutter: stable` is the
+  tidier answer and was tried first — Chromium computes it and does not honour
+  it on the root under `overflow: hidden`, same 10px jump. Zero on overlay
+  scrollbars, so it never runs on Eric's machines.
 - **`overflow-x: clip` on `<html>` and `<body>`, never `hidden`.** `hidden`
   against a visible other axis computes that axis to `auto`, which makes the
   element a scroll container — and an overflow on `<html>` then leaves `<body>`

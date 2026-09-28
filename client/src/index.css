@@ -107,6 +107,9 @@
     --watermark-scale: 0.62;
     /* The coloured blooms in the backdrop turn to mud on a light ground. */
     --backdrop-bloom: 0.25;
+    /* …and ruled lines across a white page read as print artefacts rather than
+       as a field, so paper keeps most of its veil. */
+    --backdrop-veil: 82%;
   }
 
   :root {
@@ -115,6 +118,21 @@
     --ring-strength: 60%;
     --watermark-scale: 1;
     --backdrop-bloom: 1;
+    /*
+     * How far the vignette closes over the yard lines.
+     *
+     * It used to close all the way to `--color-abyss`, which meant the field
+     * existed only inside an ellipse at the top of the viewport — Eric liked
+     * the graphic and could only ever see it behind the header. Stopping short
+     * of opaque keeps the falloff (brightest at the top, where the light is)
+     * while leaving the lines legible all the way down.
+     *
+     * The lines themselves were not touched. #141b28 on #05070c is about
+     * fifteen levels of delta before the layer opacity of 0.55 takes it to
+     * eight, so what shows through a card at 40–70% is around two — visible as
+     * texture, nowhere near text contrast.
+     */
+    --backdrop-veil: 46%;
   }
 }
 
@@ -126,6 +144,7 @@
   html {
     /* Set from the stored preference by the boot script and applySettings(). */
     color-scheme: dark;
+
     /* The header is sticky; anchor jumps shouldn't hide behind it. */
     scroll-padding-top: 7rem;
     /*

@@ -4,6 +4,7 @@ import { TeamLogo } from "./TeamLogo";
 import { BroadcastBadge } from "./Broadcast";
 import { AbroadBadge } from "./Marks";
 import { ScheduleHow } from "./ScheduleHow";
+import { SelectField } from "./SelectField";
 import { Shimmer } from "./Shimmer";
 import { useTeamSchedule } from "../hooks/useTeamSchedule";
 import { useFavourite, useLocale, useStrings } from "../lib/useSettings";
@@ -274,11 +275,11 @@ export function TeamSeason({
           same division grouping, so the app has one way of choosing a team.
         */}
         <div className="flex w-full max-w-[430px] flex-col items-center gap-3 self-center rounded-xl border border-line bg-ink/40 p-3">
-          <select
+          <SelectField
             aria-label={t.pickTeam}
             value={value ?? ""}
             onChange={(event) => onChange(event.target.value || null)}
-            className="w-full rounded-lg border border-line bg-abyss-2/70 px-3 py-2.5 font-mono text-[12.5px] text-paper"
+            wrapperClassName="w-full"
           >
             <option value="">{t.pickTeam}</option>
             {groups.map((division) => (
@@ -290,7 +291,7 @@ export function TeamSeason({
                 ))}
               </optgroup>
             ))}
-          </select>
+          </SelectField>
 
           {/*
             Why the tab opened on nothing. Only while there is no favourite —

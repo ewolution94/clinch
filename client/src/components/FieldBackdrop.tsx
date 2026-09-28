@@ -41,11 +41,15 @@ export function FieldBackdrop() {
         }}
       />
 
+      {/* The falloff, not a lid. See `--backdrop-veil` in index.css for why it
+          stops short of opaque, and why paper stops later than the dark page.
+          The ellipse is wider and taller than the viewport so the gradient is a
+          gentle wash rather than a visible edge partway down the screen. */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 90% 55% at 50% 0%, transparent 0%, var(--color-abyss) 80%)",
+            "radial-gradient(ellipse 130% 95% at 50% 0%, transparent 0%, color-mix(in srgb, var(--color-abyss) var(--backdrop-veil), transparent) 85%)",
         }}
       />
     </div>
