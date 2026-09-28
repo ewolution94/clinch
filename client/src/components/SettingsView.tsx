@@ -188,10 +188,11 @@ export function SettingsView({ conferences }: SettingsViewProps) {
             onChange={(e) => set("landing", e.target.value as Landing)}
             className="w-full rounded-lg border border-line bg-abyss-2/70 px-3 py-2 font-mono text-[12.5px] text-paper sm:w-auto"
           >
-            <option value="standings">{t.routeStandingsLong}</option>
-            <option value="week">{t.routeWeekLong}</option>
-            <option value="playoffs">{t.routePlayoffsLong}</option>
-            <option value="bracket">{t.routeBracketLong}</option>
+            <option value="standings">{t.routeStandings}</option>
+            <option value="week">{t.routeWeek}</option>
+            <option value="team">{t.routeTeam}</option>
+            <option value="playoffs">{t.routePlayoffs}</option>
+            <option value="bracket">{t.routeBracket}</option>
             <option value="last">{t.landingLast}</option>
           </select>
         </Row>

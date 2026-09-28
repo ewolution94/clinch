@@ -1,6 +1,6 @@
 import type { GameResult, PlayoffStatus } from "./types";
 
-import type { StringKey } from "./strings";
+import type { TextKey } from "./strings";
 
 /** One colour per result, shared by the form dots, streaks and result pills. */
 export const RESULT_COLOR: Record<GameResult, string> = {
@@ -11,7 +11,7 @@ export const RESULT_COLOR: Record<GameResult, string> = {
 
 export interface StatusMeta {
   /** Resolved through the string table so the label follows the language. */
-  labelKey: StringKey;
+  labelKey: TextKey;
   /** Full label, for the playoff view. */
   label: string;
   /** Two or three characters, for a dense standings row. */

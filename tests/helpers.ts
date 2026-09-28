@@ -157,3 +157,80 @@ export function soon(days: number, hourUtc = 17): string {
   at.setUTCHours(hourUtc, 0, 0, 0);
   return at.toISOString();
 }
+
+/* ------------------------------------------------------------- scoreboard */
+
+/** A scoreboard response in the shape `espn.ts` declares it reads. */
+export function scoreboard({
+  season,
+  seasonType,
+  week,
+  games = [],
+  calendar = true,
+}: {
+  season: number;
+  seasonType: number;
+  week: number;
+  games?: {
+    id: string;
+    home: string;
+    away: string;
+    homeScore: number;
+    awayScore: number;
+    /** Defaults to a finished game; pass "in" or "pre" for one that isn't. */
+    state?: "pre" | "in" | "post";
+  }[];
+  calendar?: boolean;
+}): string {
+  return JSON.stringify({
+    season: { year: season, type: seasonType },
+    week: { number: week, teamsOnBye: [{ abbreviation: "BUF" }] },
+    events: games.map((g) => {
+      const state = g.state ?? "post";
+      const status = {
+        type: { state, shortDetail: state === "post" ? "Final" : "3rd 04:12" },
+      };
+      return {
+        id: g.id,
+        date: `${season}-10-0${(week % 9) + 1}T17:00:00Z`,
+        week: { number: week },
+        status,
+        competitions: [
+          {
+            competitors: [
+              { homeAway: "home", team: { abbreviation: g.home }, score: String(g.homeScore) },
+              { homeAway: "away", team: { abbreviation: g.away }, score: String(g.awayScore) },
+            ],
+            status,
+            venue: { address: { city: "Somewhere", country: "USA" } },
+          },
+        ],
+      };
+    }),
+    leagues: calendar
+      ? [
+          {
+            calendar: [
+              {
+                value: "2",
+                entries: Array.from({ length: 18 }, (_, i) => ({
+                  value: String(i + 1),
+                  label: `Week ${i + 1}`,
+                  startDate: "",
+                  endDate: "",
+                })),
+              },
+              {
+                value: "3",
+                entries: [
+                  { value: "1", label: "Wild Card" },
+                  { value: "4", label: "Pro Bowl" },
+                  { value: "5", label: "Super Bowl" },
+                ],
+              },
+            ],
+          },
+        ]
+      : [],
+  });
+}

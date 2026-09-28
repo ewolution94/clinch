@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { SNAPSHOT_URL, STREAM_URL, seasonUrl } from "../lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { REFRESH_URL, SNAPSHOT_URL, STREAM_URL, seasonUrl } from "../lib/api";
 import type { ConnectionState, Snapshot } from "../lib/types";
 
 interface Loaded {
@@ -24,6 +24,23 @@ interface Loaded {
  * any request has been made, offline or not.
  */
 const CACHE_KEY = "clinch-snapshot-v1";
+
+/**
+ * How long the refresh acknowledgement stays up, at minimum, and how long it
+ * takes to fade afterwards.
+ *
+ * A refresh that answers in 80ms is the good case, and showing nothing for 80ms
+ * is indistinguishable from a dead button — so the acknowledgement, not the
+ * request, sets the pace. It only ever extends: a slow refresh is shown for
+ * exactly as long as it takes.
+ *
+ * The timing lives here rather than in the overlay because it belongs to the
+ * action. Every state change below happens either in an event handler or in a
+ * timer callback, which is also what keeps it out of the "setState inside an
+ * effect" pattern that mirroring a prop into a component would need.
+ */
+const MIN_REFRESH_MS = 700;
+const REFRESH_FADE_MS = 260;
 
 function readCached(): Snapshot | null {
   try {
@@ -66,6 +83,16 @@ function writeCached(snapshot: Snapshot): void {
 export function useSnapshot(season: number | null): {
   snapshot: Snapshot | null;
   connection: ConnectionState;
+  /**
+   * Poll upstream now and, if the stream died, build a new one. `silent` skips
+   * the on-screen acknowledgement — used when returning to the app, where a
+   * blurred overlay on every switch back would be intolerable.
+   */
+  refresh: (options?: { silent?: boolean }) => void;
+  /** Up while the refresh is being acknowledged on screen. */
+  refreshing: boolean;
+  /** Up for the fade afterwards, so the overlay can leave rather than vanish. */
+  refreshFading: boolean;
 } {
   // The live season opens on the last table this browser saw, before a single
   // request has been made. An archived one has nothing cached to show.
@@ -75,6 +102,14 @@ export function useSnapshot(season: number | null): {
     connection: "connecting",
   }));
   const gotStream = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshFading, setRefreshFading] = useState(false);
+  /*
+   * Bumped to rebuild the stream. An `EventSource` that died while the app was
+   * in the background stays dead — it is created inside the effect below, so
+   * changing this is how a new one gets made.
+   */
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,7 +167,7 @@ export function useSnapshot(season: number | null): {
       cancelled = true;
       source.close();
     };
-  }, [season]);
+  }, [season, attempt]);
 
   /*
    * Hand over what is on screen when the app goes away — to storage, and to the
@@ -163,7 +198,76 @@ export function useSnapshot(season: number | null): {
     return () => document.removeEventListener("visibilitychange", remember);
   }, [season]);
 
+  /**
+   * What the header's refresh button does, and what coming back to a
+   * backgrounded app does by itself.
+   *
+   * Two separate problems, one answer. The data may be up to two minutes old,
+   * because that is how often the server polls when nothing is being played —
+   * so this asks it to poll *now*. And the stream may be dead: iOS suspends a
+   * backgrounded app, and an `EventSource` that was cut while it slept never
+   * comes back on its own, which is how an installed app sits there showing
+   * Sunday's table on Monday with no way to tell.
+   */
+  const refresh = useCallback(
+    ({ silent = false }: { silent?: boolean } = {}) => {
+    if (season !== null) return;
+    const startedAt = Date.now();
+    if (!silent) {
+      setRefreshFading(false);
+      setRefreshing(true);
+    }
+    // A hung request must not leave the overlay up forever. The server has its
+    // own upstream timeout; this is the one for the trip to the server.
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 12_000);
+    fetch(REFRESH_URL, { method: "POST", signal: abort.signal })
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data: Snapshot) => {
+        setLoaded({ season: null, snapshot: data, connection: "live" });
+        writeCached(data);
+      })
+      .catch(() => {
+        setLoaded((current) => ({ ...current, connection: "offline" }));
+      })
+      .finally(() => {
+        clearTimeout(timer);
+        if (!silent) {
+          // Round a quick answer up to something the eye can follow, then fade.
+          const remaining = Math.max(0, MIN_REFRESH_MS - (Date.now() - startedAt));
+          setTimeout(() => {
+            setRefreshing(false);
+            setRefreshFading(true);
+            setTimeout(() => setRefreshFading(false), REFRESH_FADE_MS);
+          }, remaining);
+        }
+        // Rebuild the stream either way: if it was alive this is a no-op
+        // reconnect, and if it was dead this is the only thing that revives it.
+        setAttempt((n) => n + 1);
+      });
+    },
+    [season],
+  );
+
+  // Coming back to the app is the same situation as pressing the button, so it
+  // does the same thing — that is the whole of "why is this showing old data".
+  useEffect(() => {
+    if (season !== null) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [season, refresh]);
+
   // A snapshot loaded for another season is not an answer to this one.
-  if (loaded.season !== season) return { snapshot: null, connection: "connecting" };
-  return { snapshot: loaded.snapshot, connection: loaded.connection };
+  if (loaded.season !== season)
+    return { snapshot: null, connection: "connecting", refresh, refreshing, refreshFading };
+  return {
+    snapshot: loaded.snapshot,
+    connection: loaded.connection,
+    refresh,
+    refreshing,
+    refreshFading,
+  };
 }

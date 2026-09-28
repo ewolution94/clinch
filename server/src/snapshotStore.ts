@@ -3,15 +3,20 @@ import { buildConferences } from "./derive.js";
 import { broadcastStore } from "./broadcastStore.js";
 import { config } from "./config.js";
 import { describeError } from "./describeError.js";
+import { assembleTeamSchedule } from "./teamSchedule.js";
 import type {
   PostseasonGame,
   PostseasonRound,
   ScoreboardGame,
   Snapshot,
+  TeamSchedule,
   WeekView,
 } from "./types.js";
 
 const REGULAR_SEASON_WEEKS = 18;
+
+/** A manual refresh inside this window is answered from what we already have. */
+const MIN_MANUAL_REFRESH_MS = 5_000;
 
 interface CachedWeek {
   games: ScoreboardGame[];
@@ -60,6 +65,25 @@ export class SnapshotStore {
   stop(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+  }
+
+  /**
+   * Poll now, because a reader asked.
+   *
+   * An installed app has no pull-to-refresh, so the header has a button — and a
+   * button that only re-reads what the server already had would do nothing
+   * visible when the last poll was a minute ago. This goes upstream instead.
+   *
+   * Two things keep it from becoming a way to hammer ESPN: `refresh()` already
+   * ignores a second call while one is in flight, and a poll that happened
+   * within the last few seconds is treated as good enough. Both mean the answer
+   * to "refresh" is sometimes "you already have it", which is the correct
+   * answer and costs nobody a request.
+   */
+  async refreshNow(): Promise<Snapshot | null> {
+    const age = this.snapshot ? Date.now() - this.snapshot.generatedAt : Infinity;
+    if (age > MIN_MANUAL_REFRESH_MS) await this.refresh();
+    return this.snapshot;
   }
 
   private schedule(delayMs: number): void {
@@ -165,6 +189,23 @@ export class SnapshotStore {
       settled: fresh.settled,
       broadcasts,
     };
+  }
+
+  /**
+   * One team's whole season, in order — this season's.
+   *
+   * The weeks come from the same per-week cache everything else here uses, so
+   * whatever the poll loop has already read costs nothing. `assembleTeamSchedule`
+   * holds the rest, shared with the archive.
+   */
+  teamSchedule(abbr: string): Promise<TeamSchedule> {
+    return assembleTeamSchedule({
+      abbr,
+      season: this.snapshot?.season.year ?? config.season ?? new Date().getFullYear(),
+      week: (seasonType, week) => this.week(seasonType, week),
+      // Already in the snapshot; no need to ask again.
+      postseason: this.snapshot?.postseason ?? [],
+    });
   }
 
   private async refresh(): Promise<void> {

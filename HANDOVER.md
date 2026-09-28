@@ -1,7 +1,7 @@
 # Clinch — handover
 
-Quick orientation for a new session. Updated 2026-09-21, written before moving to
-a new MacBook. Detail lives elsewhere: **`README.md`** covers what the app does
+Quick orientation for a new session. Updated 2026-09-28. Detail lives
+elsewhere: **`README.md`** covers what the app does
 and how it's built; **`docs/DECISIONS.md`** holds the traps and hard-won
 decisions. Read the relevant part of the latter before changing anything it
 covers.
@@ -12,12 +12,13 @@ NFL standings and the playoff picture on one screen — "who's in, who's out."
 Eric watches the NFL from Germany and reads this on his phone. It's live at
 **clinch.ewolution.cloud**.
 
-Views: standings (`/`), schedule for any week (`/week/:slug`), playoff picture
-(`/playoffs`), a playable bracket (`/bracket`) and settings (`/settings`). Any
-game opens a native `<dialog>` (`?game=`). On top of that: German TV badges (is
-the game on RTL / RTL+?), a favourite team, calendar export, and settings —
-theme (dark / light / creative), English or German, which view to open on,
-default conference, and motion.
+Six views, named in full in the nav at every width: Standings (`/`), Week
+Schedule (`/week/:slug`), Team Schedule (`/team/:abbr`), In the Field
+(`/playoffs`), Playoffs — the playable bracket — (`/bracket`) and Settings
+(`/settings`). Any game opens a native `<dialog>` (`?game=`). On top of that:
+German TV badges (is the game on RTL / RTL+?), a favourite team, calendar
+export, and settings — theme (dark / light / creative), English or German,
+which view to open on, default conference, and motion.
 
 Any view also takes `?season=2023` and shows that finished season instead —
 2021 to 2025 are archived in full. It installs to a home screen and opens
@@ -57,19 +58,26 @@ which is the fastest way to see the bracket and playoff views with real data.
 
 ## Where it's at
 
-- **All work is committed and pushed.** `release` is at `d8f0655`, the tree is
-  clean, CI is green, and `ghcr.io/ewolution94/clinch:latest` is that commit
-  (digest verified).
-- **The last few sessions were polish on a live app.** In order: German broadcast
-  badges; a logo/colour consistency sweep; an SSE shutdown hang; settings with
-  light and creative themes; a settings-open freeze on mobile; the sticky tab bar
-  (it never stuck); and the game dialog, whose card morph had never worked on a
-  first open or on close.
-- **`npm run verify` before you push.** Typecheck, lint and 139 tests (`tests/`,
-  under a second, no network), which is also the CI gate now — a red run
-  publishes no image. It covers the logic that goes quiet for months and then
-  has to be right: clinch and elimination, the bracket, the German listings
-  parser and its four states, the calendar export.
+- **⚠️ There is uncommitted work in the tree.** Eric commits himself, so it was
+  left for him. `release` is at `c9f5b45`; everything since is unstaged.
+  `npm run verify` is green over all of it (188 tests, 6 lint warnings — 6 is
+  the long-standing baseline, not a regression).
+- **Some of it is server-side, so it is not live yet.** `/api/refresh`,
+  `/api/team/:abbr/schedule`, `/api/season/:year/team/:abbr/schedule` and the
+  snapshot's new fields need a new image. Until that ships, the header's
+  refresh button will fall back to showing offline and the team schedule won't
+  load.
+- **`npm run verify` before you push.** Typecheck, lint and 188 tests (`tests/`,
+  about a second, no network), which is also the CI gate — a red run publishes
+  no image. It covers the logic that goes quiet for months and then has to be
+  right: clinch and elimination, the bracket, the German listings parser and its
+  four states, the calendar export, the season archive, and the live-score
+  projection.
+- **The last sessions, in order:** a test suite and CI gate; the season archive
+  (2021–2025); the offline shell; the horizontal-scroll fix; a refresh button
+  with a blurred overlay; "apply live scores"; the "how the schedule is made"
+  explainer; and the nav rework — full labels, a bar that scrolls sideways, and
+  a team's season promoted out of the week view into a tab of its own.
 - **Nothing rendered is tested.** No component or browser tests, so layout,
   colour, motion and the dialog are still verified by hand, on a phone.
   Performance and view-transition checks were done in headless Chrome over CDP,
@@ -79,6 +87,16 @@ which is the fastest way to see the bracket and playoff views with real data.
 
 ## Open threads
 
+- **The nav's German is a judgement call, and Eric may want it different.**
+  Eric named the English tabs himself. German got: Tabelle · Wochen-Spielplan ·
+  Team-Spielplan · **Im Feld** · Playoffs · Einstellungen. "Im Feld" mirrors
+  "In the Field" and leans on the app's own tagline for the in/out metaphor —
+  the alternative was "Playoff-Bild", the established term in German NFL
+  coverage, which reads as too close to the "Playoffs" tab beside it. One
+  string in `client/src/lib/strings.ts` if he disagrees.
+- **A team's season is settled; it took three wrong homes.** Don't move it
+  back into the week view — `docs/DECISIONS.md` lists all three placements and
+  why each failed, so nobody proposes one of them again.
 - **Watchtower (auto-deploy) is written but not applied.** Eric was still due to
   apply `deploy/portainer-stack.yml` in Portainer. Until he does, a push
   deploys nothing: someone has to re-pull the image in Portainer. Ask before
@@ -87,6 +105,15 @@ which is the fastest way to see the bracket and playoff views with real data.
   motion by Eric.
 - **Broadcast badges past the ~14-day listings horizon** are unverified:
   postseason, the Munich game (15 Nov), Thanksgiving.
+- **The live-score projection duplicates the clinch arithmetic on purpose**
+  (`client/src/lib/liveStandings.ts` mirrors `server/src/derive.ts`), because
+  shipping a second copy of `conferences` would nearly double every SSE push.
+  `tests/liveStandings.test.ts` asserts the two agree; if you change one, that
+  test tells you about the other.
+- **The iOS Simulator is still not set up.** It runs the real WebKit and is the
+  only way to see the bugs that only happen on Eric's phone. One command, and it
+  needs his password:
+  `sudo /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -license accept`
 - Small, parked: arrows on the standings week strip; showing preseason. Records
   "as of" a past week was declined, because ESPN only exposes current seeds.
 

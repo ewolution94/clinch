@@ -20,16 +20,55 @@ export const STRINGS = {
     settings: "Settings",
     close: "Close",
 
-    /* routes */
-    routeStandings: "Table",
-    routeStandingsLong: "Standings",
-    routeWeek: "Week",
-    routeWeekLong: "Schedule",
-    routePlayoffs: "Picture",
-    routePlayoffsLong: "Playoff picture",
-    routeBracket: "Bracket",
-    routeBracketLong: "Bracket",
-    routeSettings: "Settings",
+    /* routes — one label per view, at every width. The nav scrolls sideways
+       when they don't all fit, rather than abbreviating them down to fit an
+       arbitrary phone. */
+    routeStandings: "Standings",
+    routeWeek: "Week Schedule",
+    routeTeam: "Team Schedule",
+    routePlayoffs: "In the Field",
+    routeBracket: "Playoffs",
+
+    /* team schedule */
+    teamSchedule: "A TEAM'S SEASON",
+    pickTeam: "Pick a team",
+    teamScheduleFailed: "Couldn't load that team's schedule",
+    teamScheduleEmpty: "Pick a team above to see their whole season — every game played, every game still to come.",
+    teamFavouriteHint: "No favourite team yet. Set one and this view opens on it.",
+    openSettings: "Open settings",
+    byeWeek: "BYE",
+    nextUp: "NEXT",
+    played: "PLAYED",
+    toCome: "TO COME",
+
+    /* how the schedule is made */
+    scheduleHowTitle: "HOW THE SCHEDULE IS MADE",
+    scheduleHowRules: [
+      {
+        title: "Six in your own division",
+        body: "Two against each of the three teams you share a division with, one home and one away. More than a third of the season before anything else is decided.",
+      },
+      {
+        title: "Two whole divisions",
+        body: "Four games against every team in one other division in your conference, and four against every team in one division of the other. Both rotate — three years to come round inside a conference, four across them — so every team meets all thirty-one others within four years.",
+      },
+      {
+        title: "Three from last year's table",
+        body: "Two against the teams that finished where you did, in your conference's two remaining divisions, and one more against a same-place finisher from the other conference. It is how the league evens out who gets the hard year.",
+      },
+      {
+        title: "Nine home games, or eight",
+        body: "Seventeen won't split evenly, so one conference hosts nine and the other eight, and they swap each year. Which day and kickoff each game lands on is settled separately with the broadcasters, and some late-season games still move.",
+      },
+    ],
+    scheduleHowSource: "The NFL publishes this formula; nothing here is read off the fixtures.",
+
+    applyLiveScores: "APPLY LIVE SCORES",
+    liveScoresOn: "LIVE SCORES APPLIED",
+    liveScoresNote:
+      "The table counts games in progress as if they ended now. Records and seeds move with the score; teams that come out level keep the order the NFL's tiebreakers already gave them, which the real result may not.",
+    refresh: "Refresh",
+    refreshing: "Refreshing",
 
     /* season archive */
     season: "Season",
@@ -172,15 +211,51 @@ export const STRINGS = {
 
     /* routes */
     routeStandings: "Tabelle",
-    routeStandingsLong: "Tabelle",
-    routeWeek: "Woche",
-    routeWeekLong: "Spielplan",
-    routePlayoffs: "Bild",
-    routePlayoffsLong: "Playoff-Bild",
-    routeBracket: "Bracket",
-    routeBracketLong: "Bracket",
-    // The phone tab label; the full "Einstellungen" doesn't fit five across.
-    routeSettings: "Optionen",
+    routeWeek: "Wochen-Spielplan",
+    routeTeam: "Team-Spielplan",
+    routePlayoffs: "Im Feld",
+    routeBracket: "Playoffs",
+
+    /* team schedule */
+    teamSchedule: "EINE SAISON, EIN TEAM",
+    pickTeam: "Team auswählen",
+    teamScheduleFailed: "Der Spielplan dieses Teams konnte nicht geladen werden",
+    teamScheduleEmpty: "Oben ein Team auswählen und die ganze Saison sehen — jedes gespielte Spiel und jedes, das noch kommt.",
+    teamFavouriteHint: "Noch kein Lieblingsteam. Leg eins fest, dann öffnet diese Ansicht damit.",
+    openSettings: "Zu den Optionen",
+    byeWeek: "BYE",
+    nextUp: "NÄCHSTES",
+    played: "GESPIELT",
+    toCome: "AUSSTEHEND",
+
+    /* how the schedule is made */
+    scheduleHowTitle: "WIE DER SPIELPLAN ENTSTEHT",
+    scheduleHowRules: [
+      {
+        title: "Sechs in der eigenen Division",
+        body: "Zwei gegen jedes der drei Teams der eigenen Division, eines zu Hause, eines auswärts. Mehr als ein Drittel der Saison steht damit fest, bevor irgendetwas anderes entschieden ist.",
+      },
+      {
+        title: "Zwei komplette Divisions",
+        body: "Vier Spiele gegen alle Teams einer anderen Division der eigenen Conference, vier gegen alle einer Division der anderen. Beide rotieren — drei Jahre innerhalb einer Conference, vier über beide hinweg — so trifft jedes Team binnen vier Jahren auf alle anderen einunddreißig.",
+      },
+      {
+        title: "Drei aus der Vorsaison",
+        body: "Zwei gegen die Teams, die denselben Platz belegt haben, aus den beiden übrigen Divisions der eigenen Conference, und eines gegen ein platzgleiches Team der anderen Conference. So gleicht die Liga aus, wer das schwere Jahr erwischt.",
+      },
+      {
+        title: "Neun Heimspiele, oder acht",
+        body: "Siebzehn lassen sich nicht gleichmäßig teilen: Eine Conference hat neun Heimspiele, die andere acht, im nächsten Jahr umgekehrt. Tag und Uhrzeit legt die Liga getrennt davon mit den Übertragungspartnern fest, einzelne späte Spiele werden noch verlegt.",
+      },
+    ],
+    scheduleHowSource: "Die NFL veröffentlicht diese Formel; nichts davon ist aus den Spielplänen abgeleitet.",
+
+    applyLiveScores: "LIVE-ERGEBNISSE ANWENDEN",
+    liveScoresOn: "LIVE-ERGEBNISSE ANGEWENDET",
+    liveScoresNote:
+      "Die Tabelle zählt laufende Spiele so, als wären sie jetzt zu Ende. Bilanzen und Seeds bewegen sich mit dem Spielstand; punktgleiche Teams behalten die Reihenfolge, die die NFL-Tiebreaker bereits ergeben haben — das echte Ergebnis kann anders ausfallen.",
+    refresh: "Aktualisieren",
+    refreshing: "Wird aktualisiert",
 
     /* season archive */
     season: "Saison",
@@ -316,7 +391,39 @@ export const STRINGS = {
 } as const;
 
 export type StringKey = keyof (typeof STRINGS)["en"];
-export type Strings = Record<StringKey, string>;
+
+/**
+ * Each key keeps the *shape* English gave it — almost all are a string, and the
+ * few that are a list stay a list. Written as a mapped type rather than
+ * `Record<StringKey, string>` so a list doesn't force every other key to widen
+ * into `string | string[]` at the call site.
+ */
+/** A titled paragraph, as the expandable info sections are built from. */
+export interface RuleCopy {
+  readonly title: string;
+  readonly body: string;
+}
+
+/**
+ * Each key keeps the *kind* English gave it — almost all are a string, and the
+ * few that are a list of titled paragraphs stay that. Written as a mapped type
+ * rather than `Record<StringKey, string>` so one list doesn't widen every other
+ * key into a union at the call site.
+ */
+export type Strings = {
+  readonly [K in StringKey]: (typeof STRINGS)["en"][K] extends string
+    ? string
+    : readonly RuleCopy[];
+};
+
+/**
+ * The keys that hold a plain string. Anything looking a key up dynamically
+ * should use this rather than `StringKey`, or the result widens to include the
+ * few entries that are lists and stops being renderable on its own.
+ */
+export type TextKey = {
+  [K in StringKey]: Strings[K] extends string ? K : never;
+}[StringKey];
 
 /**
  * Every language must define every key, checked at compile time — a missing

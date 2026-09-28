@@ -307,6 +307,103 @@
     backdrop-filter: blur(6px);
   }
 
+  /*
+   * The refresh overlay.
+   *
+   * Same blur recipe as the dialog's veil, and the same warning: write
+   * `backdrop-filter` **unprefixed only**. Lightning CSS adds the -webkit- form
+   * itself; writing both by hand leaves only the last one, which is how the
+   * dialog's blur was -webkit--only (and so invisible in Chrome) until
+   * 2026-09-22.
+   *
+   * It is on screen for about a second at a time, which is the only reason a
+   * full-screen blur is affordable here at all — and why the root's
+   * `data-overlay` flag pauses everything moving underneath it while it is up.
+   */
+  .refresh-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+    background: color-mix(in srgb, var(--color-abyss) 58%, transparent);
+    backdrop-filter: blur(14px);
+    animation: refresh-in 200ms ease-out both;
+  }
+
+  .refresh-veil[data-leaving] {
+    animation: refresh-out 260ms ease-in both;
+    pointer-events: none;
+  }
+
+  .refresh-badge {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+  }
+
+  /* Sits over the mark rather than around it, so the two share a centre. */
+  .refresh-ring {
+    position: absolute;
+    inset: 0;
+    width: 64px;
+    height: 64px;
+    fill: none;
+    stroke-width: 2.5;
+    /* Only the movement, never the resting position — see the keyframe
+       warning in docs/DECISIONS.md. `rotate` cannot collide with a
+       `transform` or a Tailwind `translate` the way a transform would. */
+    animation: refresh-spin 900ms linear infinite;
+  }
+
+  .refresh-ring__track {
+    stroke: color-mix(in srgb, var(--color-paper) 12%, transparent);
+  }
+
+  /* A quarter of the circle, so there is something to watch go round. */
+  .refresh-ring__arc {
+    stroke: var(--color-brand);
+    stroke-linecap: round;
+    stroke-dasharray: 44 132;
+  }
+
+  .refresh-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-mist);
+  }
+
+  @keyframes refresh-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes refresh-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes refresh-spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+
   .game-dialog__panel:focus {
     outline: none;
   }

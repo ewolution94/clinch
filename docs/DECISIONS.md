@@ -20,6 +20,19 @@ short. For what the app does and how it's built, see `README.md`.
   uses indices.
 - **Future weeks carry no team records.** Join them from the snapshot by
   abbreviation — every team's record, accent and name is already there.
+- **⚠️ The nav says what each view is, and scrolls rather than shrinking.** Six
+  full labels — Standings, Week Schedule, Team Schedule, In the Field,
+  Playoffs, Settings — identical at every width, about 640px of them against a
+  352px phone. They used to have a short phone variant each ("Table", "Week",
+  "Picture"), which is what fitting an arbitrary 360px does to wording. The bar
+  scrolls sideways instead, and **needs `contain: paint` for the same reason
+  the week strip does**: without it those 640px count towards the document's
+  own scrollable width and the whole page pans. The frame and the scroller are
+  two elements on purpose — the border has to stay crisp and put while the
+  labels move under it, and the edge fade has to dim the labels without dimming
+  the border. The active tab is scrolled into view on arrival, but only when it
+  isn't already visible: sliding the bar out from under a finger that just
+  tapped a tab is worse than not centring it.
 - **The conference switch is not global navigation.** It lives above the
   conference block it controls. It used to sit in the sticky bar, where it cost
   116px of a 390px row and left no room for a fourth tab.
@@ -460,6 +473,142 @@ short. For what the app does and how it's built, see `README.md`.
   app is backgrounded, boots with the server down showing the last table marked
   stale, never serves `/api/stream` from cache, and a redeploy still reaches an
   installed reader.
+- **A team's season is assembled from the week cache, not fetched per team.**
+  `/api/team/:abbr/schedule`. The store already caches every week the poll loop
+  has read, so the first team asked for costs only the weeks nobody had opened
+  yet, and the next team usually costs nothing. Read six weeks at a time rather
+  than eighteen at once — this is somebody else's server, and the first reader
+  to open a team in March would otherwise fire seventeen requests in one
+  breath. A week that fails is left out rather than failing the season: a
+  schedule with a gap in it is still a schedule. The bye is *the week with no
+  game in it*, derived rather than stored, and it is rendered in its place in
+  the order because a list that skips from 6 to 8 reads as a bug.
+- **⚠️ A team's season is a tab, and it took three wrong homes to get there.**
+  `/team/:abbr`, `TeamSeason`. Don't move it back. It was:
+  1. A section under the week's games. Measured at 430×932 it started **3.5
+     screens down a 4.8-screen page** and ran 900px on its own — something you
+     find once, by accident.
+  2. The second half of a full-width `This week / By team` pill *above* the
+     week heading. That shouted louder than the "Week 4" it sat on, which is
+     the thing that should be biggest on that screen.
+  3. The same switch moved into the week's control panel. Better, but still a
+     whole view hidden behind a control that looks like a filter.
+  It is a place you go, not a setting you flip, so it is a place: its own tab,
+  its own URL, 2.0 screens starting at the top. Three things give a list of
+  seventeen near-identical rows some shape — a strip of week cells above it
+  (the season at a glance, bye as a gap, a nine-wide grid on a phone rather
+  than a ragged wrap), the next game marked with a divider and the opponent's
+  accent, and the opponent's **full name** filling the width the first version
+  left as a hole between the date and the result. The column is capped at
+  760px: seventeen one-line rows stretched across 1800px is a worse read.
+- **The team view's air is vertical, never horizontal.** It shipped cramped and
+  was opened up on Eric's word — 44px rows (50 from `sm`), 8px between them,
+  24–28px between sections. What did *not* change is the row's horizontal
+  geometry: `px-2.5` until `sm`, the 21px logo, the 10px gaps. Every pixel
+  taken from those comes straight off the opponent's name, which at 390px has
+  about 160px for "Los Angeles Chargers" and loses. A first pass raised the
+  padding on both axes and pushed three more names into an ellipsis. If the
+  truncation ever needs fixing, take the width from the date column (stack the
+  day over the time — the taller rows have the room now) rather than from the
+  padding.
+- **A team's season needs the year, like a week does.** `/api/season/:year/team/
+  :abbr/schedule` next to the live one, both over `assembleTeamSchedule` in
+  `server/src/teamSchedule.ts` — the live store feeds it the poll cache, the
+  archive store its own year-keyed one. The assembly lived inside
+  `SnapshotStore` while a team's season was a corner of the week view, and an
+  archived season quietly serving *this* season's fixtures was a lie nobody
+  would catch, because it looks exactly like a schedule. Making it a tab made
+  that prominent enough to fix.
+- **Every control the week view has lives in one panel.** The "only games on TV"
+  filter sits in a single bordered box under the week heading (`BroadcastBand`,
+  which is just a frame around `BroadcastSummary` — the box-less version exists
+  for anywhere that wants to supply its own). The team view uses the same box
+  for its team picker, capped at 430px so it doesn't stretch on a desktop.
+- **There is one way to pick a team, and it is the settings one.** The team view's
+  team picker uses the same frame, type and **division grouping** as the
+  favourite-team picker in settings — eight short lists rather than two of
+  sixteen, alphabetical inside each because the standings order moves every week
+  and a list you pick from shouldn't. Note that this keeps settings' 12.5px,
+  which is under the 16px that stops iOS zooming a form control on focus:
+  consistency won, and the horizontal panning that zoom was once suspected of
+  causing turned out to be the week strip. If it ever does bite, both places
+  need the same fix.
+- **⚠️ An expandable info block must look like `Legend`.** The standings and the
+  playoff picture both end with one, so the schedule's does too: same section,
+  same button, the same `+` that rotates 45° into a cross, and the same grid of
+  titled paragraphs. The first version of `ScheduleHow` invented its own — a
+  display-font heading and a chevron — and Eric spotted it immediately. If you
+  add a third, copy `Legend` rather than the last thing you wrote.
+- **The schedule explainer is the league's formula, not a reading of the data.**
+  `ScheduleHow`, at the foot of the schedule, closed by default — it is
+  reference to be read once, not something to scroll past every Sunday. The
+  content comes from the NFL's published scheduling formula (six in the
+  division, four and four against rotating divisions, three from last season's
+  finishing positions), which means it cannot drift when the data does. It
+  **deliberately says nothing about how bye weeks are placed**: the league's own
+  page doesn't state a rule, and the pattern of recent seasons is an observation
+  rather than a rule. Don't add it from memory.
+- **⚠️ "Apply live scores" is a projection, and the honest part is what it
+  refuses to do.** `client/src/lib/liveStandings.ts`. It counts every game in
+  progress as if it had just ended — records, points, streak, form, seeds,
+  clinch labels. That is not the guessing this app refuses elsewhere: every
+  number is arithmetic on a score already on the board. **But it cannot do
+  tiebreakers**, which is the whole reason ESPN's `playoffSeed` is taken as
+  given in the first place. So the ranking rule is: sort by win percentage,
+  stable, over a list that arrives in seed order — teams that come out level
+  keep the order the real tiebreakers gave them, and only a genuine pass moves
+  anybody. Don't "improve" this into a tiebreaker implementation, and don't
+  drop the note the toggle shows while it is on; it is what makes showing the
+  table at all defensible. The switch only exists while something is being
+  played, so there is no dead control six days a week.
+- **The projection runs on the client, and that is a measurement.**
+  `conferences` is **70 kB of a 75 kB snapshot** — so serving a second,
+  adjusted copy would nearly double every SSE push, every 25 seconds, for
+  hours, on a phone, in exactly the hours the feature exists for. The page
+  already has every number. The cost is that the clinch arithmetic now lives in
+  two places (`server/src/derive.ts` and `liveStandings.ts`), and the thing
+  that stops them drifting is in `tests/liveStandings.test.ts`: it runs the
+  projection over games in progress, then has the *server* build the same
+  season from those games as finished results, and asserts the two tables match
+  field for field. Change one implementation without the other and that goes
+  red. It has already earned its place — five of ten mutations slipped past the
+  first version of those tests, including ranking by wins instead of win
+  percentage and letting level teams reshuffle.
+- **The refresh button goes upstream, not to the cache.** An installed app has
+  no browser chrome to pull down on, so there is no pull-to-refresh — hence a
+  button, next to the sync pill where a reader already looks to see how current
+  the page is. It POSTs `/api/refresh`, which makes the server poll ESPN now
+  rather than on its 120-second idle cadence; a button that only re-read what
+  the server already had would visibly do nothing. Guarded twice: `refresh()`
+  ignores a second call while one is in flight, and a poll from the last five
+  seconds is answered as-is. It also rebuilds the `EventSource`, and **that is
+  the half that matters on a phone** — iOS suspends a backgrounded app and the
+  stream it was holding never comes back, which is how an installed app sits
+  showing Sunday's table on Monday. Returning to the app does the same thing by
+  itself, on `visibilitychange`.
+- **The refresh overlay is held open on purpose, and never shows on the silent
+  path.** The request usually answers faster than the eye can register, so
+  without something deliberate on screen, refreshing an already-current page is
+  indistinguishable from pressing a dead button. `useSnapshot` therefore keeps
+  the acknowledgement up for a minimum (700ms, then a 260ms fade) — it only
+  ever *extends*, so a slow refresh shows for exactly as long as it takes. Two
+  things worth not undoing:
+  - **The timing lives with the action, not with the overlay.** Every state
+    change happens in an event handler or a timer callback, which is what keeps
+    `RefreshOverlay` stateless and out of the "setState inside an effect"
+    pattern that mirroring a prop would need. An earlier version used a
+    `useHeld` hook and a mirrored `mounted` flag; it worked and cost two lint
+    warnings, and moving the clock into `useSnapshot` removed both.
+  - **`visibilitychange` refreshes silently.** Coming back to a backgrounded
+    app refreshes too, and blurring the page on every switch back would be
+    intolerable. Only the button is loud.
+  The veil follows the game dialog exactly: `backdrop-filter` **unprefixed
+  only** (Lightning CSS adds the -webkit- form; writing both keeps just the
+  last), and `data-overlay` on the root to pause ambient motion underneath,
+  because animating anything behind a blur recomputes it every frame. The
+  reduced-motion rules already force `animation-iteration-count: 1`, so the
+  spinning ring stops rather than thrashing at 0.01ms — worth knowing before
+  adding another infinite animation anywhere near a blur.
 - **⚠️ The week strip needs `contain: paint`, or the whole page pans sideways.**
   `WeekGames`' horizontal strip is sixteen 148px cards behind `overflow-x:
   auto`. That clips them *visually*, but their scrollable overflow — about
@@ -546,7 +695,7 @@ short. For what the app does and how it's built, see `README.md`.
     England both finished 14-3, so the bye rests entirely on the settled-seed
     tiebreak. ESPN returns the AFC West as LAC, KC, LV, DEN — the division
     winner last — which is what the sort-by-seed exists to fix.
-  - **Every test was checked by breaking the code.** 46 mutations, each
+  - **Every test was checked by breaking the code.** 63 mutations, each
     reverting one documented decision (chalk in the bracket, the parser canary,
     ties as whole wins, `unavailable` for an unknown day, folding `.ics` by
     character); all 36 turned the suite red. Two early versions of tests passed
@@ -611,7 +760,7 @@ short. For what the app does and how it's built, see `README.md`.
 
 ### What has actually been verified
 
-**By the suite** (`npm test`, 139 tests, ~0.7s) — derivation, the bracket, the
+**By the suite** (`npm test`, 174 tests, ~1s) — derivation, the bracket, the
 listings parser and the four broadcast states, the calendar export, the season
 archive, week labelling and the settings guard. See the testing entry above for what it
 deliberately doesn't cover.

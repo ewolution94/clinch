@@ -177,6 +177,32 @@ export interface WeekView {
   broadcasts?: WeekBroadcasts;
 }
 
+/** One game from a single team's point of view. */
+export interface TeamScheduleGame {
+  id: string;
+  seasonType: number;
+  week: number;
+  label: string;
+  kickoff: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  opponent: string;
+  home: boolean;
+  teamScore: number | null;
+  opponentScore: number | null;
+  result: GameResult | null;
+  broadcast?: GameBroadcast;
+  abroad?: GameAbroad;
+}
+
+export interface TeamSchedule {
+  team: string;
+  season: number;
+  games: TeamScheduleGame[];
+  byeWeek: number | null;
+  record: string;
+}
+
 export interface Snapshot {
   generatedAt: number;
   season: { year: number; type: number; label: string };

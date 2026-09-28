@@ -20,12 +20,14 @@
 import { fetchScoreboard, fetchStandings } from "./espn.js";
 import { buildConferences } from "./derive.js";
 import { config } from "./config.js";
+import { assembleTeamSchedule } from "./teamSchedule.js";
 import type {
   CalendarWeek,
   PostseasonGame,
   PostseasonRound,
   ScoreboardGame,
   Snapshot,
+  TeamSchedule,
   WeekView,
 } from "./types.js";
 
@@ -110,6 +112,23 @@ export class ArchiveStore {
       // re-check and no channel to look up.
       settled: true,
     };
+  }
+
+  /**
+   * One team's season in a finished year.
+   *
+   * The same assembly the live store uses, over this store's own week cache —
+   * which is why the cache is keyed by year. Cheap after the first reader: a
+   * finished season's weeks are built once and held.
+   */
+  async teamSchedule(year: number, abbr: string): Promise<TeamSchedule> {
+    const snapshot = await this.snapshot(year);
+    return assembleTeamSchedule({
+      abbr,
+      season: year,
+      week: (seasonType, week) => this.week(year, seasonType, week),
+      postseason: snapshot.postseason,
+    });
   }
 
   private async weekGames(year: number, seasonType: number, week: number): Promise<CachedWeek> {

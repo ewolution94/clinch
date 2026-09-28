@@ -69,6 +69,17 @@ describe("loading preferences", () => {
     assert.equal(loadSettings().lastRoute, "standings");
   });
 
+  it("accepts every view the app actually has as a landing", () => {
+    // The guard here is that the allow-list and the nav don't drift apart. A
+    // view added to one and not the other reads as the setting silently
+    // refusing to stick.
+    for (const landing of ["standings", "week", "team", "playoffs", "bracket", "last"] as const) {
+      withStorage();
+      saveSettings({ ...DEFAULT_SETTINGS, landing });
+      assert.equal(loadSettings().landing, landing, landing);
+    }
+  });
+
   it("keeps the good fields of a half-corrupt value and defaults only the bad", () => {
     withStorage(JSON.stringify({ theme: 42, lang: "de", landing: "nonsense", motion: "reduced" }));
     const loaded = loadSettings();

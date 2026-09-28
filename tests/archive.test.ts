@@ -9,75 +9,14 @@
  */
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { weekUrl } from "../client/src/lib/api.js";
-import { fixture, stubFetch } from "./helpers.js";
+import { teamScheduleUrl, weekUrl } from "../client/src/lib/api.js";
+import { fixture, scoreboard, stubFetch } from "./helpers.js";
 
 let stub: { restore: () => void; urls: string[] } | null = null;
 afterEach(() => {
   stub?.restore();
   stub = null;
 });
-
-/** A scoreboard response in the shape `espn.ts` declares it reads. */
-function scoreboard({
-  season,
-  seasonType,
-  week,
-  games = [],
-  calendar = true,
-}: {
-  season: number;
-  seasonType: number;
-  week: number;
-  games?: { id: string; home: string; away: string; homeScore: number; awayScore: number }[];
-  calendar?: boolean;
-}): string {
-  return JSON.stringify({
-    season: { year: season, type: seasonType },
-    week: { number: week, teamsOnBye: [{ abbreviation: "BUF" }] },
-    events: games.map((g) => ({
-      id: g.id,
-      date: `${season}-10-0${(week % 9) + 1}T17:00:00Z`,
-      week: { number: week },
-      status: { type: { state: "post", shortDetail: "Final" } },
-      competitions: [
-        {
-          competitors: [
-            { homeAway: "home", team: { abbreviation: g.home }, score: String(g.homeScore) },
-            { homeAway: "away", team: { abbreviation: g.away }, score: String(g.awayScore) },
-          ],
-          status: { type: { state: "post", shortDetail: "Final" } },
-          venue: { address: { city: "Somewhere", country: "USA" } },
-        },
-      ],
-    })),
-    leagues: calendar
-      ? [
-          {
-            calendar: [
-              {
-                value: "2",
-                entries: Array.from({ length: 18 }, (_, i) => ({
-                  value: String(i + 1),
-                  label: `Week ${i + 1}`,
-                  startDate: "",
-                  endDate: "",
-                })),
-              },
-              {
-                value: "3",
-                entries: [
-                  { value: "1", label: "Wild Card" },
-                  { value: "4", label: "Pro Bowl" },
-                  { value: "5", label: "Super Bowl" },
-                ],
-              },
-            ],
-          },
-        ]
-      : [],
-  });
-}
 
 /** A store with empty caches, so one test's season can't answer another's. */
 let instance = 0;
@@ -262,5 +201,13 @@ describe("which week endpoint the page asks", () => {
     assert.equal(weekUrl(2, 3, null), "/api/week/2/3");
     assert.equal(weekUrl(2, 3, 2023), "/api/season/2023/week/2/3");
     assert.equal(weekUrl(3, 1, 2021), "/api/season/2021/week/3/1");
+  });
+
+  it("asks a different endpoint for a team's season in an archived year", () => {
+    // The team schedule became a tab of its own, which is what made this
+    // matter: showing this season's fixtures under a 2023 banner is the kind
+    // of wrong nobody spots, because it looks like a schedule.
+    assert.equal(teamScheduleUrl("KC", null), "/api/team/KC/schedule");
+    assert.equal(teamScheduleUrl("KC", 2023), "/api/season/2023/team/KC/schedule");
   });
 });

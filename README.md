@@ -34,6 +34,13 @@ teams are in the field, which are chasing it, and which are already out.
 - **Any week, forwards or back** — next week's fixtures, last month's results,
   or the Wild Card round, grouped by day in your own timezone with bye teams and
   division games called out. Arrows, ← / →, or a swipe.
+- **One team's whole season** — the schedule has two modes, *this week* and *by
+  team*. Pick any team for its year in order: a strip of the season at a glance,
+  then every opponent, result and kickoff, with the next game marked and the bye
+  in its place.
+- **Why those teams** — a short piece at the bottom of the schedule on how the
+  NFL decides who plays whom. See
+  [How the schedule is made](#how-the-schedule-is-made).
 - **Whether you can actually watch it** — every upcoming game on the schedule
   says whether it's on **RTL** or **RTL+**, the German outlets this is built
   for, and one switch narrows the week to just those. See
@@ -56,22 +63,33 @@ teams are in the field, which are chasing it, and which are already out.
   final table, every result, and the bracket as it was actually played. Pick a
   year in the header.
 - **Live during games** — scores and states stream over SSE; the page never
-  needs a refresh.
+  needs a refresh, and the header has a refresh button anyway, because an
+  installed app has no browser chrome to pull down on. Pressing it blurs the
+  page behind a turning mark for a moment, so an answer that arrives in 80ms
+  still reads as an answer.
+- **"If these games ended now"** — while anything is being played, one switch
+  folds the games in progress into the table: records, points, streaks, seeds
+  and the playoff picture all move with the score. See
+  [Applying live scores](#applying-live-scores).
 - **Built for a phone first** — the tables drop columns as the space narrows
   using container queries, so a card in a two-column desktop layout stays as
   readable as the same card on a 390px screen.
 - **One container** — the built frontend is served by the same Express process
   as the API, and there is no database, no volume and no state on disk.
 
-## The three views
+## The views
 
-| Route | What it's for |
-| ----- | ------------- |
-| `/` | **Standings.** All eight divisions under a banner showing where the season is and who leads each conference. Tap a team for its splits, last five results and next kickoff. |
-| `/playoffs` | **Playoff picture.** Seeds 1–7, the cut line, everyone still chasing it ranked by games back, and the eliminated. |
-| `/bracket` | **Bracket.** The tournament tree, seeded on today's standings and playable. |
-| `/week/:slug` | **Schedule.** Any week of the season — `/week/5`, `/week/wild-card` — grouped by day in your own timezone, with byes, division games flagged, and every game opening the same detail modal. |
-| `/settings` | **Settings.** Theme, language, favourite team, which view to open on, default conference and motion. |
+The nav names each of them in full at every screen width, and scrolls sideways
+on a phone rather than abbreviating them down to fit.
+
+| Route | Nav label | What it's for |
+| ----- | --------- | ------------- |
+| `/` | Standings | All eight divisions under a banner showing where the season is and who leads each conference. Tap a team for its splits, last five results and next kickoff. |
+| `/week/:slug` | Week Schedule | Any week of the season — `/week/5`, `/week/wild-card` — grouped by day in your own timezone, with byes, division games flagged, and every game opening the same detail modal. |
+| `/team/:abbr` | Team Schedule | One team's whole season in order — `/team/KC` — every result and every kickoff still to come, with the season as a strip of week cells above it and the next game marked. A bare `/team` opens on your favourite. |
+| `/playoffs` | In the Field | Seeds 1–7, the cut line, everyone still chasing it ranked by games back, and the eliminated. |
+| `/bracket` | Playoffs | The tournament tree, seeded on today's standings and playable. |
+| `/settings` | Settings | Theme, language, favourite team, which view to open on, default conference and motion. |
 
 Any of them takes `?season=2023` and shows that finished season instead — see
 [The archive](#the-archive).
@@ -86,6 +104,53 @@ Standings *as of* a past week are deliberately absent. ESPN only ever exposes
 the **current** `playoffSeed`; records could be recomputed from results, but
 seeds could not, and inventing historical ones would break the rule the rest of
 the app rests on. A week is a schedule, not a time machine for the table.
+
+## How the schedule is made
+
+The foot of the schedule carries a short explainer, closed by default, of the
+league's own formula: six games in the division, four against a division in the
+conference, four against a division in the other, and three more decided by
+where each team finished the season before. It is the NFL's published formula
+rather than anything read out of the data, so it cannot drift when the data
+does — and it deliberately stops short of how bye weeks are placed, which the
+league's own page doesn't state.
+
+The schedule's other mode, *by team*, takes any of the 32 and lays its season
+out in order: a strip of week cells for the shape of it, then every opponent,
+result and kickoff, the next game marked, and the bye in its place rather than
+appended at the end. `/api/team/:abbr/schedule` assembles it from the same
+per-week cache the rest of the app fills, so picking a team costs one request
+and not seventeen, and a second team usually costs none.
+
+## Applying live scores
+
+On a Sunday evening, with four games on, the thing you want to know is what the
+picture looks like if these results hold. The switch above the standings — which
+only appears while something is actually being played — counts every game in
+progress as if it had just ended.
+
+It is not a projection in the sense this app refuses elsewhere. Every number is
+arithmetic on a score already on the board: a team leading 17-10 is counted as
+having won 17-10, its record, points, streak, recent form and seed all move, and
+the clinch labels are recomputed from the new table.
+
+**The one thing it cannot do is tiebreakers.** Conference seeds arrive from ESPN
+with the NFL's full chain applied, and none of that can be recomputed from a
+snapshot. So the rule is: order by win percentage, and where two teams come out
+level, keep the order they already had — the order those tiebreakers produced. A
+team only moves past another when its record genuinely passes it. Teams that
+finish level may really settle the other way, and the switch says so while it is
+on.
+
+It runs in the browser, not on the server, for a measured reason: `conferences`
+is 70 kB of a 75 kB snapshot, so sending a second adjusted copy would nearly
+double every push — every 25 seconds, for hours, on a phone, in exactly the
+hours the feature is for. The page already has every number it needs.
+
+That means the clinch arithmetic exists twice, in `server/src/derive.ts` and
+`client/src/lib/liveStandings.ts`. A test keeps them honest: it runs the
+projection over games in progress, then has the server build the same season
+from those games as finished results, and asserts the two tables are identical.
 
 ## The archive
 
@@ -172,6 +237,8 @@ that are quiet for months and then have to be right —
 | **The calendar export** | RFC 5545 escaping and folding, UTC stamps, the Google link. |
 | **Weeks and settings** | Relative labels across the postseason boundary, and the guard that keeps one corrupt preference from costing all of them. |
 | **The archive** | That only finished seasons can be asked for, that a season is assembled once and survives a week that didn't answer. |
+| **Live scores applied** | The projection's arithmetic and re-ranking, and that it lands on exactly the table the server builds once those games are final. |
+| **A team's season** | That each game is turned around to face the right team, that the bye is the gap, and that one unreadable week doesn't sink the season. |
 
 Nothing rendered is covered — no component or browser tests. Layout, colour and
 motion are still checked by hand, on a phone. See

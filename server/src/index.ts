@@ -9,6 +9,7 @@ import type { Request } from "express";
 import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
 import { archiveStore } from "./archiveStore.js";
+import { teamMeta } from "./teams.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const clientDist = join(here, "..", "..", "client", "dist");
@@ -41,6 +42,26 @@ app.get("/api/snapshot", (_req, res) => {
   // second one behind our back is how a stale table arrives looking current.
   res.setHeader("cache-control", "no-store");
   res.json(snapshot);
+});
+
+/**
+ * Poll upstream now. The installed app has no pull-to-refresh, so its header
+ * has a button, and this is what that button asks for. Rate-limited in the
+ * store: a poll from the last few seconds is answered as-is.
+ */
+app.post("/api/refresh", async (_req, res) => {
+  try {
+    const snapshot = await store.refreshNow();
+    if (!snapshot) {
+      res.status(503).json({ error: "warming up" });
+      return;
+    }
+    res.setHeader("cache-control", "no-store");
+    res.json(snapshot);
+  } catch (error) {
+    console.error("[clinch] manual refresh failed:", describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
 });
 
 app.get("/api/week/:seasonType/:week", async (req, res) => {
@@ -103,6 +124,52 @@ app.get("/api/season/:year/week/:seasonType/:week", async (req, res) => {
     res.json(await archiveStore.week(year, seasonType, week));
   } catch (error) {
     console.error(`[clinch] season ${year} week failed:`, describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
+/**
+ * One team's season in order. The abbreviation is checked against the 32 we
+ * know rather than passed along, since it decides which games are read out.
+ */
+app.get("/api/team/:abbr/schedule", async (req, res) => {
+  const abbr = req.params.abbr.toUpperCase();
+  if (!teamMeta(abbr)) {
+    res.status(404).json({ error: "no such team" });
+    return;
+  }
+
+  try {
+    res.setHeader("cache-control", "no-store");
+    res.json(await store.teamSchedule(abbr));
+  } catch (error) {
+    console.error(`[clinch] team schedule ${abbr} failed:`, describeError(error));
+    res.status(502).json({ error: "upstream unavailable" });
+  }
+});
+
+/** The same, for a season that is over. Its weeks live in the archive store. */
+app.get("/api/season/:year/team/:abbr/schedule", async (req, res) => {
+  const year = Number.parseInt(req.params.year, 10);
+  const abbr = req.params.abbr.toUpperCase();
+  if (!archiveStore.offers(year)) {
+    res.status(404).json({ error: "no such season" });
+    return;
+  }
+  if (!teamMeta(abbr)) {
+    res.status(404).json({ error: "no such team" });
+    return;
+  }
+
+  try {
+    // A finished season cannot change, so this is worth holding on to.
+    res.setHeader("cache-control", "public, max-age=86400");
+    res.json(await archiveStore.teamSchedule(year, abbr));
+  } catch (error) {
+    console.error(
+      `[clinch] season ${year} team schedule ${abbr} failed:`,
+      describeError(error),
+    );
     res.status(502).json({ error: "upstream unavailable" });
   }
 });

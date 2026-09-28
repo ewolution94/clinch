@@ -1,9 +1,11 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { clsx } from "clsx";
+import { edgeFadeMask, useOverflowEdges } from "../hooks/useOverflowEdges";
 import { useStrings } from "../lib/useSettings";
 import { ClinchMark } from "./ClinchMark";
 import { SeasonSelect } from "./SeasonSwitch";
 import type { Route } from "../hooks/useRoute";
+import type { Strings } from "../lib/strings";
 import type { ConnectionState, Snapshot } from "../lib/types";
 
 interface HeaderProps {
@@ -13,11 +15,26 @@ interface HeaderProps {
   onRoute: (route: Route) => void;
   /** Null for the live season; a year while an archived one is being read. */
   onSeason: (year: number | null) => void;
+  onRefresh: () => void;
+  refreshing: boolean;
 }
 
-// Where the season is now, then where it's heading. Labels come from the string
-// table so the order lives here and the wording lives there.
-const TAB_IDS: Route[] = ["standings", "week", "playoffs", "bracket", "settings"];
+/**
+ * Where the season is now, then where it's heading.
+ *
+ * One label per view at every width — no short phone variant. The labels say
+ * what the view is ("Week Schedule", not "Week"), and when six of them don't
+ * fit a phone the bar scrolls sideways instead of the words getting shorter.
+ * Fitting an arbitrary 360px was what made them cryptic in the first place.
+ */
+const TABS: { id: Route; label: (t: Strings) => string }[] = [
+  { id: "standings", label: (t) => t.routeStandings },
+  { id: "week", label: (t) => t.routeWeek },
+  { id: "team", label: (t) => t.routeTeam },
+  { id: "playoffs", label: (t) => t.routePlayoffs },
+  { id: "bracket", label: (t) => t.routeBracket },
+  { id: "settings", label: (t) => t.settings },
+];
 
 export function Header({
   snapshot,
@@ -25,27 +42,38 @@ export function Header({
   route,
   onRoute,
   onSeason,
+  onRefresh,
+  refreshing,
 }: HeaderProps) {
   const t = useStrings();
-  const tabs = [
-    {
-      id: "standings" as const,
-      label: t.routeStandingsLong,
-      short: t.routeStandings,
-    },
-    { id: "week" as const, label: t.routeWeekLong, short: t.routeWeek },
-    {
-      id: "playoffs" as const,
-      label: t.routePlayoffsLong,
-      short: t.routePlayoffs,
-    },
-    {
-      id: "bracket" as const,
-      label: t.routeBracketLong,
-      short: t.routeBracket,
-    },
-    { id: "settings" as const, label: t.settings, short: t.routeSettings },
-  ].sort((a, b) => TAB_IDS.indexOf(a.id) - TAB_IDS.indexOf(b.id));
+  const nav = useRef<HTMLElement>(null);
+  const edges = useOverflowEdges(nav);
+  const mask = edgeFadeMask(edges, 20);
+
+  /*
+   * Bring the current view into view.
+   *
+   * Only when it isn't already: tapping a tab you can see shouldn't slide the
+   * bar out from under your finger. What this is for is arriving — a reload on
+   * `/settings`, a shared link, the back gesture — where the active tab can sit
+   * off the right-hand edge of a phone with nothing to say so.
+   */
+  useEffect(() => {
+    const bar = nav.current;
+    const active = bar?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!bar || !active) return;
+    const left = active.offsetLeft;
+    const right = left + active.offsetWidth;
+    if (left >= bar.scrollLeft && right <= bar.scrollLeft + bar.clientWidth)
+      return;
+    // Centred rather than just-in-view, so the neighbours on both sides show
+    // and the row reads as a row rather than as an edge.
+    bar.scrollTo({
+      left: Math.max(0, left - (bar.clientWidth - active.offsetWidth) / 2),
+      behavior: "instant" as ScrollBehavior,
+    });
+  }, [route]);
+
   const live = snapshot?.live ?? false;
   const archived = snapshot?.archived ?? false;
   const weekLabel = snapshot ? snapshot.week.label : "Loading";
@@ -81,6 +109,40 @@ export function Header({
           </div>
 
           <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              {/*
+                An installed app has no pull-to-refresh — there is no browser
+                chrome to pull against — so the way to ask for fresh data has to
+                be on the page. Next to the sync pill, because that is where a
+                reader already looks to find out how current this is. Hidden on
+                an archived season, which cannot change.
+              */}
+              {!archived && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  disabled={refreshing}
+                  aria-label={refreshing ? t.refreshing : t.refresh}
+                  title={refreshing ? t.refreshing : t.refresh}
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-ink/60 text-mist transition-colors hover:border-fog/40 hover:text-paper disabled:opacity-60"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={clsx(refreshing && "animate-spin")}
+                  >
+                    <path d="M20 11a8 8 0 1 0-.6 4" />
+                    <path d="M20 4v7h-7" />
+                  </svg>
+                </button>
+              )}
             {archived ? (
               <span className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 font-mono text-[13px] tracking-[0.15em] text-gold">
                 {t.archive}
@@ -116,6 +178,7 @@ export function Header({
                     : "OFFLINE"}
               </span>
             )}
+            </div>
             <span className="flex items-center gap-1.5 font-mono text-[12.5px] tracking-[0.12em] whitespace-nowrap text-mist">
               {weekLabel.toUpperCase()}
               {snapshot && (
@@ -147,32 +210,45 @@ export function Header({
       */}
       <div className="clinch-bar sticky top-0 z-30 border-b border-line/70 bg-abyss/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1800px] items-center px-4 py-2.5 sm:px-6 lg:px-10">
-          {/* Full width on a phone, each tab an equal share: five labels fit a
-              360px screen only with the cog gone and the side padding tight.
-              From sm up the tabs size to their text again. */}
-          <nav
-            className="flex w-full rounded-full border border-line bg-ink/70 p-0.5 sm:w-auto"
-            aria-label={t.views}
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onRoute(tab.id)}
-                aria-current={route === tab.id ? "page" : undefined}
-                className={clsx(
-                  "flex-1 rounded-full px-1.5 py-1.5 font-display text-[15.5px] font-medium whitespace-nowrap transition-colors sm:flex-none sm:px-5",
-                  route === tab.id
-                    ? "bg-paper text-abyss"
-                    : "text-mist hover:text-fog",
-                )}
-              >
-                <span className="sm:hidden">{tab.short}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
-          </nav>
+          {/*
+            The frame and the scroller are two elements on purpose.
 
+            The border has to stay put and stay crisp while the labels move
+            under it, and the edge fade has to dim the labels without dimming
+            the border — one element can't do both. The outer box also has no
+            overflow of its own, which keeps it out of the scrolling chain.
+          */}
+          <div className="min-w-0 rounded-full border border-line bg-ink/70 p-0.5">
+            <nav
+              ref={nav}
+              className="no-scrollbar flex overflow-x-auto [contain:paint]"
+              style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+              aria-label={t.views}
+            >
+              {/*
+                ⚠️ `contain: paint` above, for the reason the week strip needs
+                it: without it this row's scrollable overflow — six full labels,
+                roughly 640px — counts towards the document's own, and the whole
+                page can be dragged sideways. See docs/DECISIONS.md.
+              */}
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onRoute(tab.id)}
+                  aria-current={route === tab.id ? "page" : undefined}
+                  className={clsx(
+                    "shrink-0 rounded-full px-3.5 py-1.5 font-display text-[15.5px] font-medium whitespace-nowrap transition-colors sm:px-5",
+                    route === tab.id
+                      ? "bg-paper text-abyss"
+                      : "text-mist hover:text-fog",
+                  )}
+                >
+                  {tab.label(t)}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
 
         <div className="h-px w-full bg-line/60">

@@ -205,6 +205,36 @@ export interface WeekView {
   broadcasts?: WeekBroadcasts;
 }
 
+/** One game from a single team's point of view. */
+export interface TeamScheduleGame {
+  id: string;
+  seasonType: number;
+  week: number;
+  /** "Week 5", "Wild Card" — the season's own name for it. */
+  label: string;
+  kickoff: string;
+  state: "pre" | "in" | "post";
+  statusDetail: string;
+  opponent: string;
+  home: boolean;
+  teamScore: number | null;
+  opponentScore: number | null;
+  /** Null until the game is final. */
+  result: GameResult | null;
+  broadcast?: GameBroadcast;
+  abroad?: GameAbroad;
+}
+
+export interface TeamSchedule {
+  team: string;
+  season: number;
+  games: TeamScheduleGame[];
+  /** The week with no game in it. Null before the schedule says. */
+  byeWeek: number | null;
+  /** Wins-losses-ties over the games that have been played. */
+  record: string;
+}
+
 export interface Snapshot {
   generatedAt: number;
   season: { year: number; type: number; label: string };

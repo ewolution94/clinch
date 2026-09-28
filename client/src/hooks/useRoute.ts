@@ -1,22 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PATHS, parseRoute, parseTeam, parseWeekSlug } from "../lib/routes";
 
-export type Route = "standings" | "playoffs" | "bracket" | "week" | "settings";
-
-const PATHS: Record<Route, string> = {
-  standings: "/",
-  playoffs: "/playoffs",
-  bracket: "/bracket",
-  week: "/week",
-  settings: "/settings",
-};
+export type { Route } from "../lib/routes";
+import type { Route } from "../lib/routes";
 
 function readRoute(): Route {
-  const path = window.location.pathname;
-  if (path.startsWith("/playoffs")) return "playoffs";
-  if (path.startsWith("/bracket")) return "bracket";
-  if (path.startsWith("/week")) return "week";
-  if (path.startsWith("/settings")) return "settings";
-  return "standings";
+  return parseRoute(window.location.pathname);
 }
 
 /**
@@ -47,8 +36,15 @@ function readSeason(): number | null {
 const GAME_ENTRY = "clinchGame";
 
 function readWeekSlug(): string | null {
-  const match = /^\/week\/([^/?#]+)/.exec(window.location.pathname);
-  return match ? decodeURIComponent(match[1]) : null;
+  return parseWeekSlug(window.location.pathname);
+}
+
+/**
+ * In the path rather than in state, for the same reason the week is: a link to
+ * the Chiefs' season should open the Chiefs' season for whoever you send it to.
+ */
+function readTeam(): string | null {
+  return parseTeam(window.location.pathname);
 }
 
 /**
@@ -70,6 +66,9 @@ export interface Router {
   /** The `/week/<slug>` segment, if any — resolved against the calendar. */
   weekSlug: string | null;
   openWeek: (slug: string) => void;
+  /** The `/team/<abbr>` segment, if any. Null means "whatever the reader's is". */
+  teamAbbr: string | null;
+  openTeam: (abbr: string | null) => void;
   /** The open game's event id, mirrored in `?game=` so back closes it. */
   game: string | null;
   openGame: (id: string) => void;
@@ -83,6 +82,7 @@ export function useRoute(): Router {
   const [route, setRoute] = useState<Route>(readRoute);
   const [game, setGame] = useState<string | null>(readGame);
   const [weekSlug, setWeekSlug] = useState<string | null>(readWeekSlug);
+  const [teamAbbr, setTeamAbbr] = useState<string | null>(readTeam);
   const [season, setSeason] = useState<number | null>(readSeason);
 
   /** A `history.back()` from closeGame that hasn't landed yet. */
@@ -94,6 +94,7 @@ export function useRoute(): Router {
       setRoute(readRoute());
       setGame(readGame());
       setWeekSlug(readWeekSlug());
+      setTeamAbbr(readTeam());
       setSeason(readSeason());
     };
     window.addEventListener("popstate", onPop);
@@ -105,6 +106,9 @@ export function useRoute(): Router {
     setRoute(next);
     setGame(null);
     setWeekSlug(null);
+    // Dropped along with the slug: the tab lands on the reader's own team, the
+    // way it lands on the week being played.
+    setTeamAbbr(null);
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
@@ -160,6 +164,14 @@ export function useRoute(): Router {
     setRoute("week");
   }, []);
 
+  /** Replaces, like the week does: flicking through teams isn't history. */
+  const openTeam = useCallback((abbr: string | null) => {
+    const path = abbr ? `/team/${encodeURIComponent(abbr)}` : "/team";
+    window.history.replaceState({}, "", `${path}${search(readSeason())}`);
+    setTeamAbbr(abbr);
+    setRoute("team");
+  }, []);
+
   /**
    * Changing season drops the week: `/week/14` of 2023 and of this season are
    * different pages, and the one you were reading may not even exist in the
@@ -168,7 +180,12 @@ export function useRoute(): Router {
    */
   const openSeason = useCallback(
     (year: number | null) => {
-      const path = route === "week" || route === "settings" ? PATHS[route] : window.location.pathname;
+      // The week is dropped because `/week/14` of 2023 and of this season are
+      // different pages; a team is not — the Chiefs played every one of them.
+      const path =
+        route === "week" || route === "settings"
+          ? PATHS[route]
+          : window.location.pathname;
       window.history.pushState({}, "", `${path}${search(year)}`);
       setSeason(year);
       setGame(null);
@@ -186,6 +203,8 @@ export function useRoute(): Router {
     closeGame,
     weekSlug,
     openWeek,
+    teamAbbr,
+    openTeam,
     season,
     openSeason,
   };

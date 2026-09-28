@@ -14,7 +14,13 @@
 export type Theme = "dark" | "light" | "creative";
 export type Lang = "en" | "de";
 /** `last` resumes whichever view was open when you left. */
-export type Landing = "standings" | "week" | "playoffs" | "bracket" | "last";
+export type Landing =
+  | "standings"
+  | "week"
+  | "team"
+  | "playoffs"
+  | "bracket"
+  | "last";
 export type ConferencePref = "AFC" | "NFC" | "last";
 /** `system` defers to prefers-reduced-motion, as the app already did. */
 export type Motion = "system" | "full" | "reduced";
@@ -29,6 +35,8 @@ export interface Settings {
   favourite: string | null;
   /** The week view's "only games on TV" filter, remembered between visits. */
   tvOnly: boolean;
+  /** Fold games in progress into the standings, as if they ended now. */
+  liveStandings: boolean;
   /** Written when `landing` or `conference` is "last"; never shown directly. */
   lastRoute: Landing | null;
   lastConference: "AFC" | "NFC" | null;
@@ -42,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   motion: "system",
   favourite: null,
   tvOnly: false,
+  liveStandings: false,
   lastRoute: null,
   lastConference: null,
 };
@@ -53,6 +62,7 @@ const LANGS: Lang[] = ["en", "de"];
 const LANDINGS: Landing[] = [
   "standings",
   "week",
+  "team",
   "playoffs",
   "bracket",
   "last",
@@ -81,6 +91,7 @@ function normalize(raw: unknown): Settings {
         ? obj.favourite
         : null,
     tvOnly: obj.tvOnly === true,
+    liveStandings: obj.liveStandings === true,
     // `== null` rather than `=== undefined`: JSON keeps a null, so a stored
     // "nothing remembered yet" came back as "standings" instead of unset.
     lastRoute:

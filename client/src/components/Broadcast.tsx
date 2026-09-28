@@ -73,15 +73,20 @@ export function BroadcastBadge({
  * sixteen cards for four badges, and says plainly when the reason a week looks
  * empty is that nobody has published it yet.
  */
-export function BroadcastBand({
+/**
+ * What is on this week, and the switch that narrows the week to it.
+ *
+ * Box-less on purpose: it is one of the things the schedule's control panel
+ * holds, alongside the week/team switch, rather than a panel of its own. Use
+ * `BroadcastBand` where it needs its own frame.
+ */
+export function BroadcastSummary({
   broadcasts,
   filter,
-  className,
 }: {
   broadcasts: WeekBroadcasts | undefined;
   /** "Only games on TV". Absent where there is nothing to filter by. */
   filter?: { on: boolean; set: (on: boolean) => void };
-  className?: string;
 }) {
   const t = useStrings();
   if (!broadcasts || broadcasts.upcoming === 0) return null;
@@ -104,12 +109,7 @@ export function BroadcastBand({
   );
 
   return (
-    <div
-      className={clsx(
-        "flex flex-col items-center gap-0.5 rounded-xl border border-line bg-ink/40 px-3 py-2 text-center",
-        className,
-      )}
-    >
+    <div className="flex flex-col items-center gap-0.5 text-center">
       <p className="font-display text-[13px] leading-tight">{body}</p>
       {published && candidates > 0 && (
         <p className="font-display text-[12px] leading-tight text-mist">
@@ -144,6 +144,24 @@ export function BroadcastBand({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** The summary in a box of its own, for use outside the control panel. */
+export function BroadcastBand({
+  broadcasts,
+  filter,
+  className,
+}: {
+  broadcasts: WeekBroadcasts | undefined;
+  filter?: { on: boolean; set: (on: boolean) => void };
+  className?: string;
+}) {
+  if (!broadcasts || broadcasts.upcoming === 0) return null;
+  return (
+    <div className={clsx("rounded-xl border border-line bg-ink/40 px-3 py-2", className)}>
+      <BroadcastSummary broadcasts={broadcasts} filter={filter} />
     </div>
   );
 }

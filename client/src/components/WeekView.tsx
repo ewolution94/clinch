@@ -4,6 +4,7 @@ import { TeamLogo } from "./TeamLogo";
 import { Shimmer } from "./Shimmer";
 import { BroadcastBadge, BroadcastBand } from "./Broadcast";
 import { AbroadBadge, FavouriteStar } from "./Marks";
+import { ScheduleHow } from "./ScheduleHow";
 import { useWeek, prefetchWeek } from "../hooks/useWeek";
 import { currentWeek, findBySlug, relativeLabel, weekSlug } from "../lib/weeks";
 import { teamMap } from "../lib/teams";
@@ -330,6 +331,8 @@ export function WeekView({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* The week's own heading stays at the top and stays clean; the controls
+          live together in one panel below it. */}
       <header className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <WeekArrow
@@ -372,16 +375,23 @@ export function WeekView({
         <p className="text-center font-display text-[12.5px] text-mist">
           {t.scheduleOnly}
         </p>
-
-        <BroadcastBand
-          broadcasts={broadcasts}
-          filter={
-            filterable
-              ? { on: tvOnly, set: (on) => update({ tvOnly: on }) }
-              : undefined
-          }
-        />
       </header>
+
+      {/*
+        The week's controls, in one bordered panel under the heading rather than
+        scattered down the page. A team's season used to share it, as the other
+        half of a `This week / By team` switch; it is its own tab now, and a
+        whole view was the wrong thing to hide behind a control that looked like
+        a filter.
+      */}
+      <BroadcastBand
+        broadcasts={broadcasts}
+        filter={
+          filterable
+            ? { on: tvOnly, set: (on) => update({ tvOnly: on }) }
+            : undefined
+        }
+      />
 
       {loading && !view ? (
         <WeekSkeleton />
@@ -479,6 +489,10 @@ export function WeekView({
           )}
         </div>
       )}
+
+      {/* The same expandable block the standings and the playoff picture end
+          with, in the same place: last, and closed. */}
+      <ScheduleHow />
     </div>
   );
 }

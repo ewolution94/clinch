@@ -19,8 +19,12 @@ import { Legend } from "./components/Legend";
 import { Skeleton } from "./components/Skeleton";
 import { ConferenceSwitch } from "./components/ConferenceSwitch";
 import { WeekView } from "./components/WeekView";
+import { TeamSeason } from "./components/TeamSeason";
 import { SettingsView } from "./components/SettingsView";
 import { ArchiveBand } from "./components/SeasonSwitch";
+import { LiveStandingsToggle } from "./components/LiveStandingsToggle";
+import { RefreshOverlay } from "./components/RefreshOverlay";
+import { applyLiveResults, hasLiveGames } from "./lib/liveStandings";
 
 // Kept out of the main bundle: most visits never open a game.
 type GameModalComponent = (typeof import("./components/GameModal"))["default"];
@@ -74,16 +78,37 @@ function Clinch() {
     closeGame,
     weekSlug,
     openWeek,
+    teamAbbr,
+    openTeam,
     season,
     openSeason,
   } = useRoute();
-  const { snapshot: raw, connection } = useSnapshot(season);
+  const {
+    snapshot: raw,
+    connection,
+    refresh,
+    refreshing,
+    refreshFading,
+  } = useSnapshot(season);
   // Accents are picked for the dark page; on light they are remapped once here
   // so every `team.accent` read downstream is already correct.
-  const snapshot = useMemo(
+  const themed = useMemo(
     () => (raw ? themedSnapshot(raw, settings.theme) : raw),
     [raw, settings.theme],
   );
+
+  /*
+   * Games in progress, folded in — or not. Applied here rather than in each
+   * view so the standings, the playoff picture and the bracket can never
+   * disagree about what the table is. `applyLiveResults` hands back the same
+   * object when nothing is being played, so this is free six days a week.
+   */
+  const live = themed ? hasLiveGames(themed.games) : false;
+  const applyLive = live && settings.liveStandings;
+  const snapshot = useMemo(() => {
+    if (!themed || !applyLive) return themed;
+    return { ...themed, conferences: applyLiveResults(themed.conferences, themed.games) };
+  }, [themed, applyLive]);
   const [GameModal, setGameModal] = useState<GameModalComponent | null>(
     () => loadedGameModal,
   );
@@ -157,9 +182,11 @@ function Clinch() {
           ? "Bracket"
           : route === "week"
             ? "Schedule"
-            : route === "settings"
-              ? "Settings"
-              : "Standings";
+            : route === "team"
+              ? "Team schedule"
+              : route === "settings"
+                ? "Settings"
+                : "Standings";
     document.title = snapshot
       ? snapshot.archived
         ? `${view} · ${snapshot.season.year} — Clinch`
@@ -222,6 +249,8 @@ function Clinch() {
             route={route}
             onRoute={onRoute}
             onSeason={openSeason}
+            onRefresh={() => refresh()}
+            refreshing={refreshing}
           />
 
           <main className="mx-auto max-w-[1800px] px-4 pt-5 pb-16 sm:px-6 lg:px-10">
@@ -255,6 +284,12 @@ function Clinch() {
                       label={snapshot.week.label}
                       onOpenGame={onOpenGame}
                     />
+                {live && (
+                  <LiveStandingsToggle
+                    on={settings.liveStandings}
+                    onChange={(on) => update({ liveStandings: on })}
+                  />
+                )}
                     {!wide && (
                       <ConferenceSwitch
                         value={conference}
@@ -275,10 +310,31 @@ function Clinch() {
                     onOpenWeek={openWeek}
                     onOpenGame={onOpenGame}
                   />
+                ) : route === "team" ? (
+                  /*
+                   * The URL names the team; with no team in it, the reader's
+                   * own. Derived here rather than written into the URL on
+                   * arrival, so `/team` stays a link that means "my team" for
+                   * whoever opens it.
+                   */
+                  <TeamSeason
+                    snapshot={snapshot}
+                    teams={teams}
+                    value={teamAbbr ?? settings.favourite}
+                    onChange={openTeam}
+                    onOpenGame={onOpenGame}
+                    onOpenSettings={() => onRoute("settings")}
+                  />
                 ) : route === "bracket" ? (
                   <BracketTree snapshot={snapshot} onOpenGame={onOpenGame} />
                 ) : (
                   <>
+                {live && (
+                  <LiveStandingsToggle
+                    on={settings.liveStandings}
+                    onChange={(on) => update({ liveStandings: on })}
+                  />
+                )}
                     {!wide && (
                       <ConferenceSwitch
                         value={conference}
@@ -330,6 +386,7 @@ function Clinch() {
         </>
 
         {game && GameModal && <GameModal gameId={game} onClose={closeGame} />}
+        <RefreshOverlay active={refreshing} fading={refreshFading} />
       </div>
     </AccentProvider>
   );
