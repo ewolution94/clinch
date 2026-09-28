@@ -1,0 +1,48 @@
+# Watchtower — its own Portainer stack, deliberately.
+#
+# It could live inside the Clinch stack (and once did, in portainer-stack.yml),
+# but separating it is both safer and more useful:
+#
+#  - Adopting it costs the Clinch stack ONE label line instead of a rewrite.
+#    Portainer holds the authoritative copy of that stack and it may have
+#    drifted from the repo; pasting over it risks losing an env var that was
+#    only ever set there.
+#  - Watchtower is a host-level service, not a Clinch one. One copy can keep
+#    every labelled container on the NAS current — add the same label to
+#    PLANUM or Axioma later and this picks them up with no further setup.
+#  - If it ever misbehaves, stopping this stack stops auto-updates without
+#    touching anything that serves traffic.
+#
+# It needs no registry credentials: ghcr.io/ewolution94/clinch is public and
+# pulls anonymously (verified against the registry, not assumed).
+
+services:
+  watchtower:
+    # The original containrrr/watchtower is ARCHIVED upstream — last release
+    # November 2023. This is the maintained fork
+    # (github.com/nicholas-fedor/watchtower), same flags, same
+    # `com.centurylinklabs.*` labels.
+    #
+    # Pinned, and carrying no enable label of its own, so it never updates
+    # itself: it mounts the Docker socket, which is root-equivalent on the
+    # host, and an unattended auto-update of that is a worse trade than a
+    # manual version bump. Raise the pin by hand when you want a newer one.
+    image: nickfedor/watchtower:1.22.3
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      # ⚠️ Load-bearing. Without it Watchtower updates EVERY container on the
+      # NAS — Axioma, PLANUM, the landing page — not just the ones labelled.
+      - WATCHTOWER_LABEL_ENABLE=true
+      # A manifest check is cheap, so this is roughly the delay between a green
+      # CI run and the NAS following it. The default is 86400 (a day).
+      - WATCHTOWER_POLL_INTERVAL=300
+      # Bin the superseded image, or the NAS accretes one per deploy.
+      - WATCHTOWER_CLEANUP=true
+      # Skip the first-run update on start, so adopting this doesn't recreate
+      # anything until there is genuinely something newer to move to.
+      - WATCHTOWER_NO_STARTUP_MESSAGE=false
+      - TZ=Europe/Berlin
+    volumes:
+      # This is what lets it recreate a container. Read-write is required.
+      - /var/run/docker.sock:/var/run/docker.sock

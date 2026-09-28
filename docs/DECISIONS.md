@@ -721,18 +721,38 @@ short. For what the app does and how it's built, see `README.md`.
   2026-09-17 after it happened twice. `release` is the CI branch and the one he
   lives on; don't "tidy up" the divergence between the two, and don't
   fast-forward `main` onto it. This supersedes the older advice in this section.
-- **To redeploy:** commit on `release` and push it. That branch is the CI
-  trigger; a green run publishes `:latest`. **If** the Watchtower stack has been
-  applied on the NAS it then updates itself within ~5 minutes — but see the open
-  thread above: that was never confirmed, so assume a manual Portainer pull
-  ("Recreate" with re-pull image) until Eric says otherwise.
-  The stack is `deploy/portainer-stack.yml`; it must NOT be the repo's
+- **To redeploy:** commit on `release` and push it. That is the whole deploy as
+  of **2026-09-28**: the branch is the CI trigger, a green run publishes
+  `:latest`, and Watchtower on the NAS follows it within ~5 minutes. Confirmed
+  live from the container's own log — `scanned=1 failed=0`, repeated every
+  poll, which is both halves of the proof: it sees exactly the one labelled
+  container (so the label scoping works) and the anonymous GHCR pull raises no
+  auth error. No more manual Portainer "Recreate".
+  The Clinch stack is `deploy/portainer-stack.yml`; it must NOT be the repo's
   `docker-compose.yml`, which has `build: .` and would make Portainer build
   instead of pull.
+- **⚠️ The deploy ends at the NAS, not at the phone.** An installed iOS PWA
+  suspends rather than quits, so tabbing back to it resumes the existing
+  document and never re-fetches. Swipe it out of the app switcher and reopen to
+  pick up a deploy. The in-app refresh button does not do it — it re-fetches
+  the snapshot, not the document.
 - **Portainer does not poll, and never did.** `:latest` is a tag, not a
   subscription — before Watchtower, a green CI run changed nothing on the NAS
   until someone hit Recreate with "re-pull image". Worth remembering if
   Watchtower is ever removed.
+- **Watchtower is its own stack, not a service inside Clinch's.** It started as
+  a second service in `deploy/portainer-stack.yml` and sat unapplied for weeks,
+  partly because adopting it meant rewriting a working stack whose Portainer
+  copy may have drifted from the repo. Split into
+  `deploy/watchtower-stack.yml`, adoption costs the Clinch stack **one label
+  line**. It is also the more honest shape: Watchtower is a host-level service,
+  so one copy keeps every labelled container on the NAS current, and stopping
+  it stops auto-updates without touching anything serving traffic.
+- **Watchtower needs no registry credentials here.** `ghcr.io/ewolution94/clinch`
+  pulls anonymously — checked against the registry rather than assumed, by
+  taking an anonymous pull token and fetching the manifest (200). If the
+  package is ever made private, Watchtower needs a mounted `config.json` with a
+  GHCR PAT, and that is the moment this stops being a five-minute setup.
 - **Watchtower is scoped by label and that is load-bearing.**
   `WATCHTOWER_LABEL_ENABLE=true` means it only touches containers carrying
   `com.centurylinklabs.watchtower.enable=true`. Drop that env var and it starts

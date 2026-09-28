@@ -97,10 +97,6 @@ which is the fastest way to see the bracket and playoff views with real data.
 - **A team's season is settled; it took three wrong homes.** Don't move it
   back into the week view — `docs/DECISIONS.md` lists all three placements and
   why each failed, so nobody proposes one of them again.
-- **Watchtower (auto-deploy) is written but not applied.** Eric was still due to
-  apply `deploy/portainer-stack.yml` in Portainer. Until he does, a push
-  deploys nothing: someone has to re-pull the image in Portainer. Ask before
-  assuming the NAS runs the latest.
 - **The creative theme** has only been verified numerically, never looked at in
   motion by Eric.
 - **Broadcast badges past the ~14-day listings horizon** are unverified:
