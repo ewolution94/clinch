@@ -7,14 +7,23 @@
 #    Portainer holds the authoritative copy of that stack and it may have
 #    drifted from the repo; pasting over it risks losing an env var that was
 #    only ever set there.
-#  - Watchtower is a host-level service, not a Clinch one. One copy can keep
-#    every labelled container on the NAS current — add the same label to
-#    PLANUM or Axioma later and this picks them up with no further setup.
+#  - Watchtower is a host-level service, not a Clinch one. One copy keeps
+#    every labelled container on the NAS current: Clinch, Planum, Axioma,
+#    Fermata, the landing page.
 #  - If it ever misbehaves, stopping this stack stops auto-updates without
 #    touching anything that serves traffic.
 #
-# It needs no registry credentials: ghcr.io/ewolution94/clinch is public and
-# pulls anonymously (verified against the registry, not assumed).
+# It needs no registry credentials: the ghcr.io/ewolution94/* images it
+# follows are public and pull anonymously (verified against the registry).
+#
+# Telegram (verified working on the NAS, 2026-09-30): needs two Portainer
+# stack environment variables, so the bot token never lands in git:
+#
+#   TG_BOT_TOKEN   from @BotFather, e.g. 123456789:AAH…
+#   TG_CHAT_ID     YOUR chat id — from getUpdates, the "chat":{"id":…} of a
+#                  message you sent the bot. NOT the number at the start of
+#                  the token: that's the bot's own id, and Telegram answers
+#                  "Forbidden: the bot can't send messages to the bot".
 
 services:
   watchtower:
@@ -32,17 +41,30 @@ services:
     restart: unless-stopped
     environment:
       # ⚠️ Load-bearing. Without it Watchtower updates EVERY container on the
-      # NAS — Axioma, PLANUM, the landing page — not just the ones labelled.
+      # NAS, not just the ones labelled.
       - WATCHTOWER_LABEL_ENABLE=true
       # A manifest check is cheap, so this is roughly the delay between a green
       # CI run and the NAS following it. The default is 86400 (a day).
       - WATCHTOWER_POLL_INTERVAL=300
       # Bin the superseded image, or the NAS accretes one per deploy.
       - WATCHTOWER_CLEANUP=true
-      # Skip the first-run update on start, so adopting this doesn't recreate
-      # anything until there is genuinely something newer to move to.
+      # Keep this false. In this fork, true also suppresses the startup *log*
+      # block, and routine polls only log at debug level, so the log looks
+      # empty and indistinguishable from a dead Watchtower. With Telegram on,
+      # the startup message doubles as an "alive" ping after a NAS reboot.
       - WATCHTOWER_NO_STARTUP_MESSAGE=false
       - TZ=Europe/Berlin
+      # Telegram. Kept in this list style on purpose: that's what's verified.
+      - WATCHTOWER_NOTIFICATION_URL=telegram://${TG_BOT_TOKEN}@telegram?chats=${TG_CHAT_ID}
+      # One message per release (not yet verified; add these three and check
+      # the log still shows the startup block). With an update report the
+      # template renders only updated/failed containers — nothing on a routine
+      # 5-minute poll, and Watchtower skips empty messages. Without a report
+      # (the startup notification) the else branch passes the startup lines
+      # through, so the "alive" ping after a reboot keeps working.
+      # - WATCHTOWER_NOTIFICATION_REPORT=true
+      # - WATCHTOWER_NOTIFICATION_SKIP_TITLE=true
+      # - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- with .Report -}}{{- range .Updated -}}🚀 {{ .Name }} is live{{ "\n" }}{{ .ImageName }} · {{ .LatestImageID.ShortID }}{{ "\n\n" }}{{- end -}}{{- range .Failed -}}⚠️ {{ .Name }} failed to update{{ "\n" }}{{ .Error }}{{ "\n\n" }}{{- end -}}{{- else -}}{{- range .Entries -}}{{ .Message }}{{ "\n" }}{{- end -}}{{- end -}}'
     volumes:
       # This is what lets it recreate a container. Read-write is required.
       - /var/run/docker.sock:/var/run/docker.sock
