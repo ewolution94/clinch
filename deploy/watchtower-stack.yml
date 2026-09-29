@@ -7,22 +7,14 @@
 #    Portainer holds the authoritative copy of that stack and it may have
 #    drifted from the repo; pasting over it risks losing an env var that was
 #    only ever set there.
-#  - Watchtower is a host-level service, not a Clinch one. One copy keeps
-#    every labelled container on the NAS current: Clinch, Fermata, the
-#    landing page, and anything else carrying the enable label.
+#  - Watchtower is a host-level service, not a Clinch one. One copy can keep
+#    every labelled container on the NAS current — add the same label to
+#    PLANUM or Axioma later and this picks them up with no further setup.
 #  - If it ever misbehaves, stopping this stack stops auto-updates without
 #    touching anything that serves traffic.
 #
-# It needs no registry credentials: the ghcr.io/ewolution94/* images it
-# follows are public and pull anonymously (verified against the registry).
-#
-# Telegram: one message per release, once Watchtower has the new container
-# running — and silence otherwise. Needs two stack environment variables in
-# Portainer (Stacks → watchtower → Environment variables), so the bot token
-# never lands in git:
-#
-#   TG_BOT_TOKEN   from @BotFather, e.g. 123456789:AAH…
-#   TG_CHAT_ID     your chat with the bot, from getUpdates (see below)
+# It needs no registry credentials: ghcr.io/ewolution94/clinch is public and
+# pulls anonymously (verified against the registry, not assumed).
 
 services:
   watchtower:
@@ -40,48 +32,17 @@ services:
     restart: unless-stopped
     environment:
       # ⚠️ Load-bearing. Without it Watchtower updates EVERY container on the
-      # NAS, not just the ones labelled.
-      WATCHTOWER_LABEL_ENABLE: "true"
+      # NAS — Axioma, PLANUM, the landing page — not just the ones labelled.
+      - WATCHTOWER_LABEL_ENABLE=true
       # A manifest check is cheap, so this is roughly the delay between a green
       # CI run and the NAS following it. The default is 86400 (a day).
-      WATCHTOWER_POLL_INTERVAL: "300"
+      - WATCHTOWER_POLL_INTERVAL=300
       # Bin the superseded image, or the NAS accretes one per deploy.
-      WATCHTOWER_CLEANUP: "true"
-      TZ: Europe/Berlin
-
-      # --- Telegram ----------------------------------------------------------
-      # ${VAR:?…} makes the deploy fail loudly if a variable is missing, instead
-      # of starting Watchtower with a broken URL (and silently no auto-deploys).
-      WATCHTOWER_NOTIFICATION_URL: "telegram://${TG_BOT_TOKEN:?set TG_BOT_TOKEN in the stack environment}@telegram?chats=${TG_CHAT_ID:?set TG_CHAT_ID in the stack environment}&preview=no"
-      # Report mode: the template gets the whole session (what was scanned,
-      # updated, failed) instead of raw log lines.
-      WATCHTOWER_NOTIFICATION_REPORT: "true"
-      # Only what changed. The default report template prints "N Scanned,
-      # 0 Updated" on every 5-minute poll; this one renders *nothing* unless a
-      # container was updated or failed — and Watchtower skips an empty
-      # message entirely ("Message empty, skipping send" in its source).
-      # "Updated" means the new container was created and started.
-      WATCHTOWER_NOTIFICATION_TEMPLATE: |-
-        {{- with .Report -}}
-        {{- range .Updated -}}
-        🚀 {{ .Name }} is live
-        {{ .ImageName }} · {{ .LatestImageID.ShortID }}
-        {{ end -}}
-        {{- range .Failed -}}
-        ⚠️ {{ .Name }} failed to update
-        {{ .Error }}
-        {{ end -}}
-        {{- end -}}
-      # The message says it all; no "Watchtower updates on <host>" header.
-      WATCHTOWER_NOTIFICATION_SKIP_TITLE: "true"
-      # Keep the startup message ON. In this fork, suppressing it also
-      # suppresses the startup log block, and routine polls only log at debug
-      # level, so the container log stays completely empty ("No log line
-      # matching the '' filter" in Portainer) and looks exactly like a dead
-      # Watchtower. The cost is one Telegram message whenever Watchtower
-      # itself starts (NAS reboot, stack update), which doubles as an "alive"
-      # signal.
-      WATCHTOWER_NO_STARTUP_MESSAGE: "false"
+      - WATCHTOWER_CLEANUP=true
+      # Skip the first-run update on start, so adopting this doesn't recreate
+      # anything until there is genuinely something newer to move to.
+      - WATCHTOWER_NO_STARTUP_MESSAGE=false
+      - TZ=Europe/Berlin
     volumes:
       # This is what lets it recreate a container. Read-write is required.
       - /var/run/docker.sock:/var/run/docker.sock
