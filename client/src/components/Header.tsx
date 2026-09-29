@@ -261,11 +261,20 @@ export function Header({
             under it, and the edge fade has to dim the labels without dimming
             the border — one element can't do both. The outer box also has no
             overflow of its own, which keeps it out of the scrolling chain.
+
+            ⚠️ Which is why the *scroller* carries `rounded-full` as well, and
+            it is not decoration: the frame is rounded but clips nothing, so
+            the clip belongs to the nav, and a clip is whatever shape that
+            element is. Left square, it cut the active tab's white pill off
+            with a corner that sat about 5px outside the frame's curve, and
+            the white peeked past the border. The two radii are concentric —
+            the frame's inner edge less the 2px of padding is exactly half the
+            nav's height, which is what `rounded-full` resolves to here.
           */}
           <div className="relative min-w-0 rounded-full border border-line bg-ink/70 p-0.5">
             <nav
               ref={nav}
-              className="no-scrollbar flex overflow-x-auto [contain:paint]"
+              className="no-scrollbar flex overflow-x-auto rounded-full [contain:paint]"
               style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
               aria-label={t.views}
             >

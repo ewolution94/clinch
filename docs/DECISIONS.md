@@ -48,6 +48,20 @@ short. For what the app does and how it's built, see `README.md`.
   mask uses, so the two can never disagree. Verified in all four states: at the
   start 0/1, mid-scroll 1/1, at the end 1/0, and 0/0 on a desktop where nothing
   overflows.
+- **⚠️ The scroller carries the pill's radius too, or the active tab spills out
+  of it.** The frame is `rounded-full` and clips nothing (`overflow: visible`,
+  deliberately — it stays out of the scrolling chain). The clipping is done by
+  the `<nav>` inside it, and **a clip is whatever shape that element is**. With
+  the nav square, the active tab's white pill was cut off with a corner sitting
+  about 5px outside the frame's curve, and the white peeked past the border
+  whenever a selected tab was scrolled to an edge. Both now carry
+  `rounded-full`, which is exactly concentric here and not a coincidence worth
+  relying on blindly: the frame's inner radius is 19.6px, the nav is inset 2px
+  by the frame's `p-0.5`, and `rounded-full` on a 35.25px-tall nav resolves to
+  17.6px — the 2px difference, so the clip tracks the curve at a constant
+  offset the whole way round. Change the padding and the radii stop agreeing.
+  Seen by magnifying the frame 6× with a transform and toggling the nav's
+  radius; at 1× it is a two-pixel sliver that only shows on a phone.
 - **The conference switch is not global navigation.** It lives above the
   conference block it controls. It used to sit in the sticky bar, where it cost
   116px of a 390px row and left no room for a fourth tab.
