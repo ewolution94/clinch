@@ -16,7 +16,7 @@
 # It needs no registry credentials: the ghcr.io/ewolution94/* images it
 # follows are public and pull anonymously (verified against the registry).
 #
-# Telegram (verified working on the NAS, 2026-09-30): needs two Portainer
+# Telegram (verified end to end on the NAS, 2026-09-30): needs two Portainer
 # stack environment variables, so the bot token never lands in git:
 #
 #   TG_BOT_TOKEN   from @BotFather, e.g. 123456789:AAH…
@@ -56,15 +56,15 @@ services:
       - TZ=Europe/Berlin
       # Telegram. Kept in this list style on purpose: that's what's verified.
       - WATCHTOWER_NOTIFICATION_URL=telegram://${TG_BOT_TOKEN}@telegram?chats=${TG_CHAT_ID}
-      # One message per release (not yet verified; add these three and check
-      # the log still shows the startup block). With an update report the
+      # One message per release (verified 2026-09-30: clinch, axioma and the
+      # landing page each notified in the same session). With an update report the
       # template renders only updated/failed containers — nothing on a routine
       # 5-minute poll, and Watchtower skips empty messages. Without a report
       # (the startup notification) the else branch passes the startup lines
       # through, so the "alive" ping after a reboot keeps working.
-      # - WATCHTOWER_NOTIFICATION_REPORT=true
-      # - WATCHTOWER_NOTIFICATION_SKIP_TITLE=true
-      # - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- with .Report -}}{{- range .Updated -}}🚀 {{ .Name }} is live{{ "\n" }}{{ .ImageName }} · {{ .LatestImageID.ShortID }}{{ "\n\n" }}{{- end -}}{{- range .Failed -}}⚠️ {{ .Name }} failed to update{{ "\n" }}{{ .Error }}{{ "\n\n" }}{{- end -}}{{- else -}}{{- range .Entries -}}{{ .Message }}{{ "\n" }}{{- end -}}{{- end -}}'
+      - WATCHTOWER_NOTIFICATION_REPORT=true
+      - WATCHTOWER_NOTIFICATION_SKIP_TITLE=true
+      - 'WATCHTOWER_NOTIFICATION_TEMPLATE={{- with .Report -}}{{- range .Updated -}}🚀 {{ .Name }} is live{{ "\n" }}{{ .ImageName }} · {{ .LatestImageID.ShortID }}{{ "\n\n" }}{{- end -}}{{- range .Failed -}}⚠️ {{ .Name }} failed to update{{ "\n" }}{{ .Error }}{{ "\n\n" }}{{- end -}}{{- else -}}{{- range .Entries -}}{{ .Message }}{{ "\n" }}{{- end -}}{{- end -}}'
     volumes:
       # This is what lets it recreate a container. Read-write is required.
       - /var/run/docker.sock:/var/run/docker.sock
