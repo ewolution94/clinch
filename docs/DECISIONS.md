@@ -33,6 +33,21 @@ short. For what the app does and how it's built, see `README.md`.
   the border. The active tab is scrolled into view on arrival, but only when it
   isn't already visible: sliding the bar out from under a finger that just
   tapped a tab is worse than not centring it.
+- **⚠️ An edge fade is not an affordance on its own, and the reason is subtle.**
+  The nav's overflow cue is a fade *plus* a chevron (`ScrollCue` in
+  `Header.tsx`), because the fade alone has nothing to act on at some widths.
+  An inactive tab has no background — only its text paints — so a mask only
+  dims something when the scroller's edge happens to land on a word. Land it in
+  the ~28px of padding between two labels and it dims nothing at all, and the
+  bar reads as if it simply ends there. Reproduced at a 432px viewport: the
+  right edge falls at 394, inside "In the Field"'s leading padding (the tab
+  spans 387–497, its text starts around 401), and the fade is invisible. The
+  chevrons are painted regardless of what is underneath, are siblings of the
+  scroller rather than children (a child would be erased by the very mask it
+  exists to back up), and crossfade on the same `useOverflowEdges` state the
+  mask uses, so the two can never disagree. Verified in all four states: at the
+  start 0/1, mid-scroll 1/1, at the end 1/0, and 0/0 on a desktop where nothing
+  overflows.
 - **The conference switch is not global navigation.** It lives above the
   conference block it controls. It used to sit in the sticky bar, where it cost
   116px of a 390px row and left no room for a fourth tab.

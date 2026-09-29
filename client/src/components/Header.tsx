@@ -8,6 +8,48 @@ import type { Route } from "../hooks/useRoute";
 import type { Strings } from "../lib/strings";
 import type { ConnectionState, Snapshot } from "../lib/types";
 
+/**
+ * "There is more this way."
+ *
+ * The edge fade on its own is not a reliable cue, and the reason is worth
+ * writing down: an inactive tab has no background, only text. So the fade has
+ * something to act on only when the scroller's edge happens to land on a word.
+ * Land it in the ~28px of padding between two labels — which is exactly what
+ * happens at some viewport widths and no others — and the mask fades nothing
+ * at all, leaving a bar that looks like it ends there.
+ *
+ * A chevron is painted whatever is underneath it, so it does not care where
+ * the edge falls. It crossfades on the same state the mask uses, so the two
+ * always agree, and it is `aria-hidden` because the tabs are already reachable
+ * by keyboard and a screen reader has no edge to be stuck at.
+ */
+function ScrollCue({ side, shown }: { side: "start" | "end"; shown: boolean }) {
+  const start = side === "start";
+  return (
+    <span
+      aria-hidden="true"
+      className={clsx(
+        "pointer-events-none absolute inset-y-0 flex w-7 items-center justify-center text-mist transition-opacity duration-300 ease-out",
+        start ? "left-0" : "right-0",
+        shown ? "opacity-100" : "opacity-0",
+      )}
+    >
+      <svg
+        width="7"
+        height="12"
+        viewBox="0 0 7 12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d={start ? "M6 1 1 6l5 5" : "M1 1l5 5-5 5"} />
+      </svg>
+    </span>
+  );
+}
+
 interface HeaderProps {
   snapshot: Snapshot | null;
   connection: ConnectionState;
@@ -48,7 +90,9 @@ export function Header({
   const t = useStrings();
   const nav = useRef<HTMLElement>(null);
   const edges = useOverflowEdges(nav);
-  const mask = edgeFadeMask(edges, 20);
+  // Wide enough that the chevron sitting in it has properly faded labels to
+  // sit on rather than half a word.
+  const mask = edgeFadeMask(edges, 30);
 
   /*
    * Bring the current view into view.
@@ -218,7 +262,7 @@ export function Header({
             the border — one element can't do both. The outer box also has no
             overflow of its own, which keeps it out of the scrolling chain.
           */}
-          <div className="min-w-0 rounded-full border border-line bg-ink/70 p-0.5">
+          <div className="relative min-w-0 rounded-full border border-line bg-ink/70 p-0.5">
             <nav
               ref={nav}
               className="no-scrollbar flex overflow-x-auto [contain:paint]"
@@ -248,6 +292,13 @@ export function Header({
                 </button>
               ))}
             </nav>
+
+            {/*
+              Siblings of the scroller, not children, so the mask doesn't erase
+              the very thing that says there is more to see.
+            */}
+            <ScrollCue side="start" shown={edges.start} />
+            <ScrollCue side="end" shown={edges.end} />
           </div>
         </div>
 
