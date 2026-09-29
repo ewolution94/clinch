@@ -74,9 +74,14 @@ services:
         {{- end -}}
       # The message says it all; no "Watchtower updates on <host>" header.
       WATCHTOWER_NOTIFICATION_SKIP_TITLE: "true"
-      # Otherwise every restart of this stack (or of the NAS) sends a
-      # "Watchtower started" message too.
-      WATCHTOWER_NO_STARTUP_MESSAGE: "true"
+      # Keep the startup message ON. In this fork, suppressing it also
+      # suppresses the startup log block, and routine polls only log at debug
+      # level, so the container log stays completely empty ("No log line
+      # matching the '' filter" in Portainer) and looks exactly like a dead
+      # Watchtower. The cost is one Telegram message whenever Watchtower
+      # itself starts (NAS reboot, stack update), which doubles as an "alive"
+      # signal.
+      WATCHTOWER_NO_STARTUP_MESSAGE: "false"
     volumes:
       # This is what lets it recreate a container. Read-write is required.
       - /var/run/docker.sock:/var/run/docker.sock
