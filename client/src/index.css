@@ -1,3 +1,6 @@
+/* The shared tokens (--ewo-*, from Folio, vendored by its `npm run vendor`), in
+   their own first layer; this file sets the ones it differs in. */
+@import "../vendor/ewo/tokens/tokens.css";
 @import "tailwindcss";
 
 @font-face {
@@ -17,15 +20,15 @@
 }
 
 @theme {
-  --color-abyss: #05070c;
-  --color-abyss-2: #080b14;
-  --color-ink: #0c111c;
+  --color-abyss: var(--ewo-bg);
+  --color-abyss-2: var(--ewo-bg-sunk);
+  --color-ink: var(--ewo-bg-raised);
   --color-ink-2: #11182a;
-  --color-line: #1c2434;
-  --color-line-soft: #141b28;
-  --color-mist: #7c8aa5;
-  --color-fog: #b2bdd2;
-  --color-paper: #eef2f9;
+  --color-line: var(--ewo-line);
+  --color-line-soft: var(--ewo-line-2);
+  --color-mist: var(--ewo-fg-3);
+  --color-fog: var(--ewo-fg-2);
+  --color-paper: var(--ewo-fg);
 
   /**
    * The disc every team mark sits on. Near-paper on purpose: measured across all
@@ -42,14 +45,31 @@
   --color-ice: #7aa2d8;
   --color-live: #ff3d5a;
 
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono:
-    "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-display: var(--ewo-sans);
+  --font-mono: var(--ewo-mono);
 
   --animate-rise: rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-week-forward: week-in-forward 0.3s cubic-bezier(0.16, 1, 0.3, 1)
     both;
   --animate-week-back: week-in-back 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@layer base {
+  /* This app's values for the shared tokens; @theme's names point at them. */
+  :root {
+    --ewo-bg: #05070c;
+    --ewo-bg-sunk: #080b14;
+    --ewo-bg-raised: #0c111c;
+    --ewo-line: #1c2434;
+    --ewo-line-2: #141b28;
+    --ewo-fg: #eef2f9;
+    --ewo-fg-2: #b2bdd2;
+    --ewo-fg-3: #7c8aa5;
+    --ewo-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --ewo-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+    /* The brand orange (deepened on paper) is the accent. */
+    --ewo-accent: var(--color-brand);
+  }
 }
 
 /**
@@ -67,15 +87,15 @@
  */
 @layer base {
   :root[data-theme="light"] {
-    --color-abyss: #eef2f9;
-    --color-abyss-2: #e6ebf4;
-    --color-ink: #ffffff;
+    --ewo-bg: #eef2f9;
+    --ewo-bg-sunk: #e6ebf4;
+    --ewo-bg-raised: #ffffff;
     --color-ink-2: #f4f7fb;
-    --color-line: #d2dae7;
-    --color-line-soft: #e3e9f2;
-    --color-mist: #5b6880;
-    --color-fog: #364054;
-    --color-paper: #0b1220;
+    --ewo-line: #d2dae7;
+    --ewo-line-2: #e3e9f2;
+    --ewo-fg-3: #5b6880;
+    --ewo-fg-2: #364054;
+    --ewo-fg: #0b1220;
 
     /* The accents are picked for a near-black page; on paper the pale ones
        (Miami, the Raiders, New Orleans) wash out. Consumers darken them via
