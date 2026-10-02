@@ -36,7 +36,7 @@
  */
 
 /** Bump to evict everything a previous version cached. */
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `clinch-shell-${VERSION}`;
 const ASSETS = `clinch-assets-${VERSION}`;
 const DATA = `clinch-data-${VERSION}`;
