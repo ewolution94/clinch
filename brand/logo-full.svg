@@ -1,18 +1,6 @@
 <svg width="380" height="80" viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="arm" x1="0" y1="14" x2="0" y2="50" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ff9a52"/>
-      <stop offset="1" stop-color="#f8520a"/>
-    </linearGradient>
-  </defs>
 
-  <g transform="translate(8,8)">
-    <g stroke="url(#arm)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <path d="M13 13 L29 32 L13 51"/>
-      <path d="M51 13 L35 32 L51 51"/>
-    </g>
-    <circle cx="32" cy="32" r="4.6" fill="#ffc53d"/>
-  </g>
+  <svg x="8" y="8" width="64" height="64" viewBox="0 0 1024 1024"><!-- the app icon's mark (development/plans/app-icons) --><defs><linearGradient id="clinch-logo-full-arm" x1="0" y1="286" x2="0" y2="738" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff9a52"/><stop offset="1" stop-color="#f8520a"/></linearGradient></defs><g stroke="url(#clinch-logo-full-arm)" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M236 286 L384 512 L236 738"/><path d="M788 286 L640 512 L788 738"/></g><circle cx="512" cy="512" r="60" fill="#ffc53d"/></svg>
 
   <text x="78" y="43" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="30" font-weight="700" letter-spacing="-0.5" fill="#eef2f9">CLINCH</text>
   <text x="79" y="59" font-family="JetBrains Mono, ui-monospace, monospace" font-size="9.5" letter-spacing="3.4" fill="#7c8aa5">WHO'S IN, WHO'S OUT</text>

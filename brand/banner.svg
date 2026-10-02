@@ -9,14 +9,6 @@
       <stop offset="0" stop-color="#ff6a1a" stop-opacity="0.16"/>
       <stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="lit" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ff9248"/>
-      <stop offset="1" stop-color="#ff5a08"/>
-    </linearGradient>
-    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#c4470f"/>
-      <stop offset="1" stop-color="#8f3108"/>
-    </linearGradient>
     <pattern id="yard" width="96" height="630" patternUnits="userSpaceOnUse">
       <rect x="0" y="0" width="1" height="630" fill="#141b28"/>
     </pattern>
@@ -48,13 +40,7 @@
   </g>
 
   <!-- logo lockup: two bracket arms closing on one point -->
-  <g transform="translate(120,150) scale(2.1)">
-    <g stroke="url(#lit)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <path d="M13 13 L29 32 L13 51"/>
-      <path d="M51 13 L35 32 L51 51"/>
-    </g>
-    <circle cx="32" cy="32" r="4.6" fill="#ffc53d"/>
-  </g>
+  <svg x="120" y="150" width="134.4" height="134.4" viewBox="0 0 1024 1024"><!-- the app icon's mark (development/plans/app-icons) --><defs><linearGradient id="clinch-banner-arm" x1="0" y1="286" x2="0" y2="738" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff9a52"/><stop offset="1" stop-color="#f8520a"/></linearGradient></defs><g stroke="url(#clinch-banner-arm)" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M236 286 L384 512 L236 738"/><path d="M788 286 L640 512 L788 738"/></g><circle cx="512" cy="512" r="60" fill="#ffc53d"/></svg>
 
   <text x="270" y="228" font-family="Space Grotesk, Inter, system-ui, sans-serif" font-size="86" font-weight="700" letter-spacing="-2" fill="#eef2f9">CLINCH</text>
   <text x="274" y="272" font-family="JetBrains Mono, ui-monospace, monospace" font-size="17" letter-spacing="7" fill="#7c8aa5">WHO'S IN, WHO'S OUT</text>
