@@ -7,34 +7,37 @@ interface ClinchMarkProps {
  * Two bracket arms closing on a single point — a playoff bracket narrowing to
  * one team, and the act the whole app is named for. Chevrons rather than a
  * literal bracket because they still read at 16px in a browser tab.
+ *
+ * The app icon's drawing (development/plans/app-icons, 1024 grid), cropped to
+ * the mark; in the app the arms keep their orange and the point its gold.
  */
 export function ClinchMark({ size = 32, className }: ClinchMarkProps) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="192 192 640 640"
       fill="none"
       className={className}
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="clinch-arm" x1="0" y1="4" x2="0" y2="28">
+        <linearGradient id="clinch-arm" x1="0" y1="286" x2="0" y2="738" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#ff9a52" />
           <stop offset="1" stopColor="#f8520a" />
         </linearGradient>
       </defs>
       <g
         stroke="url(#clinch-arm)"
-        strokeWidth="3.6"
+        strokeWidth="80"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       >
-        <path d="M5 5.5 L14 16 L5 26.5" />
-        <path d="M27 5.5 L18 16 L27 26.5" />
+        <path d="M236 286 L384 512 L236 738" />
+        <path d="M788 286 L640 512 L788 738" />
       </g>
-      <circle cx="16" cy="16" r="2.9" fill="#ffc53d" />
+      <circle cx="512" cy="512" r="60" fill="#ffc53d" />
     </svg>
   );
 }
