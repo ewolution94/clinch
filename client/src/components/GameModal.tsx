@@ -687,7 +687,14 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       className="game-dialog"
       aria-label={t.gameDetail}
       // Escape and any native close land here, so the URL follows the dialog.
-      onClose={onClose}
+      // The `close` event arrives a task after `close()`. If the dialog is open
+      // again by then, it's the stale one from StrictMode's dev-only unmount and
+      // remount (the effect's cleanup closed it, the remount reopened it), and
+      // acting on it would shut the game you just opened.
+      onClose={(event) => {
+        if (event.currentTarget.open) return;
+        onClose();
+      }}
       onPointerDown={(event) => {
         // Anywhere outside the panel is the dialog element itself.
         tapStart.current =
