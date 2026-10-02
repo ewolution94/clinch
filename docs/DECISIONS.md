@@ -366,8 +366,8 @@ short. For what the app does and how it's built, see `README.md`.
   The panel is a flex column with `overflow: hidden` and an inner
   `.game-dialog__scroll` does the scrolling. Heights use `dvh`, not `vh` —
   `vh` on iOS counts the area behind the browser chrome.
-- **Background scroll is locked with `overflow: hidden` on the body — not a body
-  pin, and not on `<html>`.** `lib/scrollLock.ts`. This replaced pinning the
+- **Background scroll is locked with `overflow: hidden` — not a body pin.**
+  `lib/scrollLock.ts`. This replaced pinning the
   body at `position: fixed; top: -scrollY`, which moved every layer on the
   page, so WebKit re-laid out and repainted the whole visible page on every
   open and again on close (and the game dialog did it *inside* the view
@@ -376,11 +376,11 @@ short. For what the app does and how it's built, see `README.md`.
   last loophole — scrolling once Safari's toolbar had collapsed — in Safari
   26.4 (bug 240859). Belt and braces: both overlays are `touch-action: none`,
   so a drag anywhere but the dialog's own scroller has nothing to pan, whatever
-  a browser makes of the lock. **On the body, not `<html>`:** the body's own
-  `overflow-x: hidden` is normally handed to the viewport; give `<html>` an
-  overflow and the body keeps its own and turns into a scroll container around
-  the whole page — measured: the sticky bar jumped 20px out of place, and
-  WebKit would rebuild the page into a new scrolling layer. Verified with touch
+  a browser makes of the lock. **Which element carries the lock** is the entry
+  "The scroll lock goes on `<html>`" further down: it sat on the body until
+  `<html>` got `overflow-x: clip`, which silently turned a body lock into a
+  no-op. (This entry used to say "on the body, not `<html>`"; that was right
+  only before the clip.) Verified with touch
   drags: page stays put under drags on the scrim and the sheet header, the
   settings list still scrolls, scroll position survives close untouched.
 - **Team colour never goes *behind* a logo.** The first version put a blurred
