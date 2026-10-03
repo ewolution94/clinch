@@ -54,10 +54,16 @@ services:
       # the startup message doubles as an "alive" ping after a NAS reboot.
       - WATCHTOWER_NO_STARTUP_MESSAGE=false
       - TZ=Europe/Berlin
-      # Telegram. Kept in this list style on purpose: that's what's verified.
-      - WATCHTOWER_NOTIFICATION_URL=telegram://${TG_BOT_TOKEN}@telegram?chats=${TG_CHAT_ID}
+      # Telegram, then Census's deploy markers, space-separated: shoutrrr sends every message to
+      # each. Census reads the same rendered text on its internal port (only reachable over the
+      # `ewolution` network below) and ignores the startup ping. If Census is down, Watchtower logs
+      # an error for that URL and Telegram still gets its message.
+      # Kept in this list style on purpose: that's what's verified.
+      - WATCHTOWER_NOTIFICATION_URL=telegram://${TG_BOT_TOKEN}@telegram?chats=${TG_CHAT_ID} generic+http://census:4901/hooks/watchtower
       # One message per release (verified 2026-09-30: clinch, axioma and the
-      # landing page each notified in the same session). With an update report the
+      # landing page each notified in the same session). ⚠️ Census parses this
+      # template's "🚀 <name> is live" and "<image> · <id>" lines
+      # (census/server/src/markers.ts): change both together. With an update report the
       # template renders only updated/failed containers — nothing on a routine
       # 5-minute poll, and Watchtower skips empty messages. Without a report
       # (the startup notification) the else branch passes the startup lines
@@ -68,3 +74,11 @@ services:
     volumes:
       # This is what lets it recreate a container. Read-write is required.
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      # Only to reach census:4901 for the deploy markers. It's a normal bridge network, so
+      # Telegram and the registries stay reachable.
+      - ewolution
+
+networks:
+  ewolution:
+    external: true
