@@ -34,10 +34,21 @@ services:
       # - CLINCH_BROADCAST=off
       # Pin a completed season instead of following the live one:
       # - CLINCH_SEASON=2025
+      # Visit counts: /_e and /_e.js are forwarded to Census over the `ewolution`
+      # network. Remove the line to stop counting; the page doesn't change either way.
+      - CLINCH_CENSUS=http://census:4901
+    networks:
+      # The shared network Census listens on. It must exist before this stack is
+      # updated (Portainer → Networks → `ewolution`).
+      - ewolution
     labels:
       # The opt-in Watchtower looks for. Without this label the container is
       # ignored entirely — which is the whole safety property, since Watchtower
       # runs with WATCHTOWER_LABEL_ENABLE=true. This single line is what turns
       # "push `release`" into a deploy.
       - "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  ewolution:
+    external: true
 

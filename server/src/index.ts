@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
+import { createCensus } from "./census.js";
 import { describeError } from "./describeError.js";
 import { gameEvent, googleCalendarPage, toIcs, type GameEvent } from "./calendar.js";
 import type { Request } from "express";
@@ -21,6 +22,14 @@ const games = new GameDetailStore();
 
 const app = express();
 app.disable("x-powered-by");
+
+// Visit counts: /_e.js and /_e go to Census (census.ts) before anything else can answer them.
+const census = createCensus({ target: config.census, site: "clinch" });
+app.use((req, res, next) => {
+  census(req, res).then((handled) => {
+    if (!handled) next();
+  }, next);
+});
 
 app.get("/api/health", (_req, res) => {
   const snapshot = store.current;

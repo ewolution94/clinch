@@ -2,12 +2,16 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
+import { loadCensus } from "./lib/census";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 );
+
+// Clinch never rewrites the address on load, so the first path is already the visit's.
+loadCensus();
 
 /**
  * The offline shell — see `public/sw.js` for what it does and doesn't cache.

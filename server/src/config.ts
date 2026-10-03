@@ -55,4 +55,6 @@ export const config = {
   outlets: outlets(),
   /** Finished seasons offered in the season picker, newest first. */
   archiveSeasons: archiveSeasons(),
+  /** Census's ingest origin for visit counts, e.g. http://census:4901. Empty = off. */
+  census: process.env.CLINCH_CENSUS ?? "",
 };

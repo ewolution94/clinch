@@ -269,6 +269,15 @@ it only ever touches containers that opt in, and nothing else on the host.
 Without it, nothing polls: `:latest` is a tag, not a subscription, and a green CI
 run changes nothing on the host until someone re-pulls the image.
 
+**Visit counts** go to [Census](https://github.com/ewolution94/census), the
+self-hosted counter on the NAS: no cookies, nothing stored on the device, and
+still nothing stored by Clinch. `server/src/census.ts` forwards `/_e.js` and
+`/_e` to it over the shared Docker network `ewolution` (where Census listens as
+`census:4901`), adding only `X-Site: clinch`. Every path change counts as a page
+view (`/week/14`, `/team/KC`, `/settings`); `?game=` and `?season=` don't.
+Without `CLINCH_CENSUS` (local runs) the forwarder answers with an empty beacon
+and counts nothing.
+
 ### Environment variables
 
 | Variable                  | Default   | Purpose                                                    |
@@ -283,6 +292,7 @@ run changes nothing on the host until someone re-pulls the image.
 | `CLINCH_BROADCAST_TTL_MS`  | `21600000`| How long a day of TV listings is trusted.                    |
 | `CLINCH_OUTLETS`           | `RTL,RTL+`| Which outlets count as watchable — also `Nitro`, `Sky`.      |
 | `CLINCH_ARCHIVE_SEASONS`   | `2021…2025` | Finished seasons offered in the season picker.            |
+| `CLINCH_CENSUS`            | *(off)*   | Census's ingest origin for visit counts, `http://census:4901` on the NAS. |
 
 ## Where the data comes from
 
@@ -497,6 +507,7 @@ clinch/
 ├── brand/                  standalone brand assets (mark, logo, banner)
 ├── server/src/
 │   ├── config.ts           env vars
+│   ├── census.ts           forwards /_e.js and /_e to Census (visit counts)
 │   ├── espn.ts             upstream client + response normalisation
 │   ├── broadcast.ts        German TV listings: fetch + parse
 │   ├── broadcastStore.ts   listings cache, matched onto the week's games
