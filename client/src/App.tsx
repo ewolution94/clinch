@@ -90,6 +90,16 @@ function Clinch() {
     refreshing,
     refreshFading,
   } = useSnapshot(season);
+  // The splash screen (index.html) lifts once the league is on screen, or Settings
+  // is, or the snapshot has failed, so a first open without a signal isn't held up.
+  const splashLifted = useRef(false);
+  useEffect(() => {
+    if (splashLifted.current) return;
+    if (raw || connection === "offline" || route === "settings") {
+      splashLifted.current = true;
+      requestAnimationFrame(() => window.dispatchEvent(new Event("splash:ready")));
+    }
+  }, [raw, connection, route]);
   // Accents are picked for the dark page; on light they are remapped once here
   // so every `team.accent` read downstream is already correct.
   const themed = useMemo(
