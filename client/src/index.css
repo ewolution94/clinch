@@ -3,6 +3,17 @@
 @import "../vendor/ewo/tokens/tokens.css";
 @import "tailwindcss";
 
+/* Two quick taps on a control must not zoom the page: iOS Safari's double-tap zoom also made
+   sticky headers look stuck mid-page (learnings/ios-and-webkit.md, 2026-10-08). On the controls,
+   not <html>, which Safari ignores once it has an overflow. In the base layer, so a utility like
+   touch-none still wins. */
+@layer base {
+  :where(button, a, label, summary, input, select, textarea, [role='button'], [role='radio']) {
+    touch-action: manipulation;
+  }
+}
+
+
 @font-face {
   font-family: "Space Grotesk";
   src: url("/fonts/space-grotesk.woff2") format("woff2");
