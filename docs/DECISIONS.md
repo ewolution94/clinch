@@ -603,14 +603,29 @@ short. For what the app does and how it's built, see `README.md`.
   red. It has already earned its place — five of ten mutations slipped past the
   first version of those tests, including ranking by wins instead of win
   percentage and letting level teams reshuffle.
+- **⚠️ Every upstream call settles on our clock, and so does every poll.**
+  On 2026-10-09, after two days of the NAS losing DNS on and off, one poll
+  never settled: no answer, no error, no timeout, although `getJson` aborted
+  its request after 12 seconds. The loop waits for a poll to finish before it
+  schedules the next, so the server kept Friday's table through a whole Sunday
+  of games: 0–0 everywhere, no live state, so no "Apply live scores", and a
+  refresh button that only joined the stuck poll. `/api/health` still said
+  ok, so nothing noticed. Now `withDeadline` (`server/src/deadline.ts`) races
+  every ESPN and listings request against its own timer instead of trusting
+  `fetch` to honour the abort, a whole poll has a deadline of its own
+  (`CLINCH_POLL_DEADLINE_MS`, five minutes, above a cold start's two dozen
+  requests timing out one after another), and `/api/health` answers 503 when
+  no poll has finished for longer than a working loop allows, which Docker
+  and Pulse both see. `tests/polling.test.ts` stubs a `fetch` that never
+  answers.
 - **The refresh button goes upstream, not to the cache.** An installed app has
   no browser chrome to pull down on, so there is no pull-to-refresh — hence a
   button, next to the sync pill where a reader already looks to see how current
   the page is. It POSTs `/api/refresh`, which makes the server poll ESPN now
   rather than on its 120-second idle cadence; a button that only re-read what
   the server already had would visibly do nothing. Guarded twice: `refresh()`
-  ignores a second call while one is in flight, and a poll from the last five
-  seconds is answered as-is. It also rebuilds the `EventSource`, and **that is
+  joins the poll already in flight rather than starting a second, and a poll
+  from the last five seconds is answered as-is. It also rebuilds the `EventSource`, and **that is
   the half that matters on a phone** — iOS suspends a backgrounded app and the
   stream it was holding never comes back, which is how an installed app sits
   showing Sunday's table on Monday. Returning to the app does the same thing by

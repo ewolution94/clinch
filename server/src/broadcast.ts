@@ -17,6 +17,7 @@
  * missing page.
  */
 import { TEAMS } from "./teams.js";
+import { withDeadline } from "./deadline.js";
 
 export type Outlet = "RTL" | "RTL+" | "Nitro" | "Sky";
 
@@ -32,12 +33,10 @@ const TVS = "https://www.tvspielfilm.de/tv-programm/sendungen/";
 const RAN =
   "https://ran.joyn.de/sports/american-football/nfl/nfl202627-live-uebertragung-im-free-tv-livestream-und-ticker-wer-zeigt-die-partien-der-aktuellen-saison-173951";
 
-async function getText(url: string, timeoutMs: number): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
+function getText(url: string, timeoutMs: number): Promise<string> {
+  return withDeadline(timeoutMs, async (signal) => {
     const res = await fetch(url, {
-      signal: controller.signal,
+      signal,
       redirect: "follow",
       headers: {
         accept: "text/html,application/xhtml+xml",
@@ -47,9 +46,7 @@ async function getText(url: string, timeoutMs: number): Promise<string> {
     });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
     return await res.text();
-  } finally {
-    clearTimeout(timer);
-  }
+  });
 }
 
 /* ------------------------------------------------------------------- teams */

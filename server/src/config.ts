@@ -43,6 +43,12 @@ export const config = {
   /** How long an unsettled week is trusted when browsed — odds and times move. */
   weekTtlMs: int("CLINCH_WEEK_TTL_MS", 1_800_000),
   requestTimeoutMs: int("CLINCH_TIMEOUT_MS", 12_000),
+  /**
+   * How long one whole poll may take before it is given up on. A cold start
+   * reads every week so far, one after another, so this sits above two dozen
+   * requests each running into its own timeout.
+   */
+  pollDeadlineMs: int("CLINCH_POLL_DEADLINE_MS", 300_000),
   /** Set to "off" to stop looking German broadcasts up at all. */
   broadcasts: process.env.CLINCH_BROADCAST !== "off",
   /** How long a day of TV listings is trusted. They move a few times a day. */

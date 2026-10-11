@@ -3,6 +3,7 @@ import { buildConferences } from "./derive.js";
 import { broadcastStore } from "./broadcastStore.js";
 import { config } from "./config.js";
 import { describeError } from "./describeError.js";
+import { withDeadline } from "./deadline.js";
 import { assembleTeamSchedule } from "./teamSchedule.js";
 import type {
   PostseasonGame,
@@ -47,10 +48,27 @@ export class SnapshotStore {
 
   private listeners = new Set<(snapshot: Snapshot) => void>();
   private timer: NodeJS.Timeout | null = null;
-  private refreshing = false;
+  /** The poll in flight, which a second caller joins rather than starting another. */
+  private refreshing: Promise<void> | null = null;
+  /** When the last poll finished, either way. */
+  private lastPollAt = Date.now();
 
   get current(): Snapshot | null {
     return this.snapshot;
+  }
+
+  /**
+   * Whether the loop is still going round: a poll has finished, well or badly,
+   * within the longest gap a working loop leaves between two.
+   *
+   * Not the same as fresh data. ESPN being down for an hour is a failing poll
+   * every minute and a page marked stale, which is the loop working. This is
+   * false only when nothing finishes at all, which no reader can tell from a
+   * table that still looks current. `/api/health` answers 503 on it, so Docker
+   * and Pulse can.
+   */
+  get polling(): boolean {
+    return Date.now() - this.lastPollAt < config.pollDeadlineMs + config.refreshMs + 60_000;
   }
 
   subscribe(listener: (snapshot: Snapshot) => void): () => void {
@@ -74,9 +92,9 @@ export class SnapshotStore {
    * button that only re-reads what the server already had would do nothing
    * visible when the last poll was a minute ago. This goes upstream instead.
    *
-   * Two things keep it from becoming a way to hammer ESPN: `refresh()` already
-   * ignores a second call while one is in flight, and a poll that happened
-   * within the last few seconds is treated as good enough. Both mean the answer
+   * Two things keep it from becoming a way to hammer ESPN: `refresh()` joins
+   * the poll already in flight rather than starting a second, and a poll that
+   * happened within the last few seconds is treated as good enough. Both mean the answer
    * to "refresh" is sometimes "you already have it", which is the correct
    * answer and costs nobody a request.
    */
@@ -208,91 +226,102 @@ export class SnapshotStore {
     });
   }
 
-  private async refresh(): Promise<void> {
-    if (this.refreshing) return;
-    this.refreshing = true;
+  private refresh(): Promise<void> {
+    this.refreshing ??= this.poll().finally(() => {
+      this.refreshing = null;
+    });
+    return this.refreshing;
+  }
 
+  private async poll(): Promise<void> {
     try {
-      // Always ask unpinned: it's the only call that reports which week the
-      // league is actually on. Asking it for a specific season without a week
-      // is not the same question — ESPN reads `dates=YYYY` as the calendar
-      // year, and hands back January's games from the *previous* season.
-      const live = await fetchScoreboard({}, config.requestTimeoutMs);
-      const pinnedToPast = config.season !== null && config.season !== live.season;
-      const season = config.season ?? live.season;
-      const seasonType = pinnedToPast ? 2 : live.seasonType;
-
-      const currentWeek = pinnedToPast
-        ? REGULAR_SEASON_WEEKS
-        : seasonType === 1
-          ? 0
-          : seasonType === 3
-            ? REGULAR_SEASON_WEEKS
-            : live.week;
-
-      // The live response is this week's games — but only when "this week" is
-      // the week we're rendering. For a pinned season every week is fetched by
-      // number instead.
-      const liveIsCurrent = !pinnedToPast && seasonType === 2;
-      if (liveIsCurrent) {
-        this.weeks.set(weekKey(2, currentWeek), {
-          games: live.games,
-          fetchedAt: Date.now(),
-          settled: live.games.length > 0 && live.games.every((g) => g.state === "post"),
-          byeTeams: live.byeTeams,
-        });
-      }
-
-      // Weeks 1..N feed recent form; the week after feeds "next game". Settled
-      // weeks are only ever fetched once, so steady state is one request here.
-      const wanted: number[] = [];
-      for (let w = 1; w <= Math.min(currentWeek + 1, REGULAR_SEASON_WEEKS); w++) {
-        if (!liveIsCurrent || w !== currentWeek) wanted.push(w);
-      }
-      const allGames: ScoreboardGame[] = liveIsCurrent ? [...live.games] : [];
-      for (const week of wanted) {
-        try {
-          allGames.push(...(await this.weekGames(season, week)));
-        } catch {
-          // A single missing week costs us some form history, not the page.
-        }
-      }
-
-      // There is no postseason to read during a regular season, so don't ask.
-      const postseason =
-        pinnedToPast || seasonType === 3 ? await this.fetchPostseason(season) : [];
-
-      const standings = await fetchStandings(config.season, config.requestTimeoutMs);
-      const conferences = buildConferences(standings, allGames);
-      const weekGames = allGames.filter((g) => g.week === (currentWeek || 1));
-      const anyLive = weekGames.some((g) => g.state === "in");
-
-      this.publish({
-        generatedAt: Date.now(),
-        season: { year: season, type: seasonType, label: SEASON_TYPE_LABEL[seasonType] ?? "Season" },
-        week: {
-          number: currentWeek,
-          label: seasonType === 2 ? `Week ${currentWeek}` : (SEASON_TYPE_LABEL[seasonType] ?? "Season"),
-          total: REGULAR_SEASON_WEEKS,
-        },
-        live: anyLive,
-        stale: false,
-        conferences,
-        games: weekGames,
-        postseason,
-        calendar: live.calendar,
-        archiveSeasons: config.archiveSeasons.filter((y) => y !== season),
-        currentSeason: season,
-      });
-
-      this.schedule(anyLive ? config.liveRefreshMs : config.refreshMs);
+      // Every request below has its own deadline. This one is for the poll as
+      // a whole, so that nothing in it, request or not, can hold the loop.
+      const snapshot = await withDeadline(config.pollDeadlineMs, () => this.read());
+      this.publish(snapshot);
+      this.schedule(snapshot.live ? config.liveRefreshMs : config.refreshMs);
     } catch (error) {
       console.error("[clinch] refresh failed:", describeError(error));
       if (this.snapshot) this.publish({ ...this.snapshot, stale: true });
       this.schedule(Math.min(config.refreshMs, 60_000));
     } finally {
-      this.refreshing = false;
+      this.lastPollAt = Date.now();
     }
+  }
+
+  /** One poll's worth of reading, as a snapshot nobody has seen yet. */
+  private async read(): Promise<Snapshot> {
+    // Always ask unpinned: it's the only call that reports which week the
+    // league is actually on. Asking it for a specific season without a week
+    // is not the same question — ESPN reads `dates=YYYY` as the calendar
+    // year, and hands back January's games from the *previous* season.
+    const live = await fetchScoreboard({}, config.requestTimeoutMs);
+    const pinnedToPast = config.season !== null && config.season !== live.season;
+    const season = config.season ?? live.season;
+    const seasonType = pinnedToPast ? 2 : live.seasonType;
+
+    const currentWeek = pinnedToPast
+      ? REGULAR_SEASON_WEEKS
+      : seasonType === 1
+        ? 0
+        : seasonType === 3
+          ? REGULAR_SEASON_WEEKS
+          : live.week;
+
+    // The live response is this week's games — but only when "this week" is
+    // the week we're rendering. For a pinned season every week is fetched by
+    // number instead.
+    const liveIsCurrent = !pinnedToPast && seasonType === 2;
+    if (liveIsCurrent) {
+      this.weeks.set(weekKey(2, currentWeek), {
+        games: live.games,
+        fetchedAt: Date.now(),
+        settled: live.games.length > 0 && live.games.every((g) => g.state === "post"),
+        byeTeams: live.byeTeams,
+      });
+    }
+
+    // Weeks 1..N feed recent form; the week after feeds "next game". Settled
+    // weeks are only ever fetched once, so steady state is one request here.
+    const wanted: number[] = [];
+    for (let w = 1; w <= Math.min(currentWeek + 1, REGULAR_SEASON_WEEKS); w++) {
+      if (!liveIsCurrent || w !== currentWeek) wanted.push(w);
+    }
+    const allGames: ScoreboardGame[] = liveIsCurrent ? [...live.games] : [];
+    for (const week of wanted) {
+      try {
+        allGames.push(...(await this.weekGames(season, week)));
+      } catch {
+        // A single missing week costs us some form history, not the page.
+      }
+    }
+
+    // There is no postseason to read during a regular season, so don't ask.
+    const postseason =
+      pinnedToPast || seasonType === 3 ? await this.fetchPostseason(season) : [];
+
+    const standings = await fetchStandings(config.season, config.requestTimeoutMs);
+    const conferences = buildConferences(standings, allGames);
+    const weekGames = allGames.filter((g) => g.week === (currentWeek || 1));
+    const anyLive = weekGames.some((g) => g.state === "in");
+
+    return {
+      generatedAt: Date.now(),
+      season: { year: season, type: seasonType, label: SEASON_TYPE_LABEL[seasonType] ?? "Season" },
+      week: {
+        number: currentWeek,
+        label: seasonType === 2 ? `Week ${currentWeek}` : (SEASON_TYPE_LABEL[seasonType] ?? "Season"),
+        total: REGULAR_SEASON_WEEKS,
+      },
+      live: anyLive,
+      stale: false,
+      conferences,
+      games: weekGames,
+      postseason,
+      calendar: live.calendar,
+      archiveSeasons: config.archiveSeasons.filter((y) => y !== season),
+      currentSeason: season,
+    };
   }
 
   private publish(snapshot: Snapshot): void {

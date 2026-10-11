@@ -1,24 +1,21 @@
 import type { CalendarWeek, ScoreboardGame } from "./types.js";
 import { teamMeta } from "./teams.js";
+import { withDeadline } from "./deadline.js";
 
 export const SITE = "https://site.api.espn.com/apis/site/v2/sports/football/nfl";
 const CORE = "https://site.api.espn.com/apis/v2/sports/football/nfl";
 
 const USER_AGENT = "clinch/1.0 (+https://github.com/ewolution94/clinch)";
 
-export async function getJson<T>(url: string, timeoutMs: number): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
+export function getJson<T>(url: string, timeoutMs: number): Promise<T> {
+  return withDeadline(timeoutMs, async (signal) => {
     const res = await fetch(url, {
-      signal: controller.signal,
+      signal,
       headers: { accept: "application/json", "user-agent": USER_AGENT },
     });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
     return (await res.json()) as T;
-  } finally {
-    clearTimeout(timer);
-  }
+  });
 }
 
 /* ---------------------------------------------------------------- standings */

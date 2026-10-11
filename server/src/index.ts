@@ -33,8 +33,11 @@ app.use((req, res, next) => {
 
 app.get("/api/health", (_req, res) => {
   const snapshot = store.current;
-  res.json({
-    ok: true,
+  // A poll loop that has stopped serves a table that looks current and isn't,
+  // and nothing on the page can tell. 503 is what Docker and Pulse can tell.
+  const ok = store.polling;
+  res.status(ok ? 200 : 503).json({
+    ok,
     ready: snapshot !== null,
     stale: snapshot?.stale ?? null,
     updatedAt: snapshot?.generatedAt ?? null,
