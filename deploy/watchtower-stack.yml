@@ -39,6 +39,12 @@ services:
     image: nickfedor/watchtower:1.22.3
     container_name: watchtower
     restart: unless-stopped
+    healthcheck:
+      # Every ~10 minutes, each container on its own interval so they never line up (plans/nas-load.md).
+      interval: 733s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     environment:
       # ⚠️ Load-bearing. Without it Watchtower updates EVERY container on the
       # NAS, not just the ones labelled.

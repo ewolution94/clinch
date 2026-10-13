@@ -19,6 +19,12 @@ services:
     image: ghcr.io/ewolution94/clinch:latest
     container_name: clinch
     restart: unless-stopped
+    healthcheck:
+      # Every ~10 minutes, each container on its own interval so they never line up (plans/nas-load.md).
+      interval: 642s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     ports:
       - "4600:4600"
     environment:
