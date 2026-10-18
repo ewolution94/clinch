@@ -6,6 +6,7 @@ import { BroadcastBadge, BroadcastBand } from "./Broadcast";
 import { AbroadBadge, FavouriteStar } from "./Marks";
 import { ScheduleHow } from "./ScheduleHow";
 import { useWeek, prefetchWeek } from "../hooks/useWeek";
+import { scoresVersion } from "../lib/scoresVersion";
 import { currentWeek, findBySlug, relativeLabel, weekSlug } from "../lib/weeks";
 import { teamMap } from "../lib/teams";
 import { useLocale, useSettings, useStrings } from "../lib/useSettings";
@@ -228,10 +229,12 @@ export function WeekView({
   const next =
     index >= 0 && index < calendar.length - 1 ? calendar[index + 1] : null;
 
+  const version = useMemo(() => scoresVersion(snapshot), [snapshot]);
   const { view, loading } = useWeek(
     selected?.seasonType ?? 2,
     selected?.week ?? 1,
     season,
+    version,
   );
 
   // Which way the last move went, so the incoming week enters from that side.

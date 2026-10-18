@@ -603,6 +603,15 @@ short. For what the app does and how it's built, see `README.md`.
   red. It has already earned its place — five of ten mutations slipped past the
   first version of those tests, including ranking by wins instead of win
   percentage and letting level teams reshuffle.
+- **⚠️ Every view that shows a score follows the stream.** Only the snapshot
+  arrives over SSE; the Week and Team Schedules are requests of their own. On
+  2026-10-18 the Week Schedule, open on an iPhone through a game day, kept the
+  score it had loaded an hour earlier, and the refresh button, which renews
+  the snapshot, could not touch it. The team schedule was held for the whole
+  session. Both now reload when `scoresVersion(snapshot)` changes (a score, a
+  clock, a state or a kickoff in the snapshot's games): every poll while a
+  game is on, never between games. A reload that fails keeps what is on
+  screen. A new view with scores in it takes the same key.
 - **⚠️ Every upstream call settles on our clock, and so does every poll.**
   On 2026-10-09, after two days of the NAS losing DNS on and off, one poll
   never settled: no answer, no error, no timeout, although `getJson` aborted

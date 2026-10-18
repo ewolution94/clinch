@@ -5,9 +5,12 @@ import type { TeamSchedule } from "../lib/types";
 /**
  * One team's season.
  *
- * Held for the session once fetched. A schedule only changes when a game is
- * played, and the week views carry that as it happens — so flicking between
- * teams costs one request each and nothing after that.
+ * Held for the session once fetched, so flicking between teams costs one
+ * request each. A finished season is never asked again. The live one is
+ * asked again whenever `version`, the snapshot's `scoresVersion`, changes:
+ * a game the team is playing moves on screen as it is played, and one that
+ * finished while the app was in the background turns up as a result. Until
+ * 2026-10-18 nothing did, and the schedule held its first answer all session.
  *
  * The answer is worked out during render from the cache and the last thing that
  * arrived; the effect only ever *fetches*. That keeps every `setState` inside a
@@ -36,12 +39,14 @@ interface Arrived {
 export function useTeamSchedule(
   abbr: string | null,
   season: number | null,
+  version: string,
 ): State {
   const [arrived, setArrived] = useState<Arrived | null>(null);
   const id = abbr ? key(abbr, season) : null;
 
   useEffect(() => {
-    if (!abbr || !id || cache.has(id)) return;
+    if (!abbr || !id) return;
+    if (season !== null && cache.has(id)) return;
 
     let cancelled = false;
     fetch(teamScheduleUrl(abbr, season))
@@ -57,7 +62,7 @@ export function useTeamSchedule(
     return () => {
       cancelled = true;
     };
-  }, [abbr, season, id]);
+  }, [abbr, season, id, version]);
 
   if (!id) return { schedule: null, loading: false, error: false };
 

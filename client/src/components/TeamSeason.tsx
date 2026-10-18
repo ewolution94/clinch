@@ -7,6 +7,7 @@ import { ScheduleHow } from "./ScheduleHow";
 import { SelectField } from "./SelectField";
 import { Shimmer } from "./Shimmer";
 import { useTeamSchedule } from "../hooks/useTeamSchedule";
+import { scoresVersion } from "../lib/scoresVersion";
 import { useFavourite, useLocale, useStrings } from "../lib/useSettings";
 import type { Snapshot, TeamEntry, TeamScheduleGame } from "../lib/types";
 
@@ -200,7 +201,8 @@ export function TeamSeason({
   const favourite = useFavourite();
   /** Null for the live season; the year for an archived one. */
   const season = snapshot.archived ? snapshot.season.year : null;
-  const { schedule, loading, error } = useTeamSchedule(value, season);
+  const version = useMemo(() => scoresVersion(snapshot), [snapshot]);
+  const { schedule, loading, error } = useTeamSchedule(value, season, version);
 
   /**
    * Grouped by division, the same way the favourite-team picker in settings

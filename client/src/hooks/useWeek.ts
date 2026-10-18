@@ -43,10 +43,18 @@ interface WeekState {
   error: boolean;
 }
 
+/**
+ * One week of games.
+ *
+ * `version` is the snapshot's `scoresVersion`: when a game moves, an unsettled
+ * week is read again, in place, without going back to loading. A settled week
+ * answers from the cache above and never asks.
+ */
 export function useWeek(
   seasonType: number,
   week: number,
   season: number | null,
+  version: string,
 ): WeekState {
   const [loaded, setLoaded] = useState<{
     id: string;
@@ -68,13 +76,16 @@ export function useWeek(
         if (!cancelled) setLoaded({ id, view, error: false });
       })
       .catch(() => {
-        if (!cancelled) setLoaded({ id, view: null, error: true });
+        // A reload that fails keeps the week already on screen; only a first
+        // load has nothing better to show than the error.
+        if (!cancelled)
+          setLoaded((prev) => (prev?.id === id && prev.view ? prev : { id, view: null, error: true }));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [seasonType, week, season]);
+  }, [seasonType, week, season, version]);
 
   const current =
     loaded && loaded.id === key(seasonType, week, season) ? loaded : null;
