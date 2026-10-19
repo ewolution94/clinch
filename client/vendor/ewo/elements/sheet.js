@@ -71,7 +71,10 @@ var u = t`
   /* The sheet is dragged down by the grip or the header (2026-10-07: the 22 px grip alone was hard
      to hit). The grip is 6 px taller and overlaps the header by as much, so nothing below it moves. */
   .grip { display: grid; place-items: center; height: 28px; margin-bottom: -6px; flex: none; touch-action: none; cursor: grab; }
-  .grip span { width: 44px; height: 5px; border-radius: 3px; background: var(--ewo-fill-3); }
+  /* Light mode's grip is as strong as iOS's own grabber (its tertiary label, about 30%): at the 10%
+     of --ewo-fill-3 it all but vanished on a white sheet, and on Clinch's pale team colours
+     (2026-10-19). Dark mode keeps the fill. */
+  .grip span { width: 44px; height: 5px; border-radius: 3px; background: light-dark(rgb(19 19 21 / 0.3), rgb(242 241 238 / 0.1)); }
   /* A card from 720px drags nowhere, so no grip. After the rule above: placed with the other 720px
      rules it lost to it, and every desktop sheet showed a grip that did nothing (until 2026-10-07). */
   @media (min-width: 720px) { .grip { display: none; } }
