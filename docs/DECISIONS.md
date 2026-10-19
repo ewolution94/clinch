@@ -273,9 +273,15 @@ short. For what the app does and how it's built, see `README.md`.
   Clinch's part, in `GameModal`: it stays mounted, `open` follows `?game=`,
   `oncancel` calls `closeGame` at once (state first, as below), and the game
   on screen is kept until the sheet's `close`, so it slides out whole instead
-  of collapsing to its header. The heading slot says the week and the day;
-  the scoreboard runs edge to edge (`.game-sheet::part(body)` drops the side
-  and top padding, `::part(header)` lines the heading up with it). Verified
+  of collapsing to its header. **The scoreboard is the top of the sheet**
+  (Eric, the same day: team colours and marks right up to the edge, as
+  before): the sheet's grip and header leave the flow and float on it
+  (`::part(grip)`, `::part(header)` absolute), the board keeps clear with
+  `--game-sheet-top` and carries the week and the day on the close button's
+  row, and the drag still starts on that strip. Once the content scrolls up
+  under them, `GameModal` masks the body's top edge in proportion to the
+  scroll (clear for 58px at most, whole by ~100px); at rest no mask is drawn.
+  Verified
   that day in Chromium and WebKit at 390 and 1280px (tap, a tap beside it over
   another game, the close button, Escape, back, a `?game=` link, the lock, the
   height steady through the slide-out) and in the iOS Simulator (a drag down,

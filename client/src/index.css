@@ -311,23 +311,54 @@
 
   /*
    * The game sheet: Folio's <ewo-sheet> (GameModal.tsx), which brings its own
-   * backdrop, slide, drag, scroll lock and focus handling. Its body is padded
-   * for plain content; the scoreboard runs edge to edge, so the sides and the
-   * top go and every section pads itself. The bottom padding stays: it holds
-   * the safe area and, in Safari's browser mode, room above the toolbar.
+   * backdrop, slide, drag, scroll lock and focus handling.
+   *
+   * The scoreboard is the top of the sheet, its team colours and marks right
+   * up to the rounded edge, as in the dialog it replaced: the grip and the
+   * close button float on it rather than sitting on a plain band above it. So
+   * both leave the flow, the body starts at the top, and the scoreboard keeps
+   * clear of them with `--game-sheet-top`, where the close button's row
+   * begins: under the grip on a phone, at the edge from 720px (Folio's own
+   * breakpoint, where the grip goes). The body's side and top padding go too;
+   * its bottom stays, for the safe area and Safari's toolbar.
    */
-  .game-sheet::part(body) {
-    padding-inline: 0;
-    padding-top: 0;
+  .game-sheet {
+    --game-sheet-top: 1.75rem;
   }
-  /* The heading lines up with the scoreboard's text (px-4, sm:px-6). */
+  @media (width >= 45rem) {
+    .game-sheet {
+      --game-sheet-top: 1rem;
+    }
+  }
+  .game-sheet::part(grip) {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    margin: 0;
+  }
+  /* Still the drag handle on a phone, and still holds the close button. */
   .game-sheet::part(header) {
-    padding-inline: 1rem;
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    padding: var(--game-sheet-top) 1rem 0;
   }
   @media (width >= 40rem) {
     .game-sheet::part(header) {
       padding-inline: 1.5rem;
     }
+  }
+  /* Readable on a team colour, and over the content once it scrolls under. */
+  .game-sheet::part(close) {
+    color: var(--color-paper);
+    background: color-mix(in srgb, var(--color-ink) 70%, transparent);
+    border: 1px solid var(--ewo-line);
+  }
+  /* The fade is set by GameModal as the body scrolls, `none` at rest. */
+  .game-sheet::part(body) {
+    padding-inline: 0;
+    padding-top: 0;
+    mask-image: var(--game-sheet-mask, none);
   }
 
   /*

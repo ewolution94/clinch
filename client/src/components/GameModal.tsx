@@ -10,6 +10,7 @@ import { useLocale, useSettings, useStrings } from "../lib/useSettings";
 import { abroadLabel } from "../lib/abroad";
 import type { Lang } from "../lib/settings";
 import "../../vendor/ewo/elements/sheet.js";
+import type { EwoSheet } from "../../vendor/ewo/elements/sheet.js";
 // The ewo-* elements' JSX typing.
 import type {} from "../../vendor/ewo/elements/react";
 
@@ -218,7 +219,9 @@ function Header({ detail }: { detail: GameDetail }) {
 
   return (
     <header
-      className="relative overflow-hidden px-4 pt-4 pb-4 sm:px-6"
+      /* The top of the sheet: the grip and the close button float on these
+         colours, and the padding keeps the first row level with the button. */
+      className="relative overflow-hidden px-4 pt-(--game-sheet-top) pb-4 sm:px-6"
       style={{
         background: `linear-gradient(100deg, color-mix(in srgb, ${away.accent} 26%, var(--color-ink)) 0%, var(--color-ink) 42%, var(--color-ink) 58%, color-mix(in srgb, ${home.accent} 26%, var(--color-ink)) 100%)`,
       }}
@@ -240,7 +243,11 @@ function Header({ detail }: { detail: GameDetail }) {
         side="right"
       />
 
-      <div className="relative flex items-start gap-3">
+      <p className="relative flex h-8 items-center pr-12 font-mono text-[12px] tracking-[0.18em] text-mist uppercase">
+        {whereLabel(detail, locale)}
+      </p>
+
+      <div className="relative mt-2 flex items-start gap-3">
         {side(away, "left")}
         <div className="flex shrink-0 flex-col items-center gap-2 pt-4">
           <span className="font-mono text-[12px] tracking-[0.18em] text-mist">
@@ -596,7 +603,10 @@ function GameSkeleton() {
   const t = useStrings();
   return (
     <div aria-busy="true" aria-label={t.loadingGame}>
-      <div className="flex items-start gap-3 px-4 pt-5 pb-4 sm:px-6">
+      <div className="flex h-8 items-center px-4 mt-(--game-sheet-top) sm:px-6">
+        <Shimmer className="h-2.5 w-36 rounded" />
+      </div>
+      <div className="mt-2 flex items-start gap-3 px-4 pb-4 sm:px-6">
         {[0, 1].map((side) => (
           <div
             key={side}
@@ -636,6 +646,13 @@ function GameSkeleton() {
   );
 }
 
+/**
+ * How far the content scrolls before its fade is complete. Then it is clear
+ * for 58px from the sheet's edge, past the grip and the close button's row on
+ * a phone (28px + 32px), and whole again by about 100px.
+ */
+const FADE_PX = 72;
+
 /** ESPN's postseason weeks. Week 4 is the Pro Bowl, which no game here is. */
 const ROUNDS: Record<number, string> = {
   1: "Wild Card",
@@ -645,13 +662,12 @@ const ROUNDS: Record<number, string> = {
 };
 
 /**
- * "Week 6 · Sun 18 Oct": where the game sits, for the sheet's heading. The
- * scoreboard below has the teams, the score and the clock; this is the one
- * thing it doesn't say. Football words stay English, the date follows the
- * reader's language.
+ * "Week 6 · Sun 18 Oct": where the game sits, on the scoreboard's top row
+ * beside the close button. The board has the teams, the score and the clock;
+ * this is the one thing it doesn't say. Football words stay English, the date
+ * follows the reader's language.
  */
-function SheetHeading({ detail }: { detail: GameDetail }) {
-  const locale = useLocale();
+function whereLabel(detail: GameDetail, locale: string | undefined): string {
   const week =
     detail.seasonType === 3
       ? (ROUNDS[detail.week] ?? "Postseason")
@@ -663,14 +679,7 @@ function SheetHeading({ detail }: { detail: GameDetail }) {
     day: "numeric",
     month: "short",
   });
-  return (
-    <span
-      slot="heading"
-      className="font-mono text-[12px] font-normal tracking-[0.18em] text-mist uppercase"
-    >
-      {week} · {day}
-    </span>
-  );
+  return `${week} · ${day}`;
 }
 
 /**
@@ -696,6 +705,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
   if (gameId !== null && gameId !== shown) setShown(gameId);
   const { detail, loading, error } = useGameDetail(shown);
   const open = gameId !== null;
+  const sheet = useRef<EwoSheet>(null);
 
   // Paused, the page underneath is still, so the backdrop's blur is computed
   // once instead of on every frame the blooms move.
@@ -708,8 +718,46 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
     };
   }, [open]);
 
+  /*
+   * The content scrolls up under the grip and the close button, which float on
+   * the scoreboard (index.css). As it does, its top edge fades, in proportion
+   * to how far it has scrolled, up to FADE_PX: at rest the board is untouched
+   * and no mask is drawn at all, and nothing ends up sitting under the button.
+   * The scroller is the sheet's body, inside its (open) shadow root.
+   */
+  useEffect(() => {
+    const host = sheet.current;
+    const body = host?.shadowRoot?.querySelector<HTMLElement>('[part="body"]');
+    if (!host || !body) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const fade = Math.min(body.scrollTop, FADE_PX);
+      host.style.setProperty(
+        "--game-sheet-mask",
+        fade > 0
+          ? `linear-gradient(to bottom, transparent ${Math.round(fade * 0.8)}px, #000 ${Math.round(fade * 1.4)}px)`
+          : "none",
+      );
+    };
+    const onScroll = () => {
+      frame ||= requestAnimationFrame(update);
+    };
+    body.addEventListener("scroll", onScroll, { passive: true });
+    // Every game opens at its top, whatever the last one was scrolled to.
+    if (open) {
+      body.scrollTop = 0;
+      update();
+    }
+    return () => {
+      body.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [open]);
+
   return (
     <ewo-sheet
+      ref={sheet}
       class="game-sheet"
       label={t.gameDetail}
       wide
@@ -717,7 +765,6 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
       oncancel={onClose}
       onclose={() => setShown(null)}
     >
-      {detail && <SheetHeading detail={detail} />}
       {shown &&
         (detail ? (
           <>
