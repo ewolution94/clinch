@@ -342,6 +342,15 @@ short. For what the app does and how it's built, see `README.md`.
   The button sits outside the panel, where it can't be scrolled out of reach —
   the risk the old corner ✕ inside the panel carried. It is inside the
   `<dialog>`, so the native focus trap covers it.
+  **⚠️ The backdrop's close swallows the tap's own click.** It closes on
+  `pointerup`, and the tap's `click` comes after that, when the dialog is
+  gone: it landed on whatever was under the finger, so a tap beside an open
+  game opened the game behind it (2026-10-19, Eric's iPhone on the Team
+  Schedule; every time in Chromium with touch, a race in WebKit that the
+  Simulator never lost). `swallowTheClosingClick()` takes that one click at
+  the window until the next touch starts. Check it with a touch tap
+  (Playwright `touchscreen.tap`, `hasTouch`), not a mouse click, which never
+  showed it.
 - **The game dialog is loaded as a value, not through `React.lazy`.**
   `loadGameModal()` in App.tsx holds the component itself and puts it in state
   (on idle, on tap, or on a `?game=` arrival), so it renders synchronously; the

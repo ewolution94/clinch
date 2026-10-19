@@ -22,6 +22,32 @@ import { lockScroll } from "../lib/scrollLock";
  */
 const TAP_SLOP = 32;
 
+/**
+ * Keeps the closing tap's click from landing on the page.
+ *
+ * The backdrop closes on `pointerup`, and the tap's `click` comes after it. By
+ * then the dialog is gone, so the click goes to whatever was under the finger:
+ * on the Team Schedule, another game, which opened at once (2026-10-19,
+ * Eric's iPhone; every time in Chromium with touch, a race in WebKit). This
+ * takes that one click at the window, before React sees it. A tap that
+ * drifted sends no click at all, so the next touch, or a second, ends it.
+ */
+function swallowTheClosingClick(): void {
+  const swallow = (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    done();
+  };
+  const done = () => {
+    clearTimeout(timer);
+    window.removeEventListener("click", swallow, true);
+    window.removeEventListener("pointerdown", done, true);
+  };
+  const timer = setTimeout(done, 1000);
+  window.addEventListener("click", swallow, true);
+  window.addEventListener("pointerdown", done, true);
+}
+
 import type {
   GameDetail,
   GameTeamDetail,
@@ -711,6 +737,7 @@ export default function GameModal({ gameId, onClose }: GameModalProps) {
           TAP_SLOP
         )
           return;
+        swallowTheClosingClick();
         onClose();
       }}
       onPointerCancel={() => (tapStart.current = null)}
