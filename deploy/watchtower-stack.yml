@@ -54,6 +54,10 @@ services:
       - WATCHTOWER_POLL_INTERVAL=300
       # Bin the superseded image, or the NAS accretes one per deploy.
       - WATCHTOWER_CLEANUP=true
+      # One container at a time: stop, start, then the next (2026-10-19). Without it a round
+      # stops every outdated container before starting any, so in a nine-app round the first
+      # ones stopped were down ~2.5 min (learnings/nas-deploy.md, "Fifteen deploys at once").
+      - WATCHTOWER_ROLLING_RESTART=true
       # Keep this false. In this fork, true also suppresses the startup *log*
       # block, and routine polls only log at debug level, so the log looks
       # empty and indistinguishable from a dead Watchtower. With Telegram on,
