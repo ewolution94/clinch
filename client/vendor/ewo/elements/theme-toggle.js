@@ -31,18 +31,23 @@ function l(e) {
 	try {
 		e === "system" ? localStorage.removeItem(a) : localStorage.setItem(a, e);
 	} catch {}
-	let n = getComputedStyle(t).getPropertyValue("--ewo-bg").trim();
-	if (n) for (let e of document.querySelectorAll("meta[name=\"theme-color\"]")) e.content = n;
+	for (let t of document.querySelectorAll("meta[name=\"theme-color\"]")) t.content = u(e === "system" ? t.media.includes("light") ? "light" : t.media.includes("dark") ? "dark" : r() : e);
 	window.dispatchEvent(new CustomEvent("ewo-theme", { detail: {
 		choice: e,
 		theme: r()
 	} }));
 }
-function u() {
+function u(e) {
+	let t = document.createElement("i");
+	t.hidden = !0, t.style.colorScheme = e, t.style.color = "var(--ewo-bg)", document.body.append(t);
+	let n = getComputedStyle(t).color;
+	return t.remove(), n;
+}
+function d() {
 	let e = c();
 	e !== "system" && (document.documentElement.dataset.theme = e);
 }
-var d = class extends e {
+var f = class extends e {
 	static styles = [o];
 	#e;
 	#t = null;
@@ -77,6 +82,6 @@ var d = class extends e {
 		this.#e.setAttribute("aria-label", n), this.#e.title = n;
 	}
 };
-n("ewo-theme-toggle", d);
+n("ewo-theme-toggle", f);
 //#endregion
-export { d as EwoThemeToggle, u as restoreTheme, l as setTheme, c as storedTheme };
+export { f as EwoThemeToggle, d as restoreTheme, l as setTheme, c as storedTheme };

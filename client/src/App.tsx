@@ -395,7 +395,9 @@ function Clinch() {
           </main>
         </>
 
-        {game && GameModal && <GameModal gameId={game} onClose={closeGame} />}
+        {/* Mounted once loaded and left there: the sheet opens and closes on
+            `game`, and slides out with its content. */}
+        {GameModal && <GameModal gameId={game} onClose={closeGame} />}
         <RefreshOverlay active={refreshing} fading={refreshFading} />
       </div>
     </AccentProvider>

@@ -6,7 +6,7 @@
 // listens for the element's own change event.
 
 import type { HTMLAttributes } from 'svelte/elements';
-import type { EwoBadge, EwoEmpty, EwoHalftone, EwoSegmented, EwoSheet, EwoSkeleton, EwoSwitch, EwoThemeToggle, EwoTicks, EwoToaster, SegmentedOption, Tick } from './index';
+import type { EwoBadge, EwoEmblem, EwoEmblemMaker, EwoEmpty, EwoGuide, EwoHalftone, EwoSegmented, EwoSettingsBasics, EwoSettingsButton, EwoSheet, EwoSkeleton, EwoConnection, EwoSwitch, EwoThemeToggle, EwoTicks, EwoToaster, LanguageChoice, SegmentedOption, SettingsThemeChoice, Tick } from './index';
 
 type Handler<E, D> = (event: CustomEvent<D> & { currentTarget: E }) => void;
 
@@ -45,8 +45,40 @@ declare module 'svelte/elements' {
     'ewo-skeleton': HTMLAttributes<EwoSkeleton> & { width?: string; height?: string; radius?: string; lines?: number };
     'ewo-ticks': HTMLAttributes<EwoTicks> & { ticks?: Tick[]; states?: string; label?: string; start?: string; end?: string };
     'ewo-toaster': HTMLAttributes<EwoToaster> & { position?: 'bottom' | 'top' };
+    'ewo-connection': HTMLAttributes<EwoConnection> & { state?: 'connecting' | 'reconnecting' | 'online'; 'connecting-label'?: string; 'reconnecting-label'?: string; 'back-label'?: string };
     'ewo-sheet': Omit<HTMLAttributes<EwoSheet>, 'oncancel' | 'onclose'> & { open?: boolean; label?: string; wide?: boolean; placement?: 'center' | 'top'; oncancel?: Handler<EwoSheet, void>; onclose?: Handler<EwoSheet, void> };
+    'ewo-guide': Omit<HTMLAttributes<EwoGuide>, 'oncancel' | 'onclose'> & { open?: boolean; label?: string; 'next-label'?: string; 'back-label'?: string; 'done-label'?: string; 'skip-label'?: string; oncancel?: Handler<EwoGuide, void>; onclose?: Handler<EwoGuide, void>; ondone?: Handler<EwoGuide, void>; onpage?: Handler<EwoGuide, { index: number }> };
     'ewo-theme-toggle': HTMLAttributes<EwoThemeToggle> & { cycle?: boolean; 'label-light'?: string; 'label-dark'?: string };
+    'ewo-settings-button': HTMLAttributes<EwoSettingsButton> & { label?: string; 'show-label'?: boolean };
+    'ewo-settings-basics': HTMLAttributes<EwoSettingsBasics> & {
+      language?: LanguageChoice;
+      theme?: SettingsThemeChoice;
+      'language-label'?: string;
+      'theme-label'?: string;
+      'system-label'?: string;
+      'light-label'?: string;
+      'dark-label'?: string;
+      'onlanguage-change'?: Handler<EwoSettingsBasics, { value: LanguageChoice }>;
+      'ontheme-change'?: Handler<EwoSettingsBasics, { value: SettingsThemeChoice }>;
+    };
+    'ewo-emblem': HTMLAttributes<EwoEmblem> & {
+      theme?: 'heraldry' | 'doodle' | 'token' | 'tag' | 'agent';
+      value?: number[] | string;
+      size?: number | string;
+      mood?: '' | 'happy';
+      crown?: boolean;
+      boil?: boolean;
+      ring?: boolean;
+      dead?: boolean;
+      label?: string;
+      initial?: string;
+    };
+    'ewo-emblem-maker': Omit<HTMLAttributes<EwoEmblemMaker>, 'onchange'> & {
+      theme?: 'heraldry' | 'doodle' | 'token' | 'tag' | 'agent';
+      value?: number[] | string;
+      initial?: string;
+      onchange?: Handler<EwoEmblemMaker, { value: number[] }>;
+    };
     'ewo-halftone': Omit<HTMLAttributes<EwoHalftone>, 'onload' | 'onerror'> & { src?: string; alt?: string; cell?: number; color?: 'ink' | 'photo'; fit?: 'cover' | 'contain'; lens?: boolean; ripple?: boolean; origin?: string };
   }
 }

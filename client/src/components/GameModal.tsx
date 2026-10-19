@@ -9,44 +9,9 @@ import { formatKickoff } from "../lib/format";
 import { useLocale, useSettings, useStrings } from "../lib/useSettings";
 import { abroadLabel } from "../lib/abroad";
 import type { Lang } from "../lib/settings";
-import { lockScroll } from "../lib/scrollLock";
-
-/**
- * How far a finger may travel and still count as a tap on the backdrop.
- *
- * The browser's own threshold is stricter than a thumb: a tap that drifted
- * ~12px was treated as a drag, so no click was ever sent and the dialog stayed
- * open. The close button above the panel is the way out; this only keeps the
- * backdrop working as a shortcut. Generous on purpose — nothing on the
- * backdrop responds to a swipe.
- */
-const TAP_SLOP = 32;
-
-/**
- * Keeps the closing tap's click from landing on the page.
- *
- * The backdrop closes on `pointerup`, and the tap's `click` comes after it. By
- * then the dialog is gone, so the click goes to whatever was under the finger:
- * on the Team Schedule, another game, which opened at once (2026-10-19,
- * Eric's iPhone; every time in Chromium with touch, a race in WebKit). This
- * takes that one click at the window, before React sees it. A tap that
- * drifted sends no click at all, so the next touch, or a second, ends it.
- */
-function swallowTheClosingClick(): void {
-  const swallow = (event: MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    done();
-  };
-  const done = () => {
-    clearTimeout(timer);
-    window.removeEventListener("click", swallow, true);
-    window.removeEventListener("pointerdown", done, true);
-  };
-  const timer = setTimeout(done, 1000);
-  window.addEventListener("click", swallow, true);
-  window.addEventListener("pointerdown", done, true);
-}
+import "../../vendor/ewo/elements/sheet.js";
+// The ewo-* elements' JSX typing.
+import type {} from "../../vendor/ewo/elements/react";
 
 import type {
   GameDetail,
@@ -55,7 +20,9 @@ import type {
 } from "../lib/types";
 
 interface GameModalProps {
-  gameId: string;
+  /** The open game, or null when none is. */
+  gameId: string | null;
+  /** Asked to close: Escape, the backdrop, the close button or a drag down. */
   onClose: () => void;
 }
 
@@ -251,8 +218,7 @@ function Header({ detail }: { detail: GameDetail }) {
 
   return (
     <header
-      /* Extra room on the right so the home team's city clears the close button. */
-      className="relative overflow-hidden px-4 pt-5 pr-14 pb-4 sm:px-6 sm:pr-16"
+      className="relative overflow-hidden px-4 pt-4 pb-4 sm:px-6"
       style={{
         background: `linear-gradient(100deg, color-mix(in srgb, ${away.accent} 26%, var(--color-ink)) 0%, var(--color-ink) 42%, var(--color-ink) 58%, color-mix(in srgb, ${home.accent} 26%, var(--color-ink)) 100%)`,
       }}
@@ -670,120 +636,103 @@ function GameSkeleton() {
   );
 }
 
+/** ESPN's postseason weeks. Week 4 is the Pro Bowl, which no game here is. */
+const ROUNDS: Record<number, string> = {
+  1: "Wild Card",
+  2: "Divisional Round",
+  3: "Conference Championship",
+  5: "Super Bowl",
+};
+
+/**
+ * "Week 6 · Sun 18 Oct": where the game sits, for the sheet's heading. The
+ * scoreboard below has the teams, the score and the clock; this is the one
+ * thing it doesn't say. Football words stay English, the date follows the
+ * reader's language.
+ */
+function SheetHeading({ detail }: { detail: GameDetail }) {
+  const locale = useLocale();
+  const week =
+    detail.seasonType === 3
+      ? (ROUNDS[detail.week] ?? "Postseason")
+      : detail.seasonType === 1
+        ? "Preseason"
+        : `Week ${detail.week}`;
+  const day = new Date(detail.kickoff).toLocaleDateString(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  return (
+    <span
+      slot="heading"
+      className="font-mono text-[12px] font-normal tracking-[0.18em] text-mist uppercase"
+    >
+      {week} · {day}
+    </span>
+  );
+}
+
+/**
+ * One game, in Folio's `<ewo-sheet>`: a bottom sheet on a phone (it slides up,
+ * drags down by its grip or header, and slides out), a 720px card on a
+ * desktop. It replaced Clinch's own dialog on 2026-10-19, at Eric's request:
+ * that one popped in, vanished on close, opened with a focus ring on its big
+ * close button, and closed on `pointerup`, which let the tap's click land on
+ * the game behind it. The sheet closes on `click` and has been tuned on the
+ * iPhone across the family (docs/DECISIONS.md).
+ *
+ * It stays mounted. `gameId` opens and closes it; the game on screen is held
+ * until the sheet's `close`, after its slide-out, so the content leaves with
+ * it instead of collapsing as it goes (learnings: "keep a sheet's content
+ * until its close event"). Asking to close calls `onClose` at once, which
+ * clears the game and the URL synchronously (DECISIONS: `closeGame`).
+ */
 export default function GameModal({ gameId, onClose }: GameModalProps) {
   const t = useStrings();
-  const dialog = useRef<HTMLDialogElement>(null);
-  /** Where a tap on the backdrop began, if it began there. */
-  const tapStart = useRef<{ x: number; y: number } | null>(null);
-  const { detail, loading, error } = useGameDetail(gameId);
+  const [shown, setShown] = useState<string | null>(gameId);
+  // A newly opened game replaces the one on screen straight away; a closed one
+  // stays until the slide-out is over (onclose below).
+  if (gameId !== null && gameId !== shown) setShown(gameId);
+  const { detail, loading, error } = useGameDetail(shown);
+  const open = gameId !== null;
 
-  /**
-   * A real `<dialog>`, opened with `showModal()`.
-   *
-   * It was a hand-built overlay for one reason: the top layer is invisible to
-   * view transitions, and the dialog used to morph out of the card you tapped.
-   * That morph is gone — it broke differently in every engine and cost more
-   * than it gave (docs/DECISIONS.md) — and with it every reason to reimplement
-   * what the platform already does: the focus trap, Escape, painting above
-   * every stacking context, `aria-modal`, and focus handed back to the card on
-   * close.
-   */
+  // Paused, the page underneath is still, so the backdrop's blur is computed
+  // once instead of on every frame the blooms move.
   useEffect(() => {
-    const el = dialog.current;
-    if (!el) return;
+    if (!open) return;
     const root = document.documentElement;
-    // Paused, the page underneath is still, so the veil's blur is computed
-    // once instead of on every frame the blooms move.
     root.dataset.overlay = "";
-    if (!el.open) el.showModal();
-    // `showModal()` blocks interaction, not scrolling: iOS would still pan the
-    // page behind the dialog.
-    const unlock = lockScroll();
-
     return () => {
       delete root.dataset.overlay;
-      unlock();
-      if (el.open) el.close();
     };
-  }, []);
+  }, [open]);
 
   return (
-    <dialog
-      ref={dialog}
-      className="game-dialog"
-      aria-label={t.gameDetail}
-      // Escape and any native close land here, so the URL follows the dialog.
-      // The `close` event arrives a task after `close()`. If the dialog is open
-      // again by then, it's the stale one from StrictMode's dev-only unmount and
-      // remount (the effect's cleanup closed it, the remount reopened it), and
-      // acting on it would shut the game you just opened.
-      onClose={(event) => {
-        if (event.currentTarget.open) return;
-        onClose();
-      }}
-      onPointerDown={(event) => {
-        // Anywhere outside the panel is the dialog element itself.
-        tapStart.current =
-          event.target === dialog.current
-            ? { x: event.clientX, y: event.clientY }
-            : null;
-      }}
-      onPointerUp={(event) => {
-        const start = tapStart.current;
-        tapStart.current = null;
-        if (!start || event.target !== dialog.current) return;
-        if (
-          Math.hypot(event.clientX - start.x, event.clientY - start.y) >
-          TAP_SLOP
-        )
-          return;
-        swallowTheClosingClick();
-        onClose();
-      }}
-      onPointerCancel={() => (tapStart.current = null)}
+    <ewo-sheet
+      class="game-sheet"
+      label={t.gameDetail}
+      wide
+      open={open}
+      oncancel={onClose}
+      onclose={() => setShown(null)}
     >
-      {/* The dim and blur. A plain element rather than `::backdrop`, so the
-          blur is one thing in one place across engines. */}
-      <div className="game-dialog__veil" aria-hidden="true" />
-
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t.close}
-        className="game-dialog__close"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="22"
-          height="22"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        >
-          <path d="M6 6 18 18M18 6 6 18" />
-        </svg>
-      </button>
-
-      <div className="game-dialog__panel">
-        <div className="game-dialog__scroll">
-          {detail ? (
-            <>
-              <Header detail={detail} />
-              <Body detail={detail} />
-            </>
-          ) : error && !loading ? (
-            <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
-              <p className="font-mono text-[14px] tracking-[0.14em] text-mist">
-                {t.gameFailed}
-              </p>
-            </div>
-          ) : (
-            <GameSkeleton />
-          )}
-        </div>
-      </div>
-    </dialog>
+      {detail && <SheetHeading detail={detail} />}
+      {shown &&
+        (detail ? (
+          <>
+            <Header detail={detail} />
+            <Body detail={detail} />
+          </>
+        ) : error && !loading ? (
+          <div className="flex min-h-[240px] items-center justify-center px-6 text-center">
+            <p className="font-mono text-[14px] tracking-[0.14em] text-mist">
+              {t.gameFailed}
+            </p>
+          </div>
+        ) : (
+          <GameSkeleton />
+        ))}
+    </ewo-sheet>
   );
 }

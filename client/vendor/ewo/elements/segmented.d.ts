@@ -15,6 +15,7 @@ export type SegmentedOption = {
  * @attr {boolean} stretch - Fill the container's width.
  * @attr {boolean} disabled
  * @slot - `<option value>` elements, one per choice.
+ * @slot icon-<value> - An icon for that option (any element, e.g. an inline SVG), shown before its label.
  * @fires change - `detail: { value }` after the user picks another option.
  * @fires input - Same, fired first.
  * @csspart track - The pill.

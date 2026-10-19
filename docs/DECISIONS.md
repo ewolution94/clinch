@@ -260,6 +260,27 @@ short. For what the app does and how it's built, see `README.md`.
   `.absolute`.** `TeamLogo` sets `relative` on itself, so a positioning class
   passed in from outside silently loses and the watermark stays in flow. Don't
   merge the two components back together.
+- **⚠️ The game detail is Folio's `<ewo-sheet>`, not a dialog of Clinch's
+  own.** Since 2026-10-19, at Eric's request: on the phone the old dialog
+  popped in, vanished on close, opened with Safari's focus ring on its big
+  close button, couldn't be dragged away, and closed on `pointerup`, which let
+  the tap's click open the game behind it (see "The way out" below). The sheet
+  is the family's, used by about fifteen apps and tuned on the iPhone: it
+  slides up and out, drags down by its grip or header, brings the shared
+  backdrop, locks the page (Folio's `lockScroll()`, which picks `<html>` here
+  because of the clip), gives focus back without a ring, and closes on the
+  backdrop's `click`. From 720px it is a centred card (`wide`, 720px).
+  Clinch's part, in `GameModal`: it stays mounted, `open` follows `?game=`,
+  `oncancel` calls `closeGame` at once (state first, as below), and the game
+  on screen is kept until the sheet's `close`, so it slides out whole instead
+  of collapsing to its header. The heading slot says the week and the day;
+  the scoreboard runs edge to edge (`.game-sheet::part(body)` drops the side
+  and top padding, `::part(header)` lines the heading up with it). Verified
+  that day in Chromium and WebKit at 390 and 1280px (tap, a tap beside it over
+  another game, the close button, Escape, back, a `?game=` link, the lock, the
+  height steady through the slide-out) and in the iOS Simulator (a drag down,
+  two live pushes underneath, a section expanding). Vendored from Folio
+  566f909; refresh with Folio's `npm run vendor -- clinch`.
 - **⚠️ The game dialog is a native `<dialog>`, and the card→dialog morph is
   gone. Don't bring view transitions back.** Removed on 2026-09-22 at Eric's
   request, after it had been rebuilt four times and still broke: the dialog
@@ -274,7 +295,8 @@ short. For what the app does and how it's built, see `README.md`.
   and focus restored to the card for free; the dim and blur are one element
   inside it (`.game-dialog__veil`). The old reason for hand-building the
   overlay — that view transitions can't see the top layer — no longer applies.
-  Verified: opens from the strip, closes by button, backdrop tap (including a
+  (Since 2026-10-19 that native dialog is the one inside Folio's sheet, entry
+  above, and `.game-dialog__veil` is gone.) Verified: opens from the strip, closes by button, backdrop tap (including a
   drifting one), Escape and the back button; the URL, the scroll lock and focus
   come back clean each way, and a tap on the panel never closes it.
 - **The sticky controls bar is a sibling of `<header>`, not its child.** Inside a
@@ -331,26 +353,26 @@ short. For what the app does and how it's built, see `README.md`.
   Android. To get games *into* Google Calendar from the iPhone, the route is
   his Google account added to the iOS Calendar app as the default calendar;
   then the file lands in Google.
-- **The way out of the game dialog is a button, not the backdrop.** A 52px
-  round close button floats above the panel (`.game-dialog__close`), centred
-  on a phone. Tapping the backdrop is a convenience on top of it, and Escape
-  still works. It got there the long way: the backdrop tap missed about one
+- **The way out of the game sheet is a button and a drag, not the backdrop.**
+  The sheet's header carries a close button that never scrolls away, and on a
+  phone the grip or the header drags it down; the backdrop and Escape are
+  extras. Until 2026-10-19 it was a 52px round button floating above the panel
+  (`.game-dialog__close`), which went with the sheet. It got there the long
+  way: the backdrop tap missed about one
   time in twenty, because a tap that drifts a few pixels is a drag to the
   browser, which then sends no click. Pointer events with 32px of slop fixed
   that in synthetic tests (0/6/12/28px of travel close, 85px doesn't), but Eric
   reported it *worse* on the phone — so the dialog stopped depending on it.
-  The button sits outside the panel, where it can't be scrolled out of reach —
-  the risk the old corner ✕ inside the panel carried. It is inside the
-  `<dialog>`, so the native focus trap covers it.
-  **⚠️ The backdrop's close swallows the tap's own click.** It closes on
-  `pointerup`, and the tap's `click` comes after that, when the dialog is
-  gone: it landed on whatever was under the finger, so a tap beside an open
-  game opened the game behind it (2026-10-19, Eric's iPhone on the Team
-  Schedule; every time in Chromium with touch, a race in WebKit that the
-  Simulator never lost). `swallowTheClosingClick()` takes that one click at
-  the window until the next touch starts. Check it with a touch tap
-  (Playwright `touchscreen.tap`, `hasTouch`), not a mouse click, which never
-  showed it.
+  The sheet's backdrop closes on `click`, so a tap that drifts past the
+  browser's slop doesn't close it; accepted, since the drag and the button
+  cover it.
+  **⚠️ Never close an overlay on `pointerup`.** The tap's `click` comes after
+  it, when the overlay is gone, and lands on whatever was under the finger:
+  that is how a tap beside an open game opened the game behind it (2026-10-19,
+  Eric's iPhone on the Team Schedule; every time in Chromium with touch, a
+  race in WebKit that the Simulator never lost). Check overlays with a touch
+  tap (Playwright `touchscreen.tap`, `hasTouch`), not a mouse click, which
+  never showed it.
 - **The game dialog is loaded as a value, not through `React.lazy`.**
   `loadGameModal()` in App.tsx holds the component itself and puts it in state
   (on idle, on tap, or on a `?game=` arrival), so it renders synchronously; the
@@ -369,23 +391,23 @@ short. For what the app does and how it's built, see `README.md`.
   that hasn't happened as `'0'`, not as absent, so a game in the 1st quarter
   would otherwise render as three scoreless ones. Overtime adds linescore
   entries beyond `format.regulation.periods` — don't assume four columns.
-- **The modal panel must never be the scrolling element.** The close button is
-  absolutely positioned on it; when the panel scrolled, expanding the folded
+- **The sheet's body scrolls, never the sheet.** The old dialog's close button
+  was positioned on its panel; when the panel scrolled, expanding the folded
   sections carried the button off-screen and the dialog could not be closed.
-  The panel is a flex column with `overflow: hidden` and an inner
-  `.game-dialog__scroll` does the scrolling. Heights use `dvh`, not `vh` —
-  `vh` on iOS counts the area behind the browser chrome.
+  `<ewo-sheet>` keeps its header, close button included, fixed and scrolls
+  only its body, and sizes itself in `dvh`, not `vh` (`vh` on iOS counts the
+  area behind the browser chrome).
 - **Background scroll is locked with `overflow: hidden` — not a body pin.**
-  `lib/scrollLock.ts`. This replaced pinning the
+  Folio's `lockScroll()`, which the sheet takes while open (Clinch's own
+  `lib/scrollLock.ts` did the same until 2026-10-19). This replaced pinning the
   body at `position: fixed; top: -scrollY`, which moved every layer on the
   page, so WebKit re-laid out and repainted the whole visible page on every
   open and again on close (and the game dialog did it *inside* the view
   transition's update). The reason for the pin is gone: WebKit fixed
   `overflow: hidden` not stopping touch scrolling in 2021 (bug 153852), and its
   last loophole — scrolling once Safari's toolbar had collapsed — in Safari
-  26.4 (bug 240859). Belt and braces: both overlays are `touch-action: none`,
-  so a drag anywhere but the dialog's own scroller has nothing to pan, whatever
-  a browser makes of the lock. **Which element carries the lock** is the entry
+  26.4 (bug 240859). The old dialog added `touch-action: none` on top, belt
+  and braces; the sheet doesn't need it. **Which element carries the lock** is the entry
   "The scroll lock goes on `<html>`" further down: it sat on the body until
   `<html>` got `overflow-x: clip`, which silently turned a body lock into a
   no-op. (This entry used to say "on the body, not `<html>`"; that was right
@@ -664,7 +686,7 @@ short. For what the app does and how it's built, see `README.md`.
   - **`visibilitychange` refreshes silently.** Coming back to a backgrounded
     app refreshes too, and blurring the page on every switch back would be
     intolerable. Only the button is loud.
-  The veil follows the game dialog exactly: `backdrop-filter` **unprefixed
+  The veil follows the old game dialog's recipe: `backdrop-filter` **unprefixed
   only** (Lightning CSS adds the -webkit- form; writing both keeps just the
   last), and `data-overlay` on the root to pause ambient motion underneath,
   because animating anything behind a blur recomputes it every frame. The
@@ -693,7 +715,9 @@ short. For what the app does and how it's built, see `README.md`.
   `maximum-scale=1` on the viewport: it buys the same thing by taking pinch
   zoom away from everyone.
 - **⚠️ The scroll lock goes on `<html>`, and the reason is the line above it.**
-  `client/src/lib/scrollLock.ts`. CSS gives the *viewport's* overflow to the
+  Folio's `lockScroll()` checks for this and locks `<html>` whenever it has an
+  overflow of its own (Clinch's `lib/scrollLock.ts` did it by hand until
+  2026-10-19). CSS gives the *viewport's* overflow to the
   root element, with one exception: when `<html>` is `visible` in **both** axes
   the viewport takes `<body>`'s values instead. The lock used to sit on the
   body for exactly that reason — and then the horizontal-panning fix gave
@@ -709,7 +733,7 @@ short. For what the app does and how it's built, see `README.md`.
 - **The lock pays back the scrollbar it takes.** Hiding the root's overflow
   removes the scrollbar, and on a classic one that returns its width to the
   page: 1270 → 1280 at desktop width, everything jumping 10px on open and back
-  on close. `lockScroll` measures `innerWidth - clientWidth` *before* hiding
+  on close. `lockScroll()` (Folio's now, Clinch's before) measures `innerWidth - clientWidth` *before* hiding
   and replaces it with `padding-right`. `scrollbar-gutter: stable` is the
   tidier answer and was tried first — Chromium computes it and does not honour
   it on the root under `overflow: hidden`, same 10px jump. Zero on overlay
@@ -718,7 +742,7 @@ short. For what the app does and how it's built, see `README.md`.
   against a visible other axis computes that axis to `auto`, which makes the
   element a scroll container — and an overflow on `<html>` then leaves `<body>`
   as a scroller wrapping the page, which is what threw the sticky bar 20px out
-  (see `lib/scrollLock.ts`). `clip` creates no scroll container. Verified after
+  (see the scroll-lock entries above). `clip` creates no scroll container. Verified after
   the change: vertical scrolling lands exactly at 0/150/400/900 and the sticky
   bar sits at 106 then pins to 0, unchanged.
 - **The flag and the city in the abroad badge share a baseline, not a box
@@ -882,7 +906,7 @@ looking at it.
   whose `color` is transparent, so the probe can't read it — a false positive.
 - **Logos**: 169 chips across all four routes at 375px and 1280px, live 2026 and
   `CLINCH_SEASON=2025`. None missing plate or ring, none without a team colour,
-  **zero glyph overlaps** with any watermark. The game dialog is the one
+  **zero glyph overlaps** with any watermark. The game sheet is the one
   intentional exception — its marks sit behind the header text by design.
 - **Broadcasts** against live listings: week 2 six of sixteen (five RTL + the
   RTL+ exclusive), week 3 correctly `candidate`, week 8 `unknown`, a forced

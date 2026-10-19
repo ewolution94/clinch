@@ -2,6 +2,7 @@ import { EwoElement as e, css as t, define as n } from "./base.js";
 //#region packages/elements/src/switch.ts
 var r = t`
   :host {
+    touch-action: manipulation; /* the host is the control: no double-tap zoom */
     display: inline-flex;
     align-items: center;
     gap: var(--ewo-space-4);

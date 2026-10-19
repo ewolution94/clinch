@@ -15,7 +15,7 @@ var r = t`
     touch-action: pan-y;
     outline-offset: 4px;
   }
-  @media (max-width: 640px) { .bar { gap: 1px; } }
+  @media (max-width: 639.98px) { .bar { gap: 1px; } }
   i {
     flex: 1;
     min-width: 0;
@@ -29,10 +29,13 @@ var r = t`
   i[data-s='ok']      { background: var(--ewo-ok); }
   i[data-s='warn']    { background: var(--ewo-warn); }
   i[data-s='bad']     { background: var(--ewo-bad); }
-  i[data-s='unknown'] { background: var(--ewo-unknown); opacity: 0.35; }
-  i[data-s='none']    { background: var(--ewo-fg-4); opacity: 0.2; }
-  .bar.active i { opacity: 0.45; }
-  .bar.active i[data-s='none'] { opacity: 0.1; }
+  /* A day with no checks is unknown; a day with no record at all, fainter still.
+     Pointing at a tick dims the rest to 55%. (Pulse's values.) */
+  i[data-s='unknown'] { background: var(--ewo-unknown); opacity: 0.25; }
+  i[data-s='none']    { background: var(--ewo-unknown); opacity: 0.15; }
+  .bar.active i { opacity: 0.495; }
+  .bar.active i[data-s='unknown'] { opacity: 0.1375; }
+  .bar.active i[data-s='none'] { opacity: 0.0825; }
   .bar.active i.on { opacity: 1; transform: scaleY(1.14); }
 
   .caption {
@@ -87,7 +90,7 @@ var r = t`
 		return this.#e ? this.#e : (this.getAttribute("states") ?? "").split(/\s+/).filter(Boolean).map((e) => ({ state: e }));
 	}
 	set ticks(e) {
-		this.#e = e, this.#t = null, this.isConnected && this.#o();
+		e.length !== this.ticks.length && (this.#t = null), this.#e = e, this.isConnected && this.#o();
 	}
 	#a(e) {
 		e !== this.#t && (this.#t = e, this.#s(), e !== null && this.emit("ewo-tick", {

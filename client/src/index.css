@@ -184,8 +184,10 @@
      * visible `overflow-y` computes the other axis to `auto`, which makes this
      * a scroll container — and an overflow on <html> then leaves <body> as a
      * scroller wrapping the whole page, which is what sent the sticky bar 20px
-     * out of place (see lib/scrollLock.ts). `clip` creates no scroll container,
-     * so both axes stay as they were.
+     * out of place. `clip` creates no scroll container, so both axes stay as
+     * they were. It also moves the viewport's overflow to <html>, which is why
+     * an overlay's scroll lock has to go there (Folio's lockScroll() checks;
+     * docs/DECISIONS.md, "The scroll lock goes on `<html>`").
      *
      * Ignored by anything older than Safari 16, which falls back to the body
      * rule below — the behaviour we already had.
@@ -308,59 +310,30 @@
   }
 
   /*
-   * The game dialog is a real <dialog>, opened with showModal(), so the
-   * browser gives us the top layer, the focus trap, Escape and focus handed
-   * back to the card. The element itself is the full-screen container: no
-   * chrome of its own, the panel and the close button laid out inside it.
-   *
-   * It was a hand-built overlay while the dialog morphed out of its card,
-   * because view transitions can't see the top layer. That morph is gone.
+   * The game sheet: Folio's <ewo-sheet> (GameModal.tsx), which brings its own
+   * backdrop, slide, drag, scroll lock and focus handling. Its body is padded
+   * for plain content; the scoreboard runs edge to edge, so the sides and the
+   * top go and every section pads itself. The bottom padding stays: it holds
+   * the safe area and, in Safari's browser mode, room above the toolbar.
    */
-  .game-dialog[open] {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: none;
-    height: 100%;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    overflow: hidden;
-    /* A drag anywhere but the panel's own scroller has nothing to pan, so the
-       page behind stays put whatever the browser makes of the scroll lock. */
-    touch-action: none;
+  .game-sheet::part(body) {
+    padding-inline: 0;
+    padding-top: 0;
   }
-
-  /* Ours is the veil below; the UA's own dim would double it. */
-  .game-dialog::backdrop {
-    background: transparent;
+  /* The heading lines up with the scoreboard's text (px-4, sm:px-6). */
+  .game-sheet::part(header) {
+    padding-inline: 1rem;
   }
-
-  /*
-   * The dim and blur, as an ordinary element rather than `::backdrop` — one
-   * thing, in one place, that behaves the same in every engine. It is there on
-   * the dialog's first frame and never animates in: a fade here used to leave
-   * the panel open over a still-sharp page.
-   */
-  .game-dialog__veil {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background: color-mix(in srgb, var(--color-abyss) 72%, transparent);
-    /* Unprefixed only. The build (Lightning CSS) adds -webkit- itself for
-       older Safari; write both by hand and it keeps just the last one — which
-       is how this blur was -webkit- only, and so absent in Chrome, until
-       2026-09-22. */
-    backdrop-filter: blur(6px);
+  @media (width >= 40rem) {
+    .game-sheet::part(header) {
+      padding-inline: 1.5rem;
+    }
   }
 
   /*
    * The refresh overlay.
    *
-   * Same blur recipe as the dialog's veil, and the same warning: write
+   * The warning that came with the old game dialog's blur still holds: write
    * `backdrop-filter` **unprefixed only**. Lightning CSS adds the -webkit- form
    * itself; writing both by hand leaves only the last one, which is how the
    * dialog's blur was -webkit--only (and so invisible in Chrome) until
@@ -452,132 +425,6 @@
     to {
       rotate: 360deg;
     }
-  }
-
-  .game-dialog__panel:focus {
-    outline: none;
-  }
-
-  /* The panel itself never scrolls — so the close button, which is absolutely
-     positioned on it, cannot be scrolled out of reach when a section expands. */
-  .game-dialog__panel {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--color-ink);
-    border: 1px solid var(--color-line);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
-    animation: panel-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  /*
-   * The way out: one big round button floating above the dialog.
-   *
-   * Closing used to rest on tapping the backdrop, and a phone can decide a
-   * tap that drifted a few pixels was a drag and send no click at all — it
-   * missed about one time in twenty, and a corner ✕ inside the panel is a
-   * small target on a phone. This sits outside the panel, so it can never be
-   * scrolled out of reach, and outside the view transition, so it is simply
-   * there while the dialog morphs open.
-   */
-  .game-dialog__close {
-    display: flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 999px;
-    color: var(--color-paper);
-    background: color-mix(in srgb, var(--color-ink) 82%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-fog) 30%, transparent);
-    box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
-    backdrop-filter: blur(6px);
-    transition:
-      transform 0.15s ease,
-      border-color 0.15s ease,
-      color 0.15s ease;
-    animation: close-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
-  }
-  .game-dialog__close:hover {
-    border-color: color-mix(in srgb, var(--color-brand) 65%, transparent);
-    color: var(--color-brand);
-  }
-  .game-dialog__close:active {
-    transform: scale(0.93);
-  }
-
-  .game-dialog__scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    /* Don't hand the scroll on to the page when this hits its end. */
-    overscroll-behavior: contain;
-  }
-
-  /* Phone: a sheet that owns the screen, the close button riding above it. */
-  @media (width < 40rem) {
-    .game-dialog[open] {
-      justify-content: flex-end;
-      gap: 0.75rem;
-    }
-    .game-dialog__panel {
-      width: 100%;
-      /* Leaves room for the button and its gap above the sheet. */
-      max-height: 82vh;
-      max-height: 82dvh;
-      border-radius: 20px 20px 0 0;
-      border-bottom: none;
-      animation-name: sheet-in;
-    }
-  }
-
-  @media (width >= 40rem) {
-    .game-dialog[open] {
-      justify-content: center;
-      gap: 0.85rem;
-      padding: 3vh 1rem;
-    }
-    .game-dialog__panel {
-      width: min(720px, 100%);
-      max-height: 84vh;
-      max-height: 84dvh;
-      border-radius: 20px;
-    }
-  }
-}
-
-@keyframes panel-in {
-  from {
-    opacity: 0;
-    transform: scale(0.965) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes close-in {
-  from {
-    opacity: 0;
-    transform: scale(0.82) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes sheet-in {
-  from {
-    opacity: 0;
-    transform: translateY(6%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

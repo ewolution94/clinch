@@ -12,6 +12,12 @@ export declare abstract class EwoElement extends HTMLElement {
     /** A `change`-style event that crosses the shadow boundary, like native ones. */
     protected emit<T>(type: string, detail?: T, cancelable?: boolean): boolean;
 }
+/**
+ * The page's language, 'de' or 'en' (from <html lang>), for elements that bring their own words.
+ * `onPageLanguage` calls back when an app switches it.
+ */
+export declare function pageLanguage(): 'de' | 'en';
+export declare function onPageLanguage(callback: () => void): () => void;
 /** Defines once, so importing a module twice (or two bundles) is harmless. */
 export declare function define(tag: string, ctor: CustomElementConstructor): void;
 export declare const reducedMotion: () => boolean;
