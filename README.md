@@ -261,13 +261,10 @@ image CI publishes to `ghcr.io/ewolution94/clinch:latest`, and lives in
 at `docker-compose.yml`: the `build: .` in it would make the NAS compile Clinch
 instead of pulling it.
 
-The stack also defines **Watchtower**, which polls the registry every five
-minutes and recreates Clinch when a new image appears — so a push to `release`
-becomes the entire deploy. It is scoped by label (`WATCHTOWER_LABEL_ENABLE`), so
-it only ever touches containers that opt in, and nothing else on the host.
-
-Without it, nothing polls: `:latest` is a tag, not a subscription, and a green CI
-run changes nothing on the host until someone re-pulls the image.
+The stack carries the label the NAS's **Watchtower** looks for, so Watchtower
+recreates Clinch within about five minutes of a new image, and a push to `release`
+is the entire deploy. Watchtower is a stack of its own and not part of Clinch. Its file and notes
+are in the workspace repo (`development/.claude/skills/portainer/watchtower/`).
 
 **Visit counts** go to [Census](https://github.com/ewolution94/census), the
 self-hosted counter on the NAS: no cookies, nothing stored on the device, and

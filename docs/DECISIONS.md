@@ -850,34 +850,12 @@ short. For what the app does and how it's built, see `README.md`.
   document and never re-fetches. Swipe it out of the app switcher and reopen to
   pick up a deploy. The in-app refresh button does not do it — it re-fetches
   the snapshot, not the document.
-- **Portainer does not poll, and never did.** `:latest` is a tag, not a
-  subscription — before Watchtower, a green CI run changed nothing on the NAS
-  until someone hit Recreate with "re-pull image". Worth remembering if
-  Watchtower is ever removed.
-- **Watchtower is its own stack, not a service inside Clinch's.** It started as
-  a second service in `deploy/portainer-stack.yml` and sat unapplied for weeks,
-  partly because adopting it meant rewriting a working stack whose Portainer
-  copy may have drifted from the repo. Split into
-  `deploy/watchtower-stack.yml`, adoption costs the Clinch stack **one label
-  line**. It is also the more honest shape: Watchtower is a host-level service,
-  so one copy keeps every labelled container on the NAS current, and stopping
-  it stops auto-updates without touching anything serving traffic.
-- **Watchtower needs no registry credentials here.** `ghcr.io/ewolution94/clinch`
-  pulls anonymously — checked against the registry rather than assumed, by
-  taking an anonymous pull token and fetching the manifest (200). If the
-  package is ever made private, Watchtower needs a mounted `config.json` with a
-  GHCR PAT, and that is the moment this stops being a five-minute setup.
-- **Watchtower is scoped by label and that is load-bearing.**
-  `WATCHTOWER_LABEL_ENABLE=true` means it only touches containers carrying
-  `com.centurylinklabs.watchtower.enable=true`. Drop that env var and it starts
-  auto-updating everything else on the NAS — Axioma, PLANUM, the landing page.
-- **Watchtower's image is pinned and carries no enable label of its own**, so it
-  never updates itself: it mounts the Docker socket, which is root-equivalent on
-  the host, and an unattended auto-update of that is a worse trade than a manual
-  version bump. Note the upstream `containrrr/watchtower` is **archived** (last
-  release Nov 2023); the stack uses the maintained fork
-  `nickfedor/watchtower` (github.com/nicholas-fedor/watchtower), same flags and
-  the same `com.centurylinklabs.*` labels.
+- **Watchtower isn't part of Clinch.** It started as a second service in this stack, then
+  lived in `deploy/watchtower-stack.yml`. On 2026-10-20 the user made it a topic of its own:
+  its stack file and the decisions that were here (no polling without it, its own stack,
+  anonymous pulls, label scoping, the pinned fork) moved to the workspace repo,
+  `development/.claude/skills/portainer/watchtower/`, owned by the Workspace session.
+  Clinch keeps only its `watchtower.enable` label.
 - **No Docker on the dev machine.** The image is only ever built by CI, so a
   Dockerfile change cannot be smoke-tested locally — push to `release` and watch
   the Actions run.

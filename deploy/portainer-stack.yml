@@ -8,10 +8,8 @@
 # Kept in the repo so the deployed shape is reviewable. Portainer holds the
 # authoritative copy; reconcile before pasting if you've changed it there.
 #
-# ⚠️ Watchtower used to be a second service in this file. It now lives in
-# `watchtower-stack.yml` as a stack of its own — adopting it then costs this
-# stack one label line rather than a rewrite, and one Watchtower can keep every
-# labelled container on the NAS current, not just this one. The only thing
+# Auto-updates come from the NAS's Watchtower, a stack of its own that isn't part of Clinch
+# (development/.claude/skills/portainer/watchtower/ in the workspace repo). The only thing
 # needed here is the `watchtower.enable` label at the bottom.
 
 services:
