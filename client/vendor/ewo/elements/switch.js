@@ -15,7 +15,9 @@ var r = t`
     justify-content: space-between;
   }
   :host([disabled]) { cursor: default; opacity: 0.5; }
-  :host(:focus-visible) { outline: none; }
+  /* !important: a page's own :focus-visible outline (Folio's base.css has one) beats a :host rule,
+     and drew a box round the whole element after any key press. The inner ring stays. */
+  :host(:focus-visible) { outline: none !important; }
   :host(:focus-visible) .track { outline: var(--ewo-focus); outline-offset: 2px; }
 
   .text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

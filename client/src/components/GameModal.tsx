@@ -371,7 +371,7 @@ function CalendarLinks({ gameId, lang }: { gameId: string; lang: Lang }) {
 
 function Body({ detail }: { detail: GameDetail }) {
   const locale = useLocale();
-  const { lang } = useSettings().settings;
+  const { lang } = useSettings().shown;
   const [away, home] = detail.teams;
   const scroller = useRef<HTMLDivElement>(null);
   const edges = useOverflowEdges(scroller);

@@ -20,7 +20,7 @@ import { EwoElement } from './base';
  * @cssprop --ewo-emblem-strike - The line through a dead emblem.
  * @cssprop --ewo-emblem-paper - What a doodle face sits on; the tag's hole.
  * @cssprop --ewo-emblem-tag-ink - The tag's outline (default a dark ink, on any page).
- * @cssprop --ewo-emblem-tag-0 - The tag's first colour (mint); -1 … -9 the others, in TAG_COLOURS' order.
+ * @cssprop --ewo-emblem-tag-0 - The tag's first colour (mint); -1 … -13 the others, in TAG_COLOURS' order.
  */
 export declare class EwoEmblem extends EwoElement {
     #private;

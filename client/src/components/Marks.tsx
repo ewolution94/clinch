@@ -44,9 +44,9 @@ export function AbroadBadge({
   abroad: GameAbroad | undefined;
   compact?: boolean;
 }) {
-  const { settings } = useSettings();
+  const { shown } = useSettings();
   if (!abroad) return null;
-  const { flag, city, country } = abroadLabel(abroad, settings.lang);
+  const { flag, city, country } = abroadLabel(abroad, shown.lang);
   if (compact && !flag) return null;
 
   return (

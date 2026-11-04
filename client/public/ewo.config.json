@@ -1,0 +1,9 @@
+{
+  "app": "clinch",
+  "version": 1,
+  "settings": {
+    "lang": { "family": true, "default": "en" },
+    "theme": { "family": true, "default": "dark" },
+    "motion": { "family": true }
+  }
+}

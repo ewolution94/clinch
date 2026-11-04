@@ -41,6 +41,7 @@ services:
       # Visit counts: /_e and /_e.js are forwarded to Census over the `ewolution`
       # network. Remove the line to stop counting; the page doesn't change either way.
       - CLINCH_CENSUS=http://census:4901
+      - DASHBOARD_URL=http://dashboard:8081
     networks:
       # The shared network Census listens on. It must exist before this stack is
       # updated (Portainer → Networks → `ewolution`).

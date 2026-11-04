@@ -1,5 +1,6 @@
 import express from "express";
-import { existsSync } from "node:fs";
+import type { Response } from "express";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
@@ -11,6 +12,8 @@ import { SnapshotStore } from "./snapshotStore.js";
 import { GameDetailStore } from "./gameDetailStore.js";
 import { archiveStore } from "./archiveStore.js";
 import { teamMeta } from "./teams.js";
+// Folio's side of Dashboard's config channel, vendored with the client's elements.
+import { createConfig } from "../../client/vendor/ewo/elements/config-server.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const clientDist = join(here, "..", "..", "client", "dist");
@@ -304,8 +307,37 @@ app.get("/api/stream", (req, res) => {
 });
 
 if (existsSync(clientDist)) {
+  /*
+   * Dashboard's values for Clinch (the theme, language and motion a device that
+   * hasn't picked starts from), checked against the manifest the build copies
+   * from client/public/ewo.config.json. Until Dashboard answers, and whenever
+   * it's down or DASHBOARD_URL is empty, the built-in ones: the page as it
+   * ships. Never part of /api/health — Dashboard being down must not turn
+   * Clinch red.
+   */
+  const dashboard = createConfig({
+    manifest: JSON.parse(readFileSync(join(clientDist, "ewo.config.json"), "utf8")),
+    url: config.dashboard,
+  });
+  void dashboard.start();
+
+  // The page carries the values as #ewo-config, so it is kept for the current
+  // values (and build) only.
+  const shellFile = join(clientDist, "index.html");
+  let shell = { key: "", body: "" };
+  const sendShell = (res: Response) => {
+    const key = `${dashboard.etag()}:${statSync(shellFile).mtimeMs}`;
+    if (shell.key !== key) shell = { key, body: dashboard.inject(readFileSync(shellFile, "utf8")) };
+    // What sendFile said about it before, so caching is as it was.
+    res.setHeader("cache-control", "public, max-age=0");
+    res.type("html").send(shell.body);
+  };
+
+  // Before the static files, which would otherwise answer / with the plain file.
+  app.get(["/", "/index.html"], (_req, res) => sendShell(res));
   app.use(
     express.static(clientDist, {
+      index: false,
       setHeaders(res, path) {
         // Vite fingerprints everything under /assets; logos are content-stable.
         if (path.includes("/assets/") || path.includes("/logos/")) {
@@ -314,7 +346,7 @@ if (existsSync(clientDist)) {
       },
     })
   );
-  app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(join(clientDist, "index.html")));
+  app.get(/^(?!\/api\/).*/, (_req, res) => sendShell(res));
 } else {
   console.warn(`[clinch] no client build at ${clientDist} — API only`);
 }

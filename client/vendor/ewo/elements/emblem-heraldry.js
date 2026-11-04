@@ -63,8 +63,60 @@ var e = [
 	[{
 		de: "Rose",
 		en: "Rose"
-	}, "M50 20C58 20 62 28 60 36C68 32 78 38 76 46C82 52 78 62 70 62C72 70 64 78 56 74C52 82 40 82 38 74C30 78 22 70 26 62C18 62 14 52 20 46C18 38 28 32 36 36C34 28 42 20 50 20ZM50 42A8 8 0 1 0 50 58A8 8 0 1 0 50 42Z"]
-], t = "M8 6H92V44C92 72 72 88 50 96C28 88 8 72 8 44Z", n = "<path d=\"M20 18L80 82M80 18L20 82\" class=\"strike\"/>", r = e.map(([e]) => e), i = [
+	}, "M50 20C58 20 62 28 60 36C68 32 78 38 76 46C82 52 78 62 70 62C72 70 64 78 56 74C52 82 40 82 38 74C30 78 22 70 26 62C18 62 14 52 20 46C18 38 28 32 36 36C34 28 42 20 50 20ZM50 42A8 8 0 1 0 50 58A8 8 0 1 0 50 42Z"],
+	[{
+		de: "Anker",
+		en: "Anchor"
+	}, "M50 15A7.5 7.5 0 1 1 50 30A7.5 7.5 0 1 1 50 15ZM50 20A2.5 2.5 0 1 0 50 25A2.5 2.5 0 1 0 50 20ZM47 30H53V40H64V46H53V74C60 73 67 68 71 60L65 58L80 50L82 66L77 63C71 74 61 80 50 80C39 80 29 74 23 63L18 66L20 50L35 58L29 60C33 68 40 73 47 74V46H36V40H47Z"],
+	[{
+		de: "Herz",
+		en: "Heart"
+	}, "M50 82C36 70 18 58 18 40C18 28 27 20 37 20C43 20 47 23 50 28C53 23 57 20 63 20C73 20 82 28 82 40C82 58 64 70 50 82Z"],
+	[{
+		de: "Sonne",
+		en: "Sun"
+	}, "M50 16L58.4 29.7L74 26L70.3 41.6L84 50L70.3 58.4L74 74L58.4 70.3L50 84L41.6 70.3L26 74L29.7 58.4L16 50L29.7 41.6L26 26L41.6 29.7Z"],
+	[{
+		de: "Blatt",
+		en: "Leaf"
+	}, "M20 82L29 73C25 47 45 26 80 20C77 55 57 74 33 76L24 85Z"],
+	[{
+		de: "Blitz",
+		en: "Lightning"
+	}, "M58 14L28 54H46L38 86L74 42H54L64 14Z"],
+	[{
+		de: "Würfel",
+		en: "Die"
+	}, "M26 22H74A4 4 0 0 1 78 26V74A4 4 0 0 1 74 78H26A4 4 0 0 1 22 74V26A4 4 0 0 1 26 22ZM34 29A5 5 0 1 0 34 39A5 5 0 1 0 34 29ZM66 29A5 5 0 1 0 66 39A5 5 0 1 0 66 29ZM50 45A5 5 0 1 0 50 55A5 5 0 1 0 50 45ZM34 61A5 5 0 1 0 34 71A5 5 0 1 0 34 61ZM66 61A5 5 0 1 0 66 71A5 5 0 1 0 66 61Z"],
+	[{
+		de: "Eichel",
+		en: "Acorn"
+	}, "M48 16H52V28C61 28.5 70 35 70 46H30C30 35 39 28.5 48 28ZM36 49H64C64 67 58 79 50 84C42 79 36 67 36 49Z"],
+	[{
+		de: "Pik",
+		en: "Spade"
+	}, "M50 16C56 30 82 40 82 58C82 70 72 76 63 74C58 73 55 70 53 67C54 74 57 80 62 84H38C43 80 46 74 47 67C45 70 42 73 37 74C28 76 18 70 18 58C18 40 44 30 50 16Z"]
+], t = "M8 6H92V44C92 72 72 88 50 96C28 88 8 72 8 44Z", n = [
+	0,
+	1,
+	2,
+	3
+].flatMap((e) => [
+	0,
+	1,
+	2,
+	3
+].filter((t) => (e + t) % 2 == 0).map((t) => `M${t * 25} ${e * 25}h25v25h-25Z`)).join(""), r = "M0 30Q12.5 22 25 30T50 30T75 30T100 30V40Q87.5 48 75 40T50 40T25 40T0 40ZM0 58Q12.5 50 25 58T50 58T75 58T100 58V68Q87.5 76 75 68T50 68T25 68T0 68Z", i = [
+	20,
+	40,
+	60,
+	80
+].flatMap((e) => [
+	20,
+	40,
+	60,
+	80
+].map((t) => `M${e - 5} ${t}a5 5 0 1 0 10 0a5 5 0 1 0-10 0Z`)).join(""), a = "<path d=\"M20 18L80 82M80 18L20 82\" class=\"strike\"/>", o = e.map(([e]) => e), s = [
 	[{
 		de: "Tinte",
 		en: "Ink"
@@ -96,27 +148,51 @@ var e = [
 	[{
 		de: "Berg",
 		en: "Mount"
-	}, "<rect width=\"100\" height=\"100\" class=\"e1\"/><path d=\"M0 74L50 34L100 74V100H0Z\" class=\"e2\"/>"]
-], a = {
+	}, "<rect width=\"100\" height=\"100\" class=\"e1\"/><path d=\"M0 74L50 34L100 74V100H0Z\" class=\"e2\"/>"],
+	[{
+		de: "Sparren",
+		en: "Chevron"
+	}, "<rect width=\"100\" height=\"100\" class=\"e3\"/><path d=\"M0 74L50 40L100 74V94L50 60L0 94Z\" class=\"e1\"/>"],
+	[{
+		de: "Andreaskreuz",
+		en: "Saltire"
+	}, "<rect width=\"100\" height=\"100\" class=\"e2\"/><path d=\"M0 0H14L50 36L86 0H100V14L64 50L100 86V100H86L50 64L14 100H0V86L36 50L0 14Z\" class=\"e1\"/>"],
+	[{
+		de: "Kreuz",
+		en: "Cross"
+	}, "<rect width=\"100\" height=\"100\" class=\"e1\"/><path d=\"M40 0H60V40H100V60H60V100H40V60H0V40H40Z\" class=\"e3\"/>"],
+	[{
+		de: "Geschacht",
+		en: "Chequy"
+	}, `<rect width="100" height="100" class="e3"/><path d="${n}" class="e1"/>`],
+	[{
+		de: "Wellen",
+		en: "Waves"
+	}, `<rect width="100" height="100" class="e1"/><path d="${r}" class="e2"/>`],
+	[{
+		de: "Pfahl",
+		en: "Pale"
+	}, "<rect width=\"100\" height=\"100\" class=\"e1\"/><rect x=\"34\" width=\"32\" height=\"100\" class=\"e3\"/>"]
+], c = {
 	id: "heraldry",
 	parts: [{
 		name: {
 			de: "Feld",
 			en: "Field"
 		},
-		options: i.map(([e]) => e)
+		options: s.map(([e]) => e)
 	}, {
 		name: {
 			de: "Figur",
 			en: "Charge"
 		},
-		options: r
+		options: o
 	}],
-	svg([r, a], { uid: o = "e", dead: s = !1 } = {}) {
-		return `<svg viewBox="0 0 100 100" class="heraldry" aria-hidden="true"><defs><clipPath id="s${o}"><path d="${t}"/></clipPath></defs><g${s ? " class=\"faded\"" : ""}><g clip-path="url(#s${o})">${i[r]?.[1] ?? i[0][1]}<path class="charge" d="${e[a]?.[1] ?? e[0][1]}" transform="translate(50 52) scale(0.62) translate(-50 -50)"/></g><path d="${t}" class="rim"/></g>${s ? n : ""}</svg>`;
+	svg([n, r], { uid: i = "e", dead: o = !1 } = {}) {
+		return `<svg viewBox="0 0 100 100" class="heraldry" aria-hidden="true"><defs><clipPath id="s${i}"><path d="${t}"/></clipPath></defs><g${o ? " class=\"faded\"" : ""}><g clip-path="url(#s${i})">${s[n]?.[1] ?? s[0][1]}<path class="charge" d="${e[r]?.[1] ?? e[0][1]}" transform="translate(50 52) scale(0.62) translate(-50 -50)"/></g><path d="${t}" class="rim"/></g>${o ? a : ""}</svg>`;
 	},
 	fromSeed: (e) => [(e >>> 7) % 8, e % 16]
-}, o = [
+}, l = [
 	[
 		{
 			de: "Indigo & Gold",
@@ -180,8 +256,56 @@ var e = [
 		},
 		"#9a4f00",
 		"#ffeaa8"
+	],
+	[
+		{
+			de: "Petrol & Sand",
+			en: "Petrol & sand"
+		},
+		"#0b4f5c",
+		"#f3dfb5"
+	],
+	[
+		{
+			de: "Pflaume & Pfirsich",
+			en: "Plum & peach"
+		},
+		"#5e1f4f",
+		"#ffd3b8"
+	],
+	[
+		{
+			de: "Wald & Limette",
+			en: "Forest & lime"
+		},
+		"#23471a",
+		"#d9f2a0"
+	],
+	[
+		{
+			de: "Marine & Koralle",
+			en: "Navy & coral"
+		},
+		"#13294b",
+		"#ff9e8a"
+	],
+	[
+		{
+			de: "Schoko & Karamell",
+			en: "Cocoa & caramel"
+		},
+		"#4a2817",
+		"#f1c48d"
+	],
+	[
+		{
+			de: "Schiefer & Himmel",
+			en: "Slate & sky"
+		},
+		"#2f3e4e",
+		"#bfe3ff"
 	]
-], s = [
+], u = [
 	[{
 		de: "Dunkel",
 		en: "Dark"
@@ -213,8 +337,32 @@ var e = [
 	[{
 		de: "Streifen",
 		en: "Bars"
-	}, (e, t) => `<rect width="100" height="100" fill="${e}"/><path d="M0 22H100V34H0ZM0 44H100V56H0ZM0 66H100V78H0Z" fill="${t}"/>`]
-], c = {
+	}, (e, t) => `<rect width="100" height="100" fill="${e}"/><path d="M0 22H100V34H0ZM0 44H100V56H0ZM0 66H100V78H0Z" fill="${t}"/>`],
+	[{
+		de: "Sparren",
+		en: "Chevron"
+	}, (e, t) => `<rect width="100" height="100" fill="${t}"/><path d="M0 72L50 36L100 72V92L50 56L0 92Z" fill="${e}"/>`],
+	[{
+		de: "Andreaskreuz",
+		en: "Saltire"
+	}, (e, t) => `<rect width="100" height="100" fill="${t}"/><path d="M0 0H14L50 36L86 0H100V14L64 50L100 86V100H86L50 64L14 100H0V86L36 50L0 14Z" fill="${e}"/>`],
+	[{
+		de: "Kreuz",
+		en: "Cross"
+	}, (e, t) => `<rect width="100" height="100" fill="${t}"/><path d="M40 0H60V40H100V60H60V100H40V60H0V40H40Z" fill="${e}"/>`],
+	[{
+		de: "Geschacht",
+		en: "Chequy"
+	}, (e, t) => `<rect width="100" height="100" fill="${t}"/><path d="${n}" fill="${e}"/>`],
+	[{
+		de: "Wellen",
+		en: "Waves"
+	}, (e, t) => `<rect width="100" height="100" fill="${e}"/><path d="${r}" fill="${t}"/>`],
+	[{
+		de: "Punkte",
+		en: "Dots"
+	}, (e, t) => `<rect width="100" height="100" fill="${e}"/><path d="${i}" fill="${t}"/>`]
+], d = {
 	id: "token",
 	parts: [
 		{
@@ -222,26 +370,26 @@ var e = [
 				de: "Farben",
 				en: "Colours"
 			},
-			options: o.map(([e]) => e)
+			options: l.map(([e]) => e)
 		},
 		{
 			name: {
 				de: "Teilung",
 				en: "Division"
 			},
-			options: s.map(([e]) => e)
+			options: u.map(([e]) => e)
 		},
 		{
 			name: {
 				de: "Figur",
 				en: "Charge"
 			},
-			options: r
+			options: o
 		}
 	],
-	svg([t, r, i], { uid: a = "e", dead: c = !1 } = {}) {
-		let [, l, u] = o[t] ?? o[0], d = (s[r] ?? s[0])[1](l, u);
-		return `<svg viewBox="0 0 100 100" class="token" aria-hidden="true"><defs><clipPath id="r${a}"><circle cx="50" cy="50" r="46"/></clipPath></defs><g${c ? " class=\"faded\"" : ""}><g clip-path="url(#r${a})">${d}<path d="${e[i]?.[1] ?? e[0][1]}" transform="translate(50 50) scale(0.6) translate(-50 -50)" fill="#fffdf6" stroke="${l}" stroke-width="5" stroke-linejoin="round" paint-order="stroke"/></g><circle cx="50" cy="50" r="46" fill="none" stroke="${l}" stroke-width="4"/></g>${c ? n : ""}</svg>`;
+	svg([t, n, r], { uid: i = "e", dead: o = !1 } = {}) {
+		let [, s, c] = l[t] ?? l[0], d = (u[n] ?? u[0])[1](s, c);
+		return `<svg viewBox="0 0 100 100" class="token" aria-hidden="true"><defs><clipPath id="r${i}"><circle cx="50" cy="50" r="46"/></clipPath></defs><g${o ? " class=\"faded\"" : ""}><g clip-path="url(#r${i})">${d}<path d="${e[r]?.[1] ?? e[0][1]}" transform="translate(50 50) scale(0.6) translate(-50 -50)" fill="#fffdf6" stroke="${s}" stroke-width="5" stroke-linejoin="round" paint-order="stroke"/></g><circle cx="50" cy="50" r="46" fill="none" stroke="${s}" stroke-width="4"/></g>${o ? a : ""}</svg>`;
 	},
 	fromSeed: (e) => [
 		(e >>> 4) % 8,
@@ -250,4 +398,4 @@ var e = [
 	]
 };
 //#endregion
-export { e as CHARGES, a as heraldry, c as token };
+export { e as CHARGES, n as CHEQUY, r as WAVES, c as heraldry, d as token };

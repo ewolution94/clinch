@@ -290,6 +290,7 @@ and counts nothing.
 | `CLINCH_OUTLETS`           | `RTL,RTL+`| Which outlets count as watchable — also `Nitro`, `Sky`.      |
 | `CLINCH_ARCHIVE_SEASONS`   | `2021…2025` | Finished seasons offered in the season picker.            |
 | `CLINCH_CENSUS`            | *(off)*   | Census's ingest origin for visit counts, `http://census:4901` on the NAS. |
+| `DASHBOARD_URL`            | *(off)*   | Dashboard's apps' port, `http://dashboard:8081` on the NAS: the theme, language and motion a device that hasn't picked starts from (one set for Clinch; the family's motion). Off or down: the built-in ones, as before. |
 
 ## Where the data comes from
 

@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { readConfig } from "../../vendor/ewo/elements/config-client.js";
+import { shownFor, type Shown } from "./defaults";
 import {
   DEFAULT_SETTINGS,
   applySettings,
@@ -16,8 +18,14 @@ import {
 } from "./settings";
 import { stringsFor } from "./strings";
 
+/** What the page shows for this device's picks: theirs, else Dashboard's, else built-in. */
+const shownOf = (settings: Settings): Shown => shownFor(settings, readConfig());
+
 interface SettingsApi {
+  /** This device's picks, as stored: the theme and language may still be `default`. */
   settings: Settings;
+  /** The theme, language and motion the page shows; read these, not the picks. */
+  shown: Shown;
   /** False until localStorage has been read — the first render is defaults. */
   hydrated: boolean;
   update: (patch: Partial<Settings>) => void;
@@ -25,6 +33,7 @@ interface SettingsApi {
 
 const SettingsContext = createContext<SettingsApi>({
   settings: DEFAULT_SETTINGS,
+  shown: shownFor(DEFAULT_SETTINGS, {}),
   hydrated: false,
   update: () => undefined,
 });
@@ -40,7 +49,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = loadSettings();
     setSettings(stored);
-    applySettings(stored);
+    applySettings(shownOf(stored));
     setHydrated(true);
   }, []);
 
@@ -48,13 +57,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
       saveSettings(next);
-      applySettings(next);
+      applySettings(shownOf(next));
       return next;
     });
   }, []);
 
   const value = useMemo(
-    () => ({ settings, hydrated, update }),
+    () => ({ settings, shown: shownOf(settings), hydrated, update }),
     [settings, hydrated, update],
   );
 
@@ -71,7 +80,7 @@ export function useSettings(): SettingsApi {
 
 /** The BCP-47 tag for date and time formatting. */
 export function useLocale(): string {
-  return useSettings().settings.lang === "de" ? "de-DE" : "en-GB";
+  return useSettings().shown.lang === "de" ? "de-DE" : "en-GB";
 }
 
 /** The reader's team, if they've picked one. */
@@ -81,5 +90,5 @@ export function useFavourite(): string | null {
 
 /** Interface copy in the reader's language. */
 export function useStrings() {
-  return stringsFor(useSettings().settings.lang);
+  return stringsFor(useSettings().shown.lang);
 }

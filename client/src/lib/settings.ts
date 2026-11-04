@@ -8,7 +8,13 @@
  *
  * Nothing here goes near a server. Clinch has no accounts and this doesn't
  * change that — it's a preference file in the reader's own browser.
+ *
+ * The theme and the language stay `default` until this device picks one, and
+ * the motion `system`: then Dashboard's value for them, else the built-in one
+ * (lib/defaults.ts). Values saved before that existed keep counting as picks.
  */
+
+import type { Shown } from "./defaults";
 
 /** `creative` is dark with the motion turned up, not a third palette. */
 export type Theme = "dark" | "light" | "creative";
@@ -26,8 +32,9 @@ export type ConferencePref = "AFC" | "NFC" | "last";
 export type Motion = "system" | "full" | "reduced";
 
 export interface Settings {
-  theme: Theme;
-  lang: Lang;
+  /** `default` until this device picks one (lib/defaults.ts). */
+  theme: Theme | "default";
+  lang: Lang | "default";
   landing: Landing;
   conference: ConferencePref;
   motion: Motion;
@@ -43,8 +50,8 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  theme: "dark",
-  lang: "en",
+  theme: "default",
+  lang: "default",
   landing: "standings",
   conference: "AFC",
   motion: "system",
@@ -57,8 +64,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEY = "clinch-settings-v1";
 
-const THEMES: Theme[] = ["dark", "light", "creative"];
-const LANGS: Lang[] = ["en", "de"];
+const THEMES: Settings["theme"][] = ["default", "dark", "light", "creative"];
+const LANGS: Settings["lang"][] = ["default", "en", "de"];
 const LANDINGS: Landing[] = [
   "standings",
   "week",
@@ -128,14 +135,15 @@ export function saveSettings(settings: Settings): void {
  * Applied to the document root, and duplicated by the boot script in index.html
  * so the first paint is already right. Keep the two in step — a mismatch shows
  * up as a flash of the wrong theme, which is exactly what the script is for.
+ * Takes what the page shows (lib/defaults.ts), not the picks.
  */
-export function applySettings(settings: Settings): void {
+export function applySettings(shown: Shown): void {
   const root = document.documentElement;
-  root.dataset.theme = settings.theme;
-  root.dataset.motion = settings.motion;
-  root.lang = settings.lang;
+  root.dataset.theme = shown.theme;
+  root.dataset.motion = shown.motion;
+  root.lang = shown.lang;
 
-  const dark = settings.theme !== "light";
+  const dark = shown.theme !== "light";
   root.style.colorScheme = dark ? "dark" : "light";
   document
     .querySelector('meta[name="theme-color"]')

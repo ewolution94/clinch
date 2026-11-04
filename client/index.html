@@ -50,23 +50,47 @@
     <title>Clinch</title>
     <!--
       Runs before first paint so a light-theme reader never sees a flash of the
-      dark app. Deliberately duplicates applySettings() in lib/settings.ts —
-      keep the two in step. Wrapped in try/catch because a blocked localStorage
-      here would stop the module script below from ever loading.
+      dark app. Deliberately duplicates applySettings() in lib/settings.ts and
+      lib/defaults.ts — keep them in step: this device's pick, else Dashboard's
+      value (#ewo-config, which the server puts first in <head>), else dark,
+      English and the device's motion. Wrapped in try/catch because a blocked
+      localStorage here would stop the module script below from ever loading.
     -->
     <script>
       (function () {
+        var cfg = {};
         try {
-          var s = JSON.parse(
-            localStorage.getItem("clinch-settings-v1") || "{}",
-          );
+          cfg = JSON.parse(document.getElementById("ewo-config").textContent) || {};
+        } catch (e) {
+          /* No values in the page (the dev server, Dashboard off): the built-in ones. */
+        }
+        try {
+          var s = {};
+          try {
+            s = JSON.parse(localStorage.getItem("clinch-settings-v1") || "{}") || {};
+          } catch (e) {
+            /* No preferences readable: Dashboard's values, else the built-in ones. */
+          }
           var theme =
-            s.theme === "light" || s.theme === "creative" ? s.theme : "dark";
+            s.theme === "dark" || s.theme === "light" || s.theme === "creative"
+              ? s.theme
+              : cfg.theme === "light"
+                ? "light"
+                : "dark";
           var root = document.documentElement;
           root.dataset.theme = theme;
-          if (s.motion === "full" || s.motion === "reduced")
-            root.dataset.motion = s.motion;
-          if (s.lang === "de") root.lang = "de";
+          var motion =
+            s.motion === "full" || s.motion === "reduced"
+              ? s.motion
+              : cfg.motion === "less"
+                ? "reduced"
+                : cfg.motion === "full"
+                  ? "full"
+                  : "";
+          if (motion) root.dataset.motion = motion;
+          var lang =
+            s.lang === "en" || s.lang === "de" ? s.lang : cfg.lang === "de" ? "de" : "en";
+          if (lang === "de") root.lang = "de";
           var dark = theme !== "light";
           root.style.colorScheme = dark ? "dark" : "light";
           var meta = document.querySelector('meta[name="theme-color"]');

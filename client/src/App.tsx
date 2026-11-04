@@ -67,7 +67,7 @@ export default function App() {
 }
 
 function Clinch() {
-  const { settings, hydrated, update } = useSettings();
+  const { settings, shown, hydrated, update } = useSettings();
   const locale = useLocale();
   const t = useStrings();
   const {
@@ -103,8 +103,8 @@ function Clinch() {
   // Accents are picked for the dark page; on light they are remapped once here
   // so every `team.accent` read downstream is already correct.
   const themed = useMemo(
-    () => (raw ? themedSnapshot(raw, settings.theme) : raw),
-    [raw, settings.theme],
+    () => (raw ? themedSnapshot(raw, shown.theme) : raw),
+    [raw, shown.theme],
   );
 
   /*

@@ -52,7 +52,7 @@ export function TeamWatermark({
   side = "right",
 }: TeamWatermarkProps) {
   const weight = MARK_WEIGHT[abbr.toUpperCase()] ?? DEFAULT_MARK_WEIGHT;
-  const { settings } = useSettings();
+  const { shown } = useSettings();
   /*
    * The measurements in markWeight.ts are taken against the dark page, where a
    * faint mark has to be lifted to register. On paper the problem inverts — the
@@ -60,7 +60,7 @@ export function TeamWatermark({
    * visible, and the same alpha reads far heavier. So light drops the lift and
    * scales the whole thing back; the per-mark ratios still hold.
    */
-  const light = settings.theme === "light";
+  const light = shown.theme === "light";
   const alpha = Math.min(0.55, opacity * weight.alpha * (light ? 0.62 : 1));
 
   return (

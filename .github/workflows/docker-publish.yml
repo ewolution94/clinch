@@ -49,6 +49,36 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Build
+        run: npm run build
+
+      # The production server as the image runs it, without Dashboard: its values block in the
+      # page with the built-in ones (English, dark, the device's motion) on every route, and the
+      # manifest.
+      - name: Smoke test the production server
+        run: |
+          CLINCH_BROADCAST=off PORT=4691 node server/dist/index.js &
+          for _ in $(seq 1 20); do curl -sf -o /dev/null http://127.0.0.1:4691/ && break; sleep 0.5; done
+          curl -sf http://127.0.0.1:4691/ | grep -F '<script type="application/json" id="ewo-config">{"lang":"en","theme":"dark","motion":"system"}</script>' >/dev/null
+          curl -sf http://127.0.0.1:4691/week/5 | grep -F 'id="ewo-config"' >/dev/null
+          curl -sf http://127.0.0.1:4691/ewo.config.json | grep -F '"app": "clinch"' >/dev/null
+
+      # The server against a stand-in for Dashboard's apps' port: it takes the manifest, and a
+      # theme and language set for Clinch, with the family's motion, reach the page.
+      - name: Smoke test Dashboard's values
+        run: |
+          node --input-type=module -e "
+            import http from 'node:http';
+            http.createServer((req, res) => {
+              if (req.method === 'PUT' && req.url === '/v1/manifest/clinch') { req.resume(); return res.writeHead(204).end(); }
+              if (req.url === '/v1/config/clinch') return res.writeHead(200, { 'content-type': 'application/json', etag: '\"1\"' }).end(JSON.stringify({ family: { motion: 'less' }, app: { theme: 'light', lang: 'de' } }));
+              res.writeHead(404).end();
+            }).listen(4692);
+          " &
+          DASHBOARD_URL=http://127.0.0.1:4692 CLINCH_BROADCAST=off PORT=4693 node server/dist/index.js &
+          for _ in $(seq 1 20); do curl -sf http://127.0.0.1:4693/ | grep -F '"theme":"light"' >/dev/null && break; sleep 0.5; done
+          curl -sf http://127.0.0.1:4693/ | grep -F '{"lang":"de","theme":"light","motion":"less"}' >/dev/null
+
   build-and-push:
     needs: verify
     # A pull request is verified but not published; `latest` only ever moves

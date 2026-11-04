@@ -6,7 +6,7 @@
 // listens for the element's own change event.
 
 import type { HTMLAttributes } from 'svelte/elements';
-import type { EwoBadge, EwoEmblem, EwoEmblemMaker, EwoEmpty, EwoGuide, EwoHalftone, EwoSegmented, EwoSettingsBasics, EwoSettingsButton, EwoSheet, EwoSkeleton, EwoConnection, EwoSwitch, EwoThemeToggle, EwoTicks, EwoToaster, LanguageChoice, SegmentedOption, SettingsThemeChoice, Tick } from './index';
+import type { EwoBadge, EwoButton, EwoField, EwoReorder, EwoTileGrid, EwoTable, EwoEmblem, EwoEmblemMaker, EwoEmpty, EwoGuide, EwoHalftone, EwoSegmented, EwoSettingsBasics, EwoSettingsButton, EwoSheet, EwoSkeleton, EwoSlotReel, EwoSlider, EwoConnection, EwoSwitch, EwoThemeToggle, EwoTicks, EwoToaster, LanguageChoice, SegmentedOption, SettingsThemeChoice, Tick, Tiles } from './index';
 
 type Handler<E, D> = (event: CustomEvent<D> & { currentTarget: E }) => void;
 
@@ -24,6 +24,23 @@ declare module 'svelte/elements' {
       onchange?: Handler<EwoSegmented, { value: string }>;
       oninput?: Handler<EwoSegmented, { value: string }>;
     };
+    'ewo-slider': Omit<HTMLAttributes<EwoSlider>, 'onchange' | 'oninput'> & {
+      value?: number;
+      min?: number;
+      max?: number;
+      step?: number;
+      mark?: number | null;
+      label?: string;
+      unit?: string;
+      name?: string;
+      ticks?: boolean;
+      ends?: boolean;
+      nobubble?: boolean;
+      disabled?: boolean;
+      format?: ((value: number) => string) | null;
+      onchange?: Handler<EwoSlider, { value: number }>;
+      oninput?: Handler<EwoSlider, { value: number }>;
+    };
     'ewo-switch': Omit<HTMLAttributes<EwoSwitch>, 'onchange'> & {
       checked?: boolean;
       disabled?: boolean;
@@ -32,6 +49,56 @@ declare module 'svelte/elements' {
       name?: string;
       value?: string;
       onchange?: Handler<EwoSwitch, { checked: boolean }>;
+    };
+    'ewo-button': HTMLAttributes<EwoButton> & {
+      variant?: 'default' | 'primary' | 'quiet' | 'danger';
+      size?: 'sm' | 'md' | 'lg';
+      icon?: boolean;
+      label?: string;
+      stretch?: boolean;
+      disabled?: boolean;
+      type?: 'button' | 'submit' | 'reset';
+      href?: string;
+      target?: string;
+      download?: string;
+    };
+    'ewo-field': Omit<HTMLAttributes<EwoField>, 'onchange' | 'oninput'> & {
+      label?: string;
+      nolabel?: boolean;
+      value?: string;
+      placeholder?: string;
+      hint?: string;
+      error?: string;
+      type?: 'text' | 'search' | 'url' | 'email' | 'number' | 'tel';
+      multiline?: boolean;
+      rows?: number;
+      autogrow?: boolean;
+      maxlength?: number;
+      counter?: boolean;
+      size?: 'sm' | 'md';
+      name?: string;
+      required?: boolean;
+      disabled?: boolean;
+      readonly?: boolean;
+      autocomplete?: string;
+      inputmode?: string;
+      onchange?: Handler<EwoField, { value: string }>;
+      oninput?: Handler<EwoField, { value: string }>;
+    };
+    'ewo-table': HTMLAttributes<EwoTable> & { label?: string; density?: 'normal' | 'compact'; nowrap?: boolean; sticky?: boolean; hover?: boolean };
+    'ewo-reorder': Omit<HTMLAttributes<EwoReorder>, 'onchange'> & {
+      label?: string;
+      arrows?: boolean;
+      disabled?: boolean;
+      onchange?: Handler<EwoReorder, { order: string[]; key: string; from: number; to: number }>;
+    };
+    'ewo-tile-grid': Omit<HTMLAttributes<EwoTileGrid>, 'onchange'> & {
+      label?: string;
+      columns?: number;
+      compact?: boolean;
+      disabled?: boolean;
+      onchange?: Handler<EwoTileGrid, { layout: Tiles; key: string; moved: string[]; how: 'free' | 'swap' | 'push'; action: 'move' | 'resize' }>;
+      'ontile-focus'?: Handler<EwoTileGrid, { key: string }>;
     };
     'ewo-badge': HTMLAttributes<EwoBadge> & {
       tone?: 'neutral' | 'ok' | 'warn' | 'bad' | 'info' | 'unknown' | 'accent';
@@ -48,6 +115,7 @@ declare module 'svelte/elements' {
     'ewo-connection': HTMLAttributes<EwoConnection> & { state?: 'connecting' | 'reconnecting' | 'online'; 'connecting-label'?: string; 'reconnecting-label'?: string; 'back-label'?: string };
     'ewo-sheet': Omit<HTMLAttributes<EwoSheet>, 'oncancel' | 'onclose'> & { open?: boolean; label?: string; wide?: boolean; placement?: 'center' | 'top'; oncancel?: Handler<EwoSheet, void>; onclose?: Handler<EwoSheet, void> };
     'ewo-guide': Omit<HTMLAttributes<EwoGuide>, 'oncancel' | 'onclose'> & { open?: boolean; label?: string; 'next-label'?: string; 'back-label'?: string; 'done-label'?: string; 'skip-label'?: string; oncancel?: Handler<EwoGuide, void>; onclose?: Handler<EwoGuide, void>; ondone?: Handler<EwoGuide, void>; onpage?: Handler<EwoGuide, { index: number }> };
+    'ewo-slot-reel': HTMLAttributes<EwoSlotReel> & { rows?: 1 | 3 | '1' | '3'; rest?: number; ontick?: Handler<EwoSlotReel, { index: number }>; onland?: Handler<EwoSlotReel, { index: number }> };
     'ewo-theme-toggle': HTMLAttributes<EwoThemeToggle> & { cycle?: boolean; 'label-light'?: string; 'label-dark'?: string };
     'ewo-settings-button': HTMLAttributes<EwoSettingsButton> & { label?: string; 'show-label'?: boolean };
     'ewo-settings-basics': HTMLAttributes<EwoSettingsBasics> & {

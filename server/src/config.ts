@@ -63,4 +63,9 @@ export const config = {
   archiveSeasons: archiveSeasons(),
   /** Census's ingest origin for visit counts, e.g. http://census:4901. Empty = off. */
   census: process.env.CLINCH_CENSUS ?? "",
+  /**
+   * Dashboard's apps' port, e.g. http://dashboard:8081: the theme, language and
+   * motion a device that hasn't picked starts from. Empty = off, the built-in ones.
+   */
+  dashboard: process.env.DASHBOARD_URL ?? "",
 };

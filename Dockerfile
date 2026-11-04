@@ -20,6 +20,8 @@ RUN npm install --omit=dev --prefix server
 
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/client/dist ./client/dist
+# Folio's config helper (Dashboard's defaults), where the server imports it from.
+COPY client/vendor/ewo/elements/config-server.js client/vendor/ewo/elements/config-core.js ./client/vendor/ewo/elements/
 
 EXPOSE 4600
 

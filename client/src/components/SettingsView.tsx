@@ -91,7 +91,10 @@ function Segmented<T extends string>({
  * left to go wrong; a proper sheet can come back once that freeze is found.
  */
 export function SettingsView({ conferences }: SettingsViewProps) {
-  const { settings, update } = useSettings();
+  // The theme and language pills show what the page shows (a device that hasn't
+  // picked one gets Dashboard's, else dark and English); a tap makes it this
+  // device's pick. Motion has its own first choice for that, Default.
+  const { settings, shown, update } = useSettings();
   const t = useStrings();
 
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
@@ -100,8 +103,8 @@ export function SettingsView({ conferences }: SettingsViewProps) {
   // Reduced motion beats the creative theme — worth saying out loud rather than
   // leaving the reader to wonder why nothing moves.
   const motionReduced =
-    settings.motion === "reduced" ||
-    (settings.motion === "system" &&
+    shown.motion === "reduced" ||
+    (shown.motion === "system" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   return (
@@ -125,7 +128,7 @@ export function SettingsView({ conferences }: SettingsViewProps) {
         <Row label={t.theme} hint={t.themeHint}>
           <Segmented<Theme>
             label={t.theme}
-            value={settings.theme}
+            value={shown.theme}
             onChange={(v) => set("theme", v)}
             options={[
               { id: "dark", label: t.themeDark },
@@ -135,7 +138,7 @@ export function SettingsView({ conferences }: SettingsViewProps) {
           />
         </Row>
 
-        {settings.theme === "creative" && motionReduced && (
+        {shown.theme === "creative" && motionReduced && (
           <p className="-mt-1 pb-3 font-display text-[12.5px] leading-snug text-gold">
             {t.motionOverridesCreative}
           </p>
@@ -144,7 +147,7 @@ export function SettingsView({ conferences }: SettingsViewProps) {
         <Row label={t.language}>
           <Segmented<Lang>
             label={t.language}
-            value={settings.lang}
+            value={shown.lang}
             onChange={(v) => set("lang", v)}
             options={[
               { id: "en", label: "English" },
